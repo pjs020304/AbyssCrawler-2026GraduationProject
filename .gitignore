@@ -1,5 +1,8 @@
-# Visual Studio 2015 user specific files
+# IDE 설정 파일들
 .vs/
+.vscode/
+*.code-workspace
+.idea/
 
 # Compiled Object files
 *.slo
