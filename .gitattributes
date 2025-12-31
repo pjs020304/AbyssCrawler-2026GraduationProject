@@ -1,0 +1,89 @@
+###############################################################################
+# 1. 기본 설정 (Git Default)
+###############################################################################
+# 모든 파일은 기본적으로 텍스트로 취급하며, OS에 따라 줄바꿈을 자동 처리합니다.
+* text=auto
+
+###############################################################################
+# 2. 언리얼 엔진 바이너리 에셋 (Unreal Assets - LFS 필수)
+###############################################################################
+# .uasset과 .umap은 병합이 불가능한 바이너리입니다. 
+# 반드시 LFS로 관리하고, lockable을 설정하여 동시 수정을 막는 것이 좋습니다.
+*.uasset filter=lfs diff=lfs merge=lfs -text lockable
+*.umap   filter=lfs diff=lfs merge=lfs -text lockable
+
+###############################################################################
+# 3. 3D 모델 및 소스 파일 (3D Models)
+###############################################################################
+*.fbx       filter=lfs diff=lfs merge=lfs -text
+*.obj       filter=lfs diff=lfs merge=lfs -text
+*.3ds       filter=lfs diff=lfs merge=lfs -text
+*.blend     filter=lfs diff=lfs merge=lfs -text
+*.max       filter=lfs diff=lfs merge=lfs -text
+*.maya      filter=lfs diff=lfs merge=lfs -text
+*.glb       filter=lfs diff=lfs merge=lfs -text
+*.gltf      filter=lfs diff=lfs merge=lfs -text
+
+###############################################################################
+# 4. 이미지 및 텍스처 (Images & Textures)
+###############################################################################
+*.png       filter=lfs diff=lfs merge=lfs -text
+*.jpg       filter=lfs diff=lfs merge=lfs -text
+*.jpeg      filter=lfs diff=lfs merge=lfs -text
+*.bmp       filter=lfs diff=lfs merge=lfs -text
+*.tga       filter=lfs diff=lfs merge=lfs -text
+*.tiff      filter=lfs diff=lfs merge=lfs -text
+*.tif       filter=lfs diff=lfs merge=lfs -text
+*.psd       filter=lfs diff=lfs merge=lfs -text
+*.ai        filter=lfs diff=lfs merge=lfs -text
+*.exr       filter=lfs diff=lfs merge=lfs -text
+*.hdr       filter=lfs diff=lfs merge=lfs -text
+
+###############################################################################
+# 5. 오디오 및 비디오 (Audio & Video)
+###############################################################################
+*.wav       filter=lfs diff=lfs merge=lfs -text
+*.mp3       filter=lfs diff=lfs merge=lfs -text
+*.ogg       filter=lfs diff=lfs merge=lfs -text
+*.mp4       filter=lfs diff=lfs merge=lfs -text
+*.mov       filter=lfs diff=lfs merge=lfs -text
+*.avi       filter=lfs diff=lfs merge=lfs -text
+
+###############################################################################
+# 6. 컴파일된 바이너리 및 라이브러리 (Binaries - 안전장치)
+###############################################################################
+# 보통 .gitignore로 무시하지만, 실수로 올라갈 경우를 대비해 LFS로 처리합니다.
+*.dll       filter=lfs diff=lfs merge=lfs -text
+*.pdb       filter=lfs diff=lfs merge=lfs -text
+*.lib       filter=lfs diff=lfs merge=lfs -text
+*.exe       filter=lfs diff=lfs merge=lfs -text
+*.so        filter=lfs diff=lfs merge=lfs -text
+*.a         filter=lfs diff=lfs merge=lfs -text
+
+###############################################################################
+# 7. 코드 및 설정 파일 (Code & Config - 텍스트 명시)
+###############################################################################
+# C++ 소스 코드는 명확하게 텍스트로 지정합니다.
+*.cpp       text diff=cpp
+*.h         text diff=cpp
+*.c         text diff=cpp
+*.cs        text diff=csharp
+*.m         text
+*.mm        text
+*.py        text diff=python
+
+# 설정 파일들
+*.ini       text
+*.json      text
+*.xml       text
+*.yaml      text
+*.yml       text
+*.html      text
+*.css       text
+*.js        text
+*.txt       text
+*.md        text
+
+# Visual Studio / IDE 관련
+*.sln       text eol=crlf
+*.csproj    text
