@@ -2,6 +2,7 @@
 #include "AbyssCharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
@@ -35,6 +36,9 @@ AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectIniti
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
+
+
+
 }
 
 void AAbyssDiverCharacter::BeginPlay()
@@ -50,7 +54,35 @@ void AAbyssDiverCharacter::BeginPlay()
 		}
 	}
 
+	// 1. 인벤토리 초기화 (빈 슬롯 5개 생성)
+	Inventory.Init(nullptr, 5);
+	CurrentSlotIndex = 0;
+
+	// 2. 기본 아이템(손전등) 생성 및 지급
+	if (DefaultItemClass)
+	{
+		// 월드에 아이템 액터 생성
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		AAbyssItemBase* NewItem = GetWorld()->SpawnActor<AAbyssItemBase>(DefaultItemClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+		if (NewItem)
+		{
+			// 인벤토리 0번 슬롯에 넣기
+			Inventory[0] = NewItem;
+			Inventory[1] = NewItem;
+			Inventory[2] = NewItem;
+			Inventory[3] = NewItem;
+			Inventory[4] = NewItem;
+
+			// [중요] 아이템을 카메라에 붙이기 (1인칭 시점)
+			NewItem->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+		}
+	}
 	
+	OnInventoryUpdated();
+
 }
 
 void AAbyssDiverCharacter::Tick(float DeltaTime)
@@ -76,7 +108,21 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::StartDash);
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Completed, this, &AAbyssDiverCharacter::StopDash);
-	
+
+		// 아이템 사용 (마우스 좌클릭)
+		EnhancedInputComponent->BindAction(UseItemAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::UseCurrentItem);
+
+		// 슬롯 변경 (숫자키 1, 2)
+		EnhancedInputComponent->BindAction(Slot1Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot1);
+		EnhancedInputComponent->BindAction(Slot2Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot2);
+		EnhancedInputComponent->BindAction(Slot3Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot3);
+		EnhancedInputComponent->BindAction(Slot4Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot4);
+		EnhancedInputComponent->BindAction(Slot5Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot5);
+
+		// 상호작용 Interaction
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::TryInteract);
+
+
 	}
 }
 
@@ -180,4 +226,73 @@ void AAbyssDiverCharacter::StartDescend()
 void AAbyssDiverCharacter::StopDescend()
 {
 	UnCrouch();
+}
+
+void AAbyssDiverCharacter::UseCurrentItem()
+{
+	// 현재 슬롯에 아이템이 있는지 확인
+	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr)
+	{
+		Inventory[CurrentSlotIndex]->UseItem();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("현재 슬롯이 비어있습니다."));
+	}
+}
+
+void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
+{
+	if (CurrentSlotIndex == NewIndex) return;
+
+	// 기존 아이템 숨기기 등의 로직이 필요하다면 여기에 작성
+	// 예: Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
+
+	CurrentSlotIndex = NewIndex;
+	UE_LOG(LogTemp, Log, TEXT("슬롯 변경: %d"), CurrentSlotIndex + 1);
+
+	// 새 아이템 보이기
+	// 예: Inventory[CurrentSlotIndex]->SetActorHiddenInGame(false);
+
+	OnInventoryUpdated();
+}
+
+void AAbyssDiverCharacter::EquipSlot1() { SwitchToSlot(0); }
+void AAbyssDiverCharacter::EquipSlot2() { SwitchToSlot(1); }
+void AAbyssDiverCharacter::EquipSlot3() { SwitchToSlot(2); }
+void AAbyssDiverCharacter::EquipSlot4() { SwitchToSlot(3); }
+void AAbyssDiverCharacter::EquipSlot5() { SwitchToSlot(4); }
+
+
+// E키를 눌렀을 때 실행되는 함수
+void AAbyssDiverCharacter::TryInteract()
+{
+	if (!FirstPersonCameraComponent) return;
+
+	// 1. 레이캐스트 시작점(카메라 위치)과 끝점(카메라가 바라보는 방향 * 거리) 계산
+	FVector Start = FirstPersonCameraComponent->GetComponentLocation();
+	FVector End = Start + (FirstPersonCameraComponent->GetForwardVector() * InteractDistance);
+
+	FHitResult HitResult;
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this); // 내 캐릭터는 검사에서 제외
+
+	// 2. 눈에 보이는 물체(ECC_Visibility: 기본으로 StaticMesh Block, Ignore부분 설정 가능)를 기준으로 레이저 쏘기
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, CollisionParams);
+
+	// (디버그용)
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
+
+	// 3. 라인트레이스에 걸렸을 때
+	if (bHit && HitResult.GetActor())
+	{
+		AActor* HitActor = HitResult.GetActor();
+
+		// 4. 그 물체가 상호작용 인터페이스를 상속받았는지 확인
+		if (HitActor->Implements<UAbyssInteractionInterface>())
+		{
+			// 5. 인터페이스의 Interact 함수 실행 
+			IAbyssInteractionInterface::Execute_Interact(HitActor, this);
+		}
+	}
 }

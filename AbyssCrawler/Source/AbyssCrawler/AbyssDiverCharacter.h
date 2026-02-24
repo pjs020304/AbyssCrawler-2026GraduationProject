@@ -1,8 +1,12 @@
 #pragma once
+
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "AbyssItemBase.h" 
+#include "AbyssInteractionInterface.h"
 #include "AbyssDiverCharacter.generated.h"
+
 
 // 전방 선언
 class UInputMappingContext;
@@ -26,6 +30,8 @@ protected:
 public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	// 리플리케이션 설정 (변수 동기화)
+	//virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// --- Components ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
@@ -51,7 +57,51 @@ public:
 	UInputAction* CrouchAction; // Ctrl (수중 하강)
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* DashAction; // Shift 키 매핑 예정
+	UInputAction* DashAction; // Shift 키 매핑
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* UseItemAction; // 마우스 좌클릭
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* Slot1Action; // 숫자키 1
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* Slot2Action; // 숫자키 2
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* Slot3Action;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* Slot4Action;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* Slot5Action;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* InteractAction;
+
+	UPROPERTY(EditAnywhere, Category = "Interaction")
+	float InteractDistance = 250.0f;
+
+	// --- Inventory System ---
+	// 아이템 슬롯 (최대 5개)
+	// 아이템 슬롯 (최대 5개)
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Inventory")
+	TArray<AAbyssItemBase*> Inventory;
+
+	// 현재 선택된 슬롯 번호 (0 ~ 4)
+	// [추가됨] UI(블루프린트)에서 이 값을 읽어갈 수 있도록 허락해줍니다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	int32 CurrentSlotIndex;
+
+	// 시작 시 지급할 아이템 클래스 (에디터에서 설정)
+	UPROPERTY(EditAnywhere, Category = "Inventory")
+	TSubclassOf<AAbyssItemBase> DefaultItemClass;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void OnInventoryUpdated();
+
+
 
 protected:
 	// 이동 함수
@@ -63,4 +113,22 @@ protected:
 	void StopDescend();
 	void StartDash();
 	void StopDash();
+
+	// 아이템 사용 (클릭)
+	void UseCurrentItem();
+
+	// 슬롯 변경 (1, 2번 키)
+	void EquipSlot1();
+	void EquipSlot2();
+	void EquipSlot3();
+	void EquipSlot4();
+	void EquipSlot5();
+
+
+
+	// 내부적으로 슬롯 바꾸는 함수
+	void SwitchToSlot(int32 NewIndex);
+
+	// 상호작용 시도 함수
+	void TryInteract();
 };
