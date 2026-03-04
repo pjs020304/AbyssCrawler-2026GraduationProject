@@ -38,7 +38,7 @@ void AAbyssDoor::Interact_Implementation(AActor* InstigatorActor)
         FVector DirToPlayer = InstigatorActor->GetActorLocation() - GetActorLocation();
         DirToPlayer.Normalize(); // 방향만 필요하므로 길이를 1로 정규화
 
-        // 3. 두 벡터의 내적(Dot Product) 계산
+        // 3. 두 벡터의 내적(Dot Product: 얼마나 같은 방향인가) 계산
         float DotResult = FVector::DotProduct(DoorForward, DirToPlayer);
 
         // 4. 플레이어 위치에 따라 문이 열릴 방향(부호) 결정

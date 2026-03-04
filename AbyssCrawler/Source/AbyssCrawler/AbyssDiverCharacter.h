@@ -60,6 +60,12 @@ public:
 	UInputAction* DashAction; // Shift 키 매핑
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* ConvertAction;	// C키로 전환
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool IsSwimming = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputAction* UseItemAction; // 마우스 좌클릭
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
@@ -69,28 +75,30 @@ public:
 	UInputAction* Slot2Action; // 숫자키 2
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* Slot3Action;
+	UInputAction* Slot3Action; // 숫자키 3
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* Slot4Action;
+	UInputAction* Slot4Action; // 숫자키 4
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* Slot5Action;
+	UInputAction* Slot5Action; // 숫자키 5
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* InteractAction;
+	UInputAction* InteractAction; // 상호작용키 E
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* DropAction; // 버리기키 Q
 
 	UPROPERTY(EditAnywhere, Category = "Interaction")
 	float InteractDistance = 250.0f;
 
 	// --- Inventory System ---
 	// 아이템 슬롯 (최대 5개)
-	// 아이템 슬롯 (최대 5개)
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Inventory")
 	TArray<AAbyssItemBase*> Inventory;
 
 	// 현재 선택된 슬롯 번호 (0 ~ 4)
-	// [추가됨] UI(블루프린트)에서 이 값을 읽어갈 수 있도록 허락해줍니다.
+	// UI(블루프린트)에서 이 값을 읽어갈 수 있도록 허락
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
 	int32 CurrentSlotIndex;
 
@@ -98,9 +106,18 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Inventory")
 	TSubclassOf<AAbyssItemBase> DefaultItemClass;
 
+	// 현재 시선이 머물고 있는 상호작용 액터 기억하기
+	UPROPERTY()
+	AActor* FocusedActor;
+
+	// --- public 함수 ---
 	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void OnInventoryUpdated();
 
+	bool AddItemToInventory(AAbyssItemBase* AddedItem);
+
+	// 매 프레임 시선을 검사하는 함수
+	void CheckForInteractables();
 
 
 protected:
@@ -114,6 +131,9 @@ protected:
 	void StartDash();
 	void StopDash();
 
+	// 수중 이동 전환
+	void ConvertMove();
+
 	// 아이템 사용 (클릭)
 	void UseCurrentItem();
 
@@ -124,11 +144,11 @@ protected:
 	void EquipSlot4();
 	void EquipSlot5();
 
-
-
 	// 내부적으로 슬롯 바꾸는 함수
 	void SwitchToSlot(int32 NewIndex);
 
 	// 상호작용 시도 함수
 	void TryInteract();
+
+	void DropItem();
 };

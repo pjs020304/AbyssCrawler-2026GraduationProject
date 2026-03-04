@@ -70,13 +70,21 @@ void AAbyssDiverCharacter::BeginPlay()
 		{
 			// 인벤토리 0번 슬롯에 넣기
 			Inventory[0] = NewItem;
-			Inventory[1] = NewItem;
+			/*Inventory[1] = NewItem;
 			Inventory[2] = NewItem;
 			Inventory[3] = NewItem;
-			Inventory[4] = NewItem;
+			Inventory[4] = NewItem;*/
 
-			// [중요] 아이템을 카메라에 붙이기 (1인칭 시점)
+			UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(NewItem->GetRootComponent());
+			if (RootPrim)
+			{
+				RootPrim->SetSimulatePhysics(false);
+			}
+
+			// 아이템을 카메라에 붙이기 (1인칭 시점)
 			NewItem->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+			NewItem->SetActorEnableCollision(false);
 
 		}
 	}
@@ -89,6 +97,8 @@ void AAbyssDiverCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	// 여기에 나중에 산소 소모 등의 로직 추가
+
+	CheckForInteractables();
 }
 
 void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -109,6 +119,8 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::StartDash);
 		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Completed, this, &AAbyssDiverCharacter::StopDash);
 
+		EnhancedInputComponent->BindAction(ConvertAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::ConvertMove);
+
 		// 아이템 사용 (마우스 좌클릭)
 		EnhancedInputComponent->BindAction(UseItemAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::UseCurrentItem);
 
@@ -122,7 +134,8 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		// 상호작용 Interaction
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::TryInteract);
 
-
+		// 버리기
+		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::DropItem);
 	}
 }
 
@@ -152,7 +165,7 @@ void AAbyssDiverCharacter::Move(const FInputActionValue& Value)
 		// [핵심] 수영 모드일 때는 카메라가 보는 방향(Z축 포함)으로 이동해야 함 (6DOF)
 		bool bIsSwimming = GetCharacterMovement()->IsSwimming();
 
-		if (bIsSwimming)
+		if (bIsSwimming && IsSwimming)
 		{
 			// 수영 중: ControlRotation을 사용하여 3차원 방향 획득
 			FRotator ControlRot = GetControlRotation();
@@ -196,6 +209,7 @@ void AAbyssDiverCharacter::StartAscend()
 		// 수영 중 Space: 수직 상승
 		AddMovementInput(FVector::UpVector, 1.0f);
 		//UE_LOG(LogTemp, Warning, TEXT("Swiming Ascend now"))
+		
 	}
 	else
 	{
@@ -228,6 +242,13 @@ void AAbyssDiverCharacter::StopDescend()
 	UnCrouch();
 }
 
+void AAbyssDiverCharacter::ConvertMove()
+{
+	if (GetCharacterMovement()->IsSwimming()) {
+		IsSwimming = !IsSwimming;
+	}
+}
+
 void AAbyssDiverCharacter::UseCurrentItem()
 {
 	// 현재 슬롯에 아이템이 있는지 확인
@@ -237,7 +258,7 @@ void AAbyssDiverCharacter::UseCurrentItem()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("현재 슬롯이 비어있습니다."));
+		UE_LOG(LogTemp, Warning, TEXT("[Abyss] Empty Slot"));
 	}
 }
 
@@ -247,12 +268,16 @@ void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
 
 	// 기존 아이템 숨기기 등의 로직이 필요하다면 여기에 작성
 	// 예: Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
-
+	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr) {
+		Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
+	}
 	CurrentSlotIndex = NewIndex;
-	UE_LOG(LogTemp, Log, TEXT("슬롯 변경: %d"), CurrentSlotIndex + 1);
+	UE_LOG(LogTemp, Log, TEXT("Slot Change: %d"), CurrentSlotIndex + 1);
 
 	// 새 아이템 보이기
-	// 예: Inventory[CurrentSlotIndex]->SetActorHiddenInGame(false);
+	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr) {
+		Inventory[CurrentSlotIndex]->SetActorHiddenInGame(false);
+	}
 
 	OnInventoryUpdated();
 }
@@ -294,5 +319,158 @@ void AAbyssDiverCharacter::TryInteract()
 			// 5. 인터페이스의 Interact 함수 실행 
 			IAbyssInteractionInterface::Execute_Interact(HitActor, this);
 		}
+	}
+}
+
+bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
+{
+	if (!ItemToAdd) return false;
+
+	// 인벤토리 배열(5칸)을 순회하면서 빈칸(nullptr) 찾기
+	for (int32 i = 0; i < Inventory.Num(); ++i)
+	{
+		if (Inventory[i] == nullptr)
+		{
+			// 빈칸 발견! 아이템 넣기
+			Inventory[i] = ItemToAdd;
+
+			// 충돌 끄기
+			ItemToAdd->SetActorEnableCollision(false);
+
+			// 물리 시뮬레이션 끄기 
+			UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(ItemToAdd->GetRootComponent());
+			if (RootPrim)
+			{
+				RootPrim->SetSimulatePhysics(false);
+			}
+
+			// 아이템을 카메라에 부착
+			ItemToAdd->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);	
+
+			// 액터 전체를 게임에서 숨기기
+			if (CurrentSlotIndex != i) {
+				ItemToAdd->SetActorHiddenInGame(true);
+			}
+
+			// 소유권 설정
+			//ItemToAdd->SetOwner(this);
+
+			// UI 업데이트 알림
+			OnInventoryUpdated();
+
+			return true; // 성공적으로 주움
+		}
+	}
+
+	// 빈칸이 하나도 없음
+	return false;
+}
+
+void AAbyssDiverCharacter::CheckForInteractables()
+{
+	if (!FirstPersonCameraComponent) return;
+
+	FVector Start = FirstPersonCameraComponent->GetComponentLocation();
+	FVector End = Start + (FirstPersonCameraComponent->GetForwardVector() * InteractDistance);
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params);
+
+	if (bHit && HitResult.GetActor())
+	{
+		AActor* HitActor = HitResult.GetActor();
+
+		// 맞은 물체가 인터페이스를 가지고 있다면?
+		if (HitActor->Implements<UAbyssInteractionInterface>())
+		{
+			// 만약 이전에 쳐다보던 물체와 '다른' 물체라면?
+			if (HitActor != FocusedActor)
+			{
+				// 기존 물체에게는 시선을 뗐다고 알려줌
+				if (FocusedActor)
+				{
+					IAbyssInteractionInterface::Execute_OnLostFocus(FocusedActor);
+				}
+
+				// 새 물체에게는 시선이 닿았다고 알려줌
+				FocusedActor = HitActor;
+				IAbyssInteractionInterface::Execute_OnFocus(FocusedActor);
+			}
+			return; // 성공했으니 여기서 함수 종료
+		}
+	}
+
+	// 허공을 보거나 상호작용 불가능한 벽을 보았을 때
+	if (FocusedActor)
+	{
+		// 기존에 보던 물체의 UI를 꺼줌
+		IAbyssInteractionInterface::Execute_OnLostFocus(FocusedActor);
+		FocusedActor = nullptr; // 기억 지우기
+	}
+}
+
+void AAbyssDiverCharacter::DropItem()
+{
+	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr)
+	{
+		AAbyssItemBase* ItemToDrop = Inventory[CurrentSlotIndex];
+		Inventory[CurrentSlotIndex] = nullptr;
+
+		// 1. 캐릭터로부터 완벽히 분리
+		ItemToDrop->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+		// 2. 숨김 해제
+		ItemToDrop->SetActorHiddenInGame(false);
+
+		// 3. 위치 세팅 (카메라 바로 앞, 눈앞에서 떨어지도록 세팅)
+		if (FirstPersonCameraComponent)
+		{
+			// 내 몸(캡슐)과 덜 겹치도록 50.0f 정도만 살짝 앞으로 뺍니다.
+			FVector DropLocation = FirstPersonCameraComponent->GetComponentLocation() + (FirstPersonCameraComponent->GetForwardVector() * 50.0f);
+			ItemToDrop->SetActorLocation(DropLocation);
+
+			// 던질 때 똑바로 날아가도록 회전값도 카메라와 일치시킵니다.
+			ItemToDrop->SetActorRotation(FirstPersonCameraComponent->GetComponentRotation());
+		}
+
+		// 4. 충돌 및 물리 켜기
+		ItemToDrop->SetActorEnableCollision(true);
+		UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(ItemToDrop->GetRootComponent());
+
+		if (RootPrim)
+		{
+			RootPrim->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+			RootPrim->SetSimulatePhysics(true);
+
+			// 물리 엔진 깨우기 (필수)
+			RootPrim->WakeAllRigidBodies();
+
+			// ---------------------------------------------------
+			// 5. [핵심] 물리적인 힘(Impulse)을 가해 앞으로 던지기!
+			// ---------------------------------------------------
+			if (FirstPersonCameraComponent)
+			{
+				// 카메라가 바라보는 방향 벡터
+				FVector ThrowDirection = FirstPersonCameraComponent->GetForwardVector();
+
+				// 살짝 위로 던지는 느낌을 주기 위해 Z축 값을 조금 더해줍니다.
+				ThrowDirection.Z += 0.2f;
+				ThrowDirection.Normalize();
+
+				// 던지는 힘 (숫자를 조절해서 세기를 맞추세요)
+				float ThrowForce = 600.0f;
+
+				// 힘 가하기! (bVelChange를 true로 하면 아이템의 질량(무게)을 무시하고 일정한 속도로 던집니다)
+				RootPrim->AddImpulse(ThrowDirection * ThrowForce, NAME_None, true);
+			}
+		}
+
+		// 6. UI 갱신
+		OnInventoryUpdated();
+
+		UE_LOG(LogTemp, Log, TEXT("Throw Item: %s"), *ItemToDrop->ItemName);
 	}
 }

@@ -5,8 +5,10 @@ AAbyssFlashLight::AAbyssFlashLight()
 {
     // 1. 스포트 라이트 생성
     SpotLightComp = CreateDefaultSubobject<USpotLightComponent>(TEXT("SpotLightComp"));
-    RootComponent = SpotLightComp; // 아이템의 뿌리가 됨
+    SpotLightComp->SetupAttachment(RootComponent);
 
+
+    ItemMesh->SetupAttachment(SpotLightComp);
     // 2. 라이트 설정 (이전에 했던 설정 그대로)
     SpotLightComp->Intensity = 5000.0f;
     SpotLightComp->AttenuationRadius = 2000.0f;
