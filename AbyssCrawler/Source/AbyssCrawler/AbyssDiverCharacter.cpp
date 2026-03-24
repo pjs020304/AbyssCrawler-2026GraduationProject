@@ -5,6 +5,8 @@
 #include "Components/SpotLightComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "AbilitySystemComponent.h"
+#include "AbyssAttributeSet.h"
 
 // 중요: 커스텀 무브먼트 컴포넌트를 사용하려면 FObjectInitializer를 받는 생성자를 써야 함
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
@@ -17,10 +19,10 @@ AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectIniti
 
 	// 2. 카메라 설정 (1인칭)
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->SetupAttachment(GetMesh(), TEXT("head"));
+	FirstPersonCameraComponent->SetupAttachment(GetMesh(), TEXT("Bone_004"));
 
 	// 카메라 위치 미세 조정 (눈 위치로 맞춤, 모델에 따라 다름)
-	FirstPersonCameraComponent->SetRelativeLocation(FVector(100.f, 0.f, 0.f));
+	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.0f, 0.f, 0.f));
 
 	// 컨트롤러 회전에 따라 카메라가 돌도록 설정
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
@@ -37,13 +39,43 @@ AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectIniti
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 
+	// 1. GAS 심장(컴포넌트) 생성 및 멀티플레이 설정
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
 
+	// 멀티플레이 최적화 모드: 내 캐릭터(혼합 모드)로 설정하면 서버 부하를 줄이면서도 내 화면엔 즉각 반영됩니다.
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
+	// 2. 자원 보관소(AttributeSet) 생성
+	AttributeSet = CreateDefaultSubobject<UAbyssAttributeSet>(TEXT("AttributeSet"));
 }
 
 void AAbyssDiverCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (AbilitySystemComponent && AttributeSet)
+	{
+		// 1. [UI 바인딩] 산소(Oxygen) 값이 변할 때마다 OnOxygenChangedCallback 함수를 실행하라고 예약!
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetOxygenAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnOxygenChangedCallback);
+
+		// 2. [GE 적용] 산소 감소 이펙트(GE_DrainOxygen)를 내 몸에 적용하기
+		if (OxygenDrainEffectClass)
+		{
+			// 이펙트를 적용하기 위한 포장지(Context) 만들기
+			FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+			Context.AddInstigator(this, this);
+
+			// 포장지와 이펙트를 합쳐서 적용할 준비(Spec) 완료
+			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(OxygenDrainEffectClass, 1.0f, Context);
+
+			if (SpecHandle.IsValid())
+			{
+				// 드디어 내 몸에 산소 감소 이펙트 부착!
+				AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			}
+		}
+	}
 
 	// Enhanced Input 매핑
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -83,6 +115,8 @@ void AAbyssDiverCharacter::BeginPlay()
 
 			// 아이템을 카메라에 붙이기 (1인칭 시점)
 			NewItem->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+			// 애니메이션 물건을 들고 있는데, 그냥 걷는 모션 + 물건을 들고있는 모션(대부분 한손 아이템)
+			// 아이템: 공격, 방해(전파), 설치(방해), 이동속도(제트팩, 손으로 들고 사용 하는거) 증가
 
 			NewItem->SetActorEnableCollision(false);
 
@@ -104,6 +138,12 @@ void AAbyssDiverCharacter::Tick(float DeltaTime)
 void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	if (AbilitySystemComponent)
+	{
+		// 클라이언트에서도 똑같이 초기화해 주어야 UI 연동 및 예측(Prediction)이 정상 작동합니다.
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
@@ -473,4 +513,29 @@ void AAbyssDiverCharacter::DropItem()
 
 		UE_LOG(LogTemp, Log, TEXT("Throw Item: %s"), *ItemToDrop->ItemName);
 	}
+}
+
+// 인터페이스 필수 구현: 심장(컴포넌트) 반환
+UAbilitySystemComponent* AAbyssDiverCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+// [서버 측 초기화] 캐릭터가 컨트롤러에 빙의(Possess)될 때
+void AAbyssDiverCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AbilitySystemComponent)
+	{
+		// GAS 초기화의 핵심 함수: (소유자 액터, 물리적 아바타 액터)
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
+}
+
+// 산소 값이 변할 때마다 엔진이 알아서 호출해 주는 함수
+void AAbyssDiverCharacter::OnOxygenChangedCallback(const FOnAttributeChangeData& Data)
+{
+	// 블루프린트(UI) 쪽으로 "산소 변했다!" 하고 현재값과 최대값을 방송(Broadcast)합니다.
+	OnOxygenChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxOxygen());
 }

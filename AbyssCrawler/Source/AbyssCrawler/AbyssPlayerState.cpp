@@ -11,7 +11,7 @@ AAbyssPlayerState::AAbyssPlayerState()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	bIsAlive = true;
-	NetUpdateFrequency = 100.0f; // 빠른 동기화
+	//NetUpdateFrequency = 100.0f; // 빠른 동기화
 }
 
 UAbilitySystemComponent* AAbyssPlayerState::GetAbilitySystemComponent() const

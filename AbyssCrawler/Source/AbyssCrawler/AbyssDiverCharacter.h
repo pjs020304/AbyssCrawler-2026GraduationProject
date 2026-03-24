@@ -5,8 +5,12 @@
 #include "InputActionValue.h"
 #include "AbyssItemBase.h" 
 #include "AbyssInteractionInterface.h"
+#include "AbilitySystemInterface.h"
+#include "GameplayEffectTypes.h"
 #include "AbyssDiverCharacter.generated.h"
 
+// 블루프린트(UI)로 신호를 Delegate 선언
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnResourceChanged, float, CurrentValue, float, MaxValue);
 
 // 전방 선언
 class UInputMappingContext;
@@ -14,15 +18,20 @@ class UInputAction;
 class UCameraComponent;
 class USpringArmComponent;
 class UAbyssCharacterMovementComponent;
+class UAbilitySystemComponent;
+class UAbyssAttributeSet;
+
 
 UCLASS()
-class ABYSSCRAWLER_API AAbyssDiverCharacter : public ACharacter
+class ABYSSCRAWLER_API AAbyssDiverCharacter : public ACharacter, public IAbilitySystemInterface 
 {
 	GENERATED_BODY()
 
 public:
 	// 커스텀 무브먼트 컴포넌트 사용을 위한 생성자 선언
 	AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer);
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -120,6 +129,14 @@ public:
 	void CheckForInteractables();
 
 
+	// 산소가 변할 때 블루프린트로 쏴줄 이벤트
+	UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
+	FOnResourceChanged OnOxygenChanged;
+
+	// 에디터에서 방금 만든 GE_DrainOxygen을 넣을 칸
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
+	TSubclassOf<class UGameplayEffect> OxygenDrainEffectClass;
+
 protected:
 	// 이동 함수
 	void Move(const FInputActionValue& Value);
@@ -151,4 +168,20 @@ protected:
 	void TryInteract();
 
 	void DropItem();
+
+	// --- [GAS Components] ---
+	// GAS의 심장 (모든 스킬과 이펙트를 처리)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities", meta = (AllowPrivateAccess = "true"))
+	UAbilitySystemComponent* AbilitySystemComponent;
+
+	// 자원 보관소 (체력, 산소, 배터리)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities", meta = (AllowPrivateAccess = "true"))
+	UAbyssAttributeSet* AttributeSet;
+
+	// --- [GAS 초기화 함수들] ---
+	// 서버에서 캐릭터를 조종하기 시작할 때 호출
+	virtual void PossessedBy(AController* NewController) override;
+	//GAS 내부에서 산소 값이 변하면 자동으로 실행될 콜백 함수
+
+	void OnOxygenChangedCallback(const struct FOnAttributeChangeData& Data);
 };
