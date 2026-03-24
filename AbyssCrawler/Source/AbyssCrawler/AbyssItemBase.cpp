@@ -28,7 +28,7 @@ AAbyssItemBase::AAbyssItemBase()
 
 void AAbyssItemBase::UseItem()
 {
-	UE_LOG(LogTemp, Log, TEXT("아이템 사용됨: %s"), *ItemName);
+	UE_LOG(LogTemp, Log, TEXT("Item Used: %s"), *ItemName);
 }
 
 // [핵심] E키를 눌러 상호작용했을 때 실행되는 함수
