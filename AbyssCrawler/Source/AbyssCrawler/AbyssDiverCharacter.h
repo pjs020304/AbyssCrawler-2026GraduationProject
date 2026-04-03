@@ -133,9 +133,13 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
 	FOnResourceChanged OnOxygenChanged;
 
-	// 에디터에서 방금 만든 GE_DrainOxygen을 넣을 칸
+	// 에디터에 GE_DrainOxygen을 넣을 칸
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
 	TSubclassOf<class UGameplayEffect> OxygenDrainEffectClass;
+
+	// 체력이 변할 때 블루프린트로 쏴줄 이벤트
+	UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
+	FOnResourceChanged OnHealthChanged;
 
 protected:
 	// 이동 함수
@@ -184,4 +188,7 @@ protected:
 	//GAS 내부에서 산소 값이 변하면 자동으로 실행될 콜백 함수
 
 	void OnOxygenChangedCallback(const struct FOnAttributeChangeData& Data);
+
+	void OnHealthChangedCallback(const struct FOnAttributeChangeData& Data);
+
 };
