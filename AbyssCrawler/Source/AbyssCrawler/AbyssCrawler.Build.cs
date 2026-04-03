@@ -8,9 +8,21 @@ public class AbyssCrawler : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "Slate", "SlateCore", "GameplayAbilities", 
-    "GameplayTags", 
-    "GameplayTasks" });
+PublicDependencyModuleNames.AddRange(new string[] { 
+	"Core", 
+	"CoreUObject", 
+	"Engine", 
+	"InputCore", 
+	"EnhancedInput", 
+	"UMG", 
+	"Slate", 
+	"SlateCore", 
+	"GameplayAbilities", 
+    	"AIModule",         // AI 및 Behavior Tree용
+    	"GameplayTasks",    // GAS 필수 모듈 1
+    	"GameplayAbilities",// GAS 필수 모듈 2
+    	"GameplayTags"      // GAS 필수 모듈 3 (FGameplayTag 사용을 위해)
+});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

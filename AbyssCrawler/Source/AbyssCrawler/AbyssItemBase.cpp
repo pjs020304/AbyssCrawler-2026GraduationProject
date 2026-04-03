@@ -46,6 +46,9 @@ void AAbyssItemBase::Interact_Implementation(AActor* InstigatorActor)
 			//ItemMesh->SetVisibility(false); // 눈에 안 보이게 숨기기
 
 			//UE_LOG(LogTemp, Log, TEXT("%s Get! 가격: %d"), *ItemName, ItemPrice);
+
+			OwnerCharacter = Diver;
+
 		}
 		else
 		{

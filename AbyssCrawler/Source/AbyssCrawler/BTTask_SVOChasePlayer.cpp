@@ -65,10 +65,10 @@ void UBTTask_SVOChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* 
 	Shark->AddMovementInput(Shark->GetActorForwardVector(), 1.0f);
 
 	// 3. 다음 웨이포인트 반경 안에 도착했다면?
-	if (FVector::Distance(Shark->GetActorLocation(), NextWaypoint) < 150.0f)
+	if (FVector::Distance(Shark->GetActorLocation(), NextWaypoint) < 300.0f)
 	{
 		// 경로 배열의 인덱스를 다음으로 넘깁니다.
 		// 만약 경로의 마지막(플레이어 코앞)에 도달했다면 Task를 성공으로 끝냅니다.
-		// FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
 }

@@ -1,5 +1,7 @@
 #include "SVOVolume.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
 #include "DrawDebugHelpers.h"
 
 ASVOVolume::ASVOVolume()

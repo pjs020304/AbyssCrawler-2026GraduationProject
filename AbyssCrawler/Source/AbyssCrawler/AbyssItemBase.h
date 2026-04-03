@@ -40,4 +40,8 @@ public:
 	// 인터페이스 오버라이드
 	virtual void OnFocus_Implementation() override;
 	virtual void OnLostFocus_Implementation() override;
+
+protected:
+	UPROPERTY()
+	class AAbyssDiverCharacter* OwnerCharacter;
 };

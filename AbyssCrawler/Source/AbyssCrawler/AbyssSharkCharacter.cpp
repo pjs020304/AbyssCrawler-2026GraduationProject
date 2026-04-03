@@ -3,10 +3,13 @@
 #include "Components/CapsuleComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.h"
+#include "AIController.h"
 
 AAbyssSharkCharacter::AAbyssSharkCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	
 
 	// 1. [AI 설정] 맵에 배치되거나 스폰될 때 자동으로 AI Controller가 빙의(Possess)하도록 설정
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
@@ -34,11 +37,17 @@ AAbyssSharkCharacter::AAbyssSharkCharacter()
 	}
 
 	// 3. [GAS 설정] 플레이어와 동일하게 데미지를 받을 수 있도록 시스템 부착
-	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent")); // ASC 컴포넌트 생성 및 기본 세팅
+	// 서버에서만 권한을 가지도록 설정
 	AbilitySystemComponent->SetIsReplicated(true);
-	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal); // AI는 최적화를 위해 Minimal 모드 사용 
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);// AI는 최적화를 위해 Minimal 모드 사용 
 
 	AttributeSet = CreateDefaultSubobject<UAbyssAttributeSet>(TEXT("AttributeSet"));
+
+
+	
+
+	bAbilitiesInitialized = false;
 }
 
 UAbilitySystemComponent* AAbyssSharkCharacter::GetAbilitySystemComponent() const
@@ -54,5 +63,57 @@ void AAbyssSharkCharacter::BeginPlay()
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
+}
+
+void AAbyssSharkCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// 2. ASC 초기화 (Owner와 Avatar가 누구인지 엔진에 등록)
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+		// 3. 서버(권한이 있는 곳)에서만 어빌리티를 부여합니다.
+		if (HasAuthority() && !bAbilitiesInitialized)
+		{
+			// 기절 태그의 추가/삭제 이벤트를 감지하도록 리스너 등록
+			AbilitySystemComponent->RegisterGameplayTagEvent(StunTag, EGameplayTagEventType::NewOrRemoved)
+				.AddUObject(this, &AAbyssSharkCharacter::OnStunTagChanged);
+
+			// 배열에 세팅된 스킬들을 하나씩 꺼내서 상어에게 부여(Grant)합니다.
+			for (TSubclassOf<UGameplayAbility>& StartupAbility : StartupAbilities)
+			{
+				if (StartupAbility)
+				{
+					// FGameplayAbilitySpec은 어빌리티의 실행 정보를 담는 컨테이너입니다.
+					// 인자: (부여할 스킬, 레벨, 입력 키 ID(보통 AI는 INDEX_NONE), 스킬의 주인)
+					AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(StartupAbility, 1, INDEX_NONE, this));
+				}
+			}
+
+			bAbilitiesInitialized = true;
+			UE_LOG(LogTemp, Warning, TEXT("Shark has Skill"));
+		}
+	}
+}
+
+void AAbyssSharkCharacter::OnStunTagChanged(const FGameplayTag CallbackTag, int32 NewCount)
+{
+	// UE_LOG(LogTemp, Warning, TEXT("Start On Stun Tag Changed Function"));
+
+	AAIController* AIController = Cast<AAIController>(GetController());
+	
+	if (AIController && AIController->GetBlackboardComponent())
+	{
+		// NewCount가 1 이상이면 태그가 존재하는 것(기절 상태), 0이면 풀린 것
+		bool bIsStunned = (NewCount > 0);
+		AIController->GetBlackboardComponent()->SetValueAsBool(TEXT("IsStunned"), bIsStunned);
+
+		if (bIsStunned)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Shark Stunned!!"));
+		}
 	}
 }
