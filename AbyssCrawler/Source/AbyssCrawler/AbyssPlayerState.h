@@ -24,6 +24,11 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Abyss State")
 	bool bIsAlive; // 생존 여부 (사망 시 관전 모드 전환용)
 
+	virtual void CopyProperties(APlayerState* PlayerState) override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FText Nickname;
+
 protected:
 	// GAS 컴포넌트 (Replicated)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abyss GAS")

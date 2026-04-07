@@ -45,6 +45,7 @@ AAbyssSharkCharacter::AAbyssSharkCharacter()
 	AttributeSet = CreateDefaultSubobject<UAbyssAttributeSet>(TEXT("AttributeSet"));
 
 
+
 	
 
 	bAbilitiesInitialized = false;
@@ -82,6 +83,9 @@ void AAbyssSharkCharacter::PossessedBy(AController* NewController)
 			AbilitySystemComponent->RegisterGameplayTagEvent(StunTag, EGameplayTagEventType::NewOrRemoved)
 				.AddUObject(this, &AAbyssSharkCharacter::OnStunTagChanged);
 
+			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
+				.AddUObject(this, &AAbyssSharkCharacter::OnHealthChangedCallback);
+
 			// 배열에 세팅된 스킬들을 하나씩 꺼내서 상어에게 부여(Grant)합니다.
 			for (TSubclassOf<UGameplayAbility>& StartupAbility : StartupAbilities)
 			{
@@ -116,4 +120,34 @@ void AAbyssSharkCharacter::OnStunTagChanged(const FGameplayTag CallbackTag, int3
 			UE_LOG(LogTemp, Warning, TEXT("Shark Stunned!!"));
 		}
 	}
+}
+
+void AAbyssSharkCharacter::OnHealthChangedCallback(const FOnAttributeChangeData& Data)
+{
+	float NewHealth = Data.NewValue;
+	UE_LOG(LogTemp, Warning, TEXT("Shark Health Changed: %f"), NewHealth);
+
+	// 체력이 0 이하로 떨어지면 사망 처리
+	if (NewHealth <= 0.0f)
+	{
+		Die();
+	}
+}
+
+void AAbyssSharkCharacter::Die()
+{
+	UE_LOG(LogTemp, Warning, TEXT("상어 사망!"));
+
+	// 1. 행동 트리 정지
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController && AIController->GetBrainComponent())
+	{
+		AIController->GetBrainComponent()->StopLogic("Shark Died");
+	}
+
+	// 2. 콜리전 해제 (시체에 부딪히지 않게)
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// 3. 사망 애니메이션 몽타주 재생 또는 랙돌(Ragdoll) 켜기
+	// PlayAnimMontage(DeathMontage);
 }

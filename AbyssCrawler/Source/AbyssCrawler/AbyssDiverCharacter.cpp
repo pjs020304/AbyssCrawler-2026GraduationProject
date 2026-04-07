@@ -7,6 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.h"
+#include "GameFramework/PlayerController.h"
 
 // 중요: 커스텀 무브먼트 컴포넌트를 사용하려면 FObjectInitializer를 받는 생성자를 써야 함
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
@@ -79,13 +80,15 @@ void AAbyssDiverCharacter::BeginPlay()
 	}
 
 	// Enhanced Input 매핑
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	/*if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
-	}
+	}*/
+
+	SetupEnhancedInput();
 
 	// 1. 인벤토리 초기화 (빈 슬롯 5개 생성)
 	Inventory.Init(nullptr, 5);
@@ -532,6 +535,8 @@ void AAbyssDiverCharacter::PossessedBy(AController* NewController)
 		// GAS 초기화의 핵심 함수: (소유자 액터, 물리적 아바타 액터)
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
+
+	SetupEnhancedInput();
 }
 
 // 산소 값이 변할 때마다 엔진이 알아서 호출해 주는 함수
@@ -546,4 +551,51 @@ void AAbyssDiverCharacter::OnHealthChangedCallback(const FOnAttributeChangeData&
 {
 	// 블루프린트(UI) 쪽으로 "체력 변했다!" 하고 현재값과 최대값을 방송(Broadcast)합니다.
 	OnHealthChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxHealth());
+}
+
+void AAbyssDiverCharacter::SetupEnhancedInput()
+{
+	if (!DefaultMappingContext)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Input] DefaultMappingContext is null"));
+		return;
+	}
+
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (!PlayerController)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Input] PlayerController is null"));
+		return;
+	}
+
+	if (!PlayerController->IsLocalController())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Input] Not Local Controller"));
+		return;
+	}
+
+	ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Input] LocalPlayer is null"));
+		return;
+	}
+
+	UEnhancedInputLocalPlayerSubsystem* Subsystem =
+		ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer);
+
+	if (!Subsystem)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Input] EnhancedInput Subsystem is null"));
+		return;
+	}
+
+	Subsystem->AddMappingContext(DefaultMappingContext, 0);
+	UE_LOG(LogTemp, Warning, TEXT("[Input] MappingContext Added"));
+}
+
+void AAbyssDiverCharacter::OnRep_Controller()
+{
+	Super::OnRep_Controller();
+	SetupEnhancedInput();
 }

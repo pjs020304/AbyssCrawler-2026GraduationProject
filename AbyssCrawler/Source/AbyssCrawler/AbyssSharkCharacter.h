@@ -29,8 +29,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
 	UAbilitySystemComponent* AbilitySystemComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
-	UAbyssAttributeSet* AttributeSet;
+
 
 	// 게임 시작 시 상어에게 부여할 어빌리티(스킬) 목록
 	// 에디터에서 여기에 방금 만든 GA_SharkBite를 삽입
@@ -46,4 +45,14 @@ protected:
 
 	// 태그가 추가되거나 지워질 때 호출될 콜백 함수
 	virtual void OnStunTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
+
+	// 플레이어와 동일한 AttributeSet 사용
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
+	UAbyssAttributeSet* AttributeSet;
+
+	// 체력이 변할 때 호출될 콜백 함수
+	void OnHealthChangedCallback(const FOnAttributeChangeData& Data);
+
+	// 사망 처리 함수
+	void Die();
 };

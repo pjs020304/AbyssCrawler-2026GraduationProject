@@ -191,4 +191,7 @@ protected:
 
 	void OnHealthChangedCallback(const struct FOnAttributeChangeData& Data);
 
+	void SetupEnhancedInput();
+	virtual void OnRep_Controller() override;
+
 };

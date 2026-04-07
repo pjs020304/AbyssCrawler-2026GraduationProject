@@ -24,3 +24,14 @@ void AAbyssPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AAbyssPlayerState, bIsAlive);
 }
+
+void AAbyssPlayerState::CopyProperties(APlayerState* PlayerState)
+{
+	Super::CopyProperties(PlayerState);
+
+	ALobbyPlayerState* NewPlayerState = Cast<ALobbyPlayerState>(PlayerState);
+	if (NewPlayerState)
+	{
+		NewPlayerState->Nickname = Nickname;
+	}
+}
