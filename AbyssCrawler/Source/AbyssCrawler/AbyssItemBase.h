@@ -6,7 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "AbyssInteractionInterface.h"
 #include "Components/WidgetComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "AbyssItemBase.generated.h"
+
+class AAbyssDiverCharacter;
 
 UCLASS()
 class ABYSSCRAWLER_API AAbyssItemBase : public AActor, public IAbyssInteractionInterface
@@ -41,7 +44,21 @@ public:
 	virtual void OnFocus_Implementation() override;
 	virtual void OnLostFocus_Implementation() override;
 
+	// 아이템 상태 전환
+	void SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USceneComponent* AttachParent, bool bVisibleInHand);
+	void SetAsDropped(const FVector& DropLocation, const FRotator& DropRotation, const FVector& ThrowImpulse);
+
 protected:
+
 	UPROPERTY()
-	class AAbyssDiverCharacter* OwnerCharacter;
+	AAbyssDiverCharacter* OwnerCharacter = nullptr;
+
+	UPROPERTY(ReplicatedUsing = OnRep_PickedUp, VisibleAnywhere, BlueprintReadOnly, Category = "Item State")
+	bool bPickedUp = false;
+
+	UFUNCTION()
+	void OnRep_PickedUp();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	void ApplyPickedUpState();
 };

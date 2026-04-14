@@ -1,6 +1,7 @@
 #include "AbyssPlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
+#include <Lobby/Contents/LobbyPlayerState.h>
 
 AAbyssPlayerState::AAbyssPlayerState()
 {

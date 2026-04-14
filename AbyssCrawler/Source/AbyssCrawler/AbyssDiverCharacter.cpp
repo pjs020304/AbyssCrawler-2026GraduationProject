@@ -8,6 +8,8 @@
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.h"
 #include "GameFramework/PlayerController.h"
+#include "Net/UnrealNetwork.h"
+#include <AbyssFlashLight.h>
 
 // 중요: 커스텀 무브먼트 컴포넌트를 사용하려면 FObjectInitializer를 받는 생성자를 써야 함
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
@@ -90,44 +92,64 @@ void AAbyssDiverCharacter::BeginPlay()
 
 	SetupEnhancedInput();
 
-	// 1. 인벤토리 초기화 (빈 슬롯 5개 생성)
-	Inventory.Init(nullptr, 5);
-	CurrentSlotIndex = 0;
-
-	// 2. 기본 아이템(손전등) 생성 및 지급
-	if (DefaultItemClass)
+	if (HasAuthority())
 	{
-		// 월드에 아이템 액터 생성
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = this;
-		AAbyssItemBase* NewItem = GetWorld()->SpawnActor<AAbyssItemBase>(DefaultItemClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		// 1. 인벤토리 초기화 (빈 슬롯 5개 생성)
+		Inventory.Init(nullptr, 5);
+		CurrentSlotIndex = 0;
 
-		if (NewItem)
+		// 2. 기본 아이템(손전등) 생성 및 지급
+		if (DefaultItemClass)
 		{
-			// 인벤토리 0번 슬롯에 넣기
-			Inventory[0] = NewItem;
-			/*Inventory[1] = NewItem;
-			Inventory[2] = NewItem;
-			Inventory[3] = NewItem;
-			Inventory[4] = NewItem;*/
+			// 월드에 아이템 액터 생성
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			AAbyssItemBase* NewItem = GetWorld()->SpawnActor<AAbyssItemBase>(
+				DefaultItemClass, 
+				FVector::ZeroVector, 
+				FRotator::ZeroRotator, 
+				SpawnParams
+			);
 
-			UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(NewItem->GetRootComponent());
-			if (RootPrim)
+			if (NewItem)
 			{
-				RootPrim->SetSimulatePhysics(false);
+				// 인벤토리 0번 슬롯에 넣기
+				Inventory[0] = NewItem;
+				/*Inventory[1] = NewItem;
+				Inventory[2] = NewItem;
+				Inventory[3] = NewItem;
+				Inventory[4] = NewItem;
+
+				UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(NewItem->GetRootComponent());
+				if (RootPrim)
+				{
+					RootPrim->SetSimulatePhysics(false);
+					RootPrim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				}
+
+				// 아이템을 카메라에 붙이기 (1인칭 시점)
+				NewItem->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+				// 애니메이션 물건을 들고 있는데, 그냥 걷는 모션 + 물건을 들고있는 모션(대부분 한손 아이템)
+				// 아이템: 공격, 방해(전파), 설치(방해), 이동속도(제트팩, 손으로 들고 사용 하는거) 증가
+
+				NewItem->SetActorEnableCollision(false);
+				*/
+
+				CurrentSlotIndex = 0;
+
+				NewItem->SetAsPickedUp(this, FirstPersonCameraComponent, true);
+				ApplyCurrentSlotVisual();
+
+				if (IsLocallyControlled())
+				{
+					OnInventoryUpdated();
+				}
+				
 			}
-
-			// 아이템을 카메라에 붙이기 (1인칭 시점)
-			NewItem->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-			// 애니메이션 물건을 들고 있는데, 그냥 걷는 모션 + 물건을 들고있는 모션(대부분 한손 아이템)
-			// 아이템: 공격, 방해(전파), 설치(방해), 이동속도(제트팩, 손으로 들고 사용 하는거) 증가
-
-			NewItem->SetActorEnableCollision(false);
-
 		}
 	}
-	
-	OnInventoryUpdated();
+		
+	//OnInventoryUpdated();
 
 }
 
@@ -181,6 +203,14 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		// 버리기
 		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::DropItem);
 	}
+}
+
+void AAbyssDiverCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AAbyssDiverCharacter, Inventory);
+	DOREPLIFETIME(AAbyssDiverCharacter, CurrentSlotIndex);
 }
 
 void AAbyssDiverCharacter::StartDash()
@@ -298,6 +328,7 @@ void AAbyssDiverCharacter::UseCurrentItem()
 	// 현재 슬롯에 아이템이 있는지 확인
 	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[UseCurrentItem] Item=%s"), *Inventory[CurrentSlotIndex]->GetName());
 		Inventory[CurrentSlotIndex]->UseItem();
 	}
 	else
@@ -308,11 +339,13 @@ void AAbyssDiverCharacter::UseCurrentItem()
 
 void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
 {
+	/*
 	if (CurrentSlotIndex == NewIndex) return;
 
 	// 기존 아이템 숨기기 등의 로직이 필요하다면 여기에 작성
 	// 예: Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
-	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr) {
+	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr) 
+	{
 		Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
 	}
 	CurrentSlotIndex = NewIndex;
@@ -324,13 +357,94 @@ void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
 	}
 
 	OnInventoryUpdated();
+	*/
+	Server_SwitchToSlot(NewIndex);
 }
 
+void AAbyssDiverCharacter::Server_SwitchToSlot_Implementation(int32 NewIndex)
+{
+	if (!Inventory.IsValidIndex(NewIndex))
+	{
+		return;
+	}
+
+	if (CurrentSlotIndex == NewIndex)
+	{
+		return;
+	}
+
+	CurrentSlotIndex = NewIndex;
+	ApplyCurrentSlotVisual();
+}
+
+void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
+{
+	for (int32 i = 0; i < Inventory.Num(); ++i)
+	{
+		AAbyssItemBase* Item = Inventory[i];
+		if (!Item)
+		{
+			continue;
+		}
+
+		const bool bShouldBeVisible = (i == CurrentSlotIndex);
+
+		if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(Item->GetRootComponent()))
+		{
+			RootPrim->SetSimulatePhysics(false);
+			RootPrim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			RootPrim->SetCollisionProfileName(TEXT("NoCollision"));
+		}
+
+		Item->SetActorEnableCollision(false);
+
+		// 현재 슬롯 아이템은 다시 카메라에 부착
+		if (bShouldBeVisible && FirstPersonCameraComponent)
+		{
+			Item->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+			Item->AttachToComponent(
+				FirstPersonCameraComponent,
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale
+			);
+		}
+
+		// 장착 해제되는 손전등은 강제로 끄기
+		if (!bShouldBeVisible)
+		{
+			if (AAbyssFlashLight* FlashLight = Cast<AAbyssFlashLight>(Item))
+			{
+				FlashLight->NotifyUnequipped();
+			}
+		}
+
+		Item->SetActorHiddenInGame(!bShouldBeVisible);
+
+		UE_LOG(LogTemp, Warning, TEXT("[Inventory] Slot=%d Item=%s Visible=%d"),
+			i,
+			*Item->GetName(),
+			bShouldBeVisible ? 1 : 0);
+	}
+}
+
+void AAbyssDiverCharacter::RefreshEquippedVisual()
+{
+	ApplyCurrentSlotVisual();
+}
+
+/*
 void AAbyssDiverCharacter::EquipSlot1() { SwitchToSlot(0); }
 void AAbyssDiverCharacter::EquipSlot2() { SwitchToSlot(1); }
 void AAbyssDiverCharacter::EquipSlot3() { SwitchToSlot(2); }
 void AAbyssDiverCharacter::EquipSlot4() { SwitchToSlot(3); }
 void AAbyssDiverCharacter::EquipSlot5() { SwitchToSlot(4); }
+*/
+
+void AAbyssDiverCharacter::EquipSlot1() { Server_SwitchToSlot(0); }
+void AAbyssDiverCharacter::EquipSlot2() { Server_SwitchToSlot(1); }
+void AAbyssDiverCharacter::EquipSlot3() { Server_SwitchToSlot(2); }
+void AAbyssDiverCharacter::EquipSlot4() { Server_SwitchToSlot(3); }
+void AAbyssDiverCharacter::EquipSlot5() { Server_SwitchToSlot(4); }
+
 
 
 // E키를 눌렀을 때 실행되는 함수
@@ -361,8 +475,45 @@ void AAbyssDiverCharacter::TryInteract()
 		if (HitActor->Implements<UAbyssInteractionInterface>())
 		{
 			// 5. 인터페이스의 Interact 함수 실행 
-			IAbyssInteractionInterface::Execute_Interact(HitActor, this);
+			//IAbyssInteractionInterface::Execute_Interact(HitActor, this);
+
+			// 서버 함수로 실행
+			Server_TryInteract(HitActor);
 		}
+	}
+}
+
+void AAbyssDiverCharacter::Server_TryInteract_Implementation(AActor* TargetActor)
+{
+	if (!TargetActor) return;
+
+	if (TargetActor->Implements<UAbyssInteractionInterface>())
+	{
+		IAbyssInteractionInterface::Execute_Interact(TargetActor, this);
+	}
+}
+
+void AAbyssDiverCharacter::OnRep_Inventory()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[UI] OnRep_Inventory"));
+
+	ApplyCurrentSlotVisual();
+
+	if (IsLocallyControlled())
+	{
+		OnInventoryUpdated();
+	}
+}
+
+void AAbyssDiverCharacter::OnRep_CurrentSlotIndex()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[UI] OnRep_CurrentSlotIndex"));
+
+	ApplyCurrentSlotVisual();
+
+	if (IsLocallyControlled())
+	{
+		OnInventoryUpdated();
 	}
 }
 
@@ -375,9 +526,10 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 	{
 		if (Inventory[i] == nullptr)
 		{
+
 			// 빈칸 발견! 아이템 넣기
 			Inventory[i] = ItemToAdd;
-
+			/*
 			// 충돌 끄기
 			ItemToAdd->SetActorEnableCollision(false);
 
@@ -386,13 +538,20 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 			if (RootPrim)
 			{
 				RootPrim->SetSimulatePhysics(false);
+				// 루트 매쉬 충돌 끄기
+				RootPrim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				RootPrim->SetCollisionProfileName(TEXT("NoCollision"));
 			}
 
 			// 아이템을 카메라에 부착
 			ItemToAdd->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);	
 
 			// 액터 전체를 게임에서 숨기기
-			if (CurrentSlotIndex != i) {
+			if (CurrentSlotIndex == i) {
+				ItemToAdd->SetActorHiddenInGame(false);
+			}
+			else
+			{
 				ItemToAdd->SetActorHiddenInGame(true);
 			}
 
@@ -400,7 +559,22 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 			//ItemToAdd->SetOwner(this);
 
 			// UI 업데이트 알림
-			OnInventoryUpdated();
+			if (IsLocallyControlled())
+			{
+				OnInventoryUpdated();
+			}
+			*/
+			const bool bVisibleInHand = (CurrentSlotIndex == i);
+			ItemToAdd->SetAsPickedUp(this, FirstPersonCameraComponent, bVisibleInHand);
+
+			ApplyCurrentSlotVisual();
+
+			if (IsLocallyControlled())
+			{
+				OnInventoryUpdated();
+			}
+
+			UE_LOG(LogTemp, Warning, TEXT("[Inventory] Picked item %s into slot %d"), *ItemToAdd->GetName(), i);
 
 			return true; // 성공적으로 주움
 		}
@@ -458,64 +632,54 @@ void AAbyssDiverCharacter::CheckForInteractables()
 
 void AAbyssDiverCharacter::DropItem()
 {
+	Server_DropItem();
+}
+
+void AAbyssDiverCharacter::Client_OnInventoryUpdated_Implementation()
+{
+	OnInventoryUpdated();
+}
+
+void AAbyssDiverCharacter::Server_DropItem_Implementation()
+{
 	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr)
 	{
 		AAbyssItemBase* ItemToDrop = Inventory[CurrentSlotIndex];
 		Inventory[CurrentSlotIndex] = nullptr;
 
-		// 1. 캐릭터로부터 완벽히 분리
-		ItemToDrop->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-
-		// 2. 숨김 해제
-		ItemToDrop->SetActorHiddenInGame(false);
-
-		// 3. 위치 세팅 (카메라 바로 앞, 눈앞에서 떨어지도록 세팅)
 		if (FirstPersonCameraComponent)
 		{
-			// 내 몸(캡슐)과 덜 겹치도록 50.0f 정도만 살짝 앞으로 뺍니다.
-			FVector DropLocation = FirstPersonCameraComponent->GetComponentLocation() + (FirstPersonCameraComponent->GetForwardVector() * 50.0f);
-			ItemToDrop->SetActorLocation(DropLocation);
+			const FVector DropLocation =
+				FirstPersonCameraComponent->GetComponentLocation() +
+				(FirstPersonCameraComponent->GetForwardVector() * 120.0f);
 
-			// 던질 때 똑바로 날아가도록 회전값도 카메라와 일치시킵니다.
-			ItemToDrop->SetActorRotation(FirstPersonCameraComponent->GetComponentRotation());
-		}
+			const FRotator DropRotation = FirstPersonCameraComponent->GetComponentRotation();
 
-		// 4. 충돌 및 물리 켜기
-		ItemToDrop->SetActorEnableCollision(true);
-		UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(ItemToDrop->GetRootComponent());
+			FVector ThrowDirection = FirstPersonCameraComponent->GetForwardVector();
+			ThrowDirection.Z += 0.2f;
+			ThrowDirection.Normalize();
 
-		if (RootPrim)
-		{
-			RootPrim->SetCollisionProfileName(TEXT("BlockAllDynamic"));
-			RootPrim->SetSimulatePhysics(true);
+			const float ThrowForce = 600.0f;
+			const FVector ThrowImpulse = ThrowDirection * ThrowForce;
 
-			// 물리 엔진 깨우기 (필수)
-			RootPrim->WakeAllRigidBodies();
-
-			// ---------------------------------------------------
-			// 5. [핵심] 물리적인 힘(Impulse)을 가해 앞으로 던지기!
-			// ---------------------------------------------------
-			if (FirstPersonCameraComponent)
+			if (AAbyssFlashLight* FlashLight = Cast<AAbyssFlashLight>(ItemToDrop))
 			{
-				// 카메라가 바라보는 방향 벡터
-				FVector ThrowDirection = FirstPersonCameraComponent->GetForwardVector();
+				FlashLight->SetLightEnabled(false);
+			}
 
-				// 살짝 위로 던지는 느낌을 주기 위해 Z축 값을 조금 더해줍니다.
-				ThrowDirection.Z += 0.2f;
-				ThrowDirection.Normalize();
+			ItemToDrop->SetAsDropped(DropLocation, DropRotation, ThrowImpulse);
 
-				// 던지는 힘 (숫자를 조절해서 세기를 맞추세요)
-				float ThrowForce = 600.0f;
-
-				// 힘 가하기! (bVelChange를 true로 하면 아이템의 질량(무게)을 무시하고 일정한 속도로 던집니다)
-				RootPrim->AddImpulse(ThrowDirection * ThrowForce, NAME_None, true);
+			if (IsLocallyControlled())
+			{
+				OnInventoryUpdated();
 			}
 		}
 
-		// 6. UI 갱신
-		OnInventoryUpdated();
-
 		UE_LOG(LogTemp, Log, TEXT("Throw Item: %s"), *ItemToDrop->ItemName);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Abyss] Empty Slot"));
 	}
 }
 
@@ -592,6 +756,11 @@ void AAbyssDiverCharacter::SetupEnhancedInput()
 
 	Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	UE_LOG(LogTemp, Warning, TEXT("[Input] MappingContext Added"));
+
+	// 로비에서 넘어올 때 UI 입력 모드가 남아있을 수 있으므로 복원
+	FInputModeGameOnly InputMode;
+	PlayerController->SetInputMode(InputMode);
+	PlayerController->bShowMouseCursor = false;
 }
 
 void AAbyssDiverCharacter::OnRep_Controller()

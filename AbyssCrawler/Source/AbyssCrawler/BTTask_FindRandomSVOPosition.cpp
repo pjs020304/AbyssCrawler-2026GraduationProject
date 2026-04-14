@@ -79,7 +79,7 @@ EBTNodeResult::Type UBTTask_FindRandomSVOPosition::ExecuteTask(UBehaviorTreeComp
 
 	CurrentPath.Empty();
 
-	UE_LOG(LogTemp, Warning, TEXT("Patrol A* Thread Started..."));
+	//UE_LOG(LogTemp, Warning, TEXT("Patrol A* Thread Started..."));
 	PathfinderTask = new FAsyncTask<FSVOPathfindingTask>(SVOData, SafeStartIndex, StartLoc, SafeTargetIndex, TargetLoc, VoxelSize);
 	PathfinderTask->StartBackgroundTask();
 

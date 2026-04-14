@@ -40,7 +40,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// 리플리케이션 설정 (변수 동기화)
-	//virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// --- Components ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
@@ -103,12 +103,12 @@ public:
 
 	// --- Inventory System ---
 	// 아이템 슬롯 (최대 5개)
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Inventory")
+	UPROPERTY(ReplicatedUsing = OnRep_Inventory, VisibleInstanceOnly, BlueprintReadOnly, Category = "Inventory")
 	TArray<AAbyssItemBase*> Inventory;
 
 	// 현재 선택된 슬롯 번호 (0 ~ 4)
 	// UI(블루프린트)에서 이 값을 읽어갈 수 있도록 허락
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentSlotIndex, VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
 	int32 CurrentSlotIndex;
 
 	// 시작 시 지급할 아이템 클래스 (에디터에서 설정)
@@ -118,6 +118,12 @@ public:
 	// 현재 시선이 머물고 있는 상호작용 액터 기억하기
 	UPROPERTY()
 	AActor* FocusedActor;
+
+	UFUNCTION()
+	void OnRep_Inventory();
+
+	UFUNCTION()
+	void OnRep_CurrentSlotIndex();
 
 	// --- public 함수 ---
 	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
@@ -140,6 +146,8 @@ public:
 	// 체력이 변할 때 블루프린트로 쏴줄 이벤트
 	UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
 	FOnResourceChanged OnHealthChanged;
+
+	void RefreshEquippedVisual();
 
 protected:
 	// 이동 함수
@@ -168,11 +176,31 @@ protected:
 	// 내부적으로 슬롯 바꾸는 함수
 	void SwitchToSlot(int32 NewIndex);
 
+	// 서버 슬롯 전환
+	UFUNCTION(Server, Reliable)
+	void Server_SwitchToSlot(int32 NewIndex);
+
+	void ApplyCurrentSlotVisual();
+
+
+
 	// 상호작용 시도 함수
 	void TryInteract();
 
+	// 클라 -> 서버 호출
+	// Reliable : 패킷 전송 보장, 서버에서만 실행
+	// 클라에서 어떤 동작을 서버에서 요청 할 때 사용
+	UFUNCTION(Server, Reliable)
+	void Server_TryInteract(AActor* TargetActor);
+
 	void DropItem();
 
+	UFUNCTION(Server, Reliable)
+	void Server_DropItem();
+	
+	UFUNCTION(Client, Reliable)
+	void Client_OnInventoryUpdated();
+	
 	// --- [GAS Components] ---
 	// GAS의 심장 (모든 스킬과 이펙트를 처리)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities", meta = (AllowPrivateAccess = "true"))

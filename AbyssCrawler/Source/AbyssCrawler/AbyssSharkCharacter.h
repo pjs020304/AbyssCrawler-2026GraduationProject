@@ -1,8 +1,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
+#include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h" // GAS 연동용 인터페이스
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "BrainComponent.h"
 #include "AbyssSharkCharacter.generated.h"
 
 class UAbilitySystemComponent;

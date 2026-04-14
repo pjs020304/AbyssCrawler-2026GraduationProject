@@ -1,9 +1,13 @@
 #include "AbyssItemBase.h"
 #include "AbyssDiverCharacter.h" // 캐릭터 함수 호출용
+#include "Net/UnrealNetwork.h"
 
 AAbyssItemBase::AAbyssItemBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	// 1. 메쉬 생성 및 루트 설정
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMesh"));
@@ -34,6 +38,17 @@ void AAbyssItemBase::UseItem()
 // [핵심] E키를 눌러 상호작용했을 때 실행되는 함수
 void AAbyssItemBase::Interact_Implementation(AActor* InstigatorActor)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (bPickedUp)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Item] Already picked up: %s"), *GetName());
+		return;
+	}
+
 	// 1. 상호작용한 사람이 플레이어 캐릭터인지 확인
 	AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(InstigatorActor);
 	if (Diver)
@@ -42,12 +57,12 @@ void AAbyssItemBase::Interact_Implementation(AActor* InstigatorActor)
 		if (Diver->AddItemToInventory(this))
 		{
 			// 3. 인벤토리에 성공적으로 들어갔다면, 바닥에서 안 보이게 처리
-			ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 더 이상 상호작용 안 되게 충돌 끄기
+			//ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 더 이상 상호작용 안 되게 충돌 끄기
 			//ItemMesh->SetVisibility(false); // 눈에 안 보이게 숨기기
 
 			//UE_LOG(LogTemp, Log, TEXT("%s Get! 가격: %d"), *ItemName, ItemPrice);
 
-			OwnerCharacter = Diver;
+			//OwnerCharacter = Diver;
 
 		}
 		else
@@ -55,6 +70,10 @@ void AAbyssItemBase::Interact_Implementation(AActor* InstigatorActor)
 			// 인벤토리가 꽉 찼을 때의 처리 (UI 메시지 출력 등)
 			UE_LOG(LogTemp, Warning, TEXT("[Abyss] Getting Fail"));
 		}
+	}
+	else
+	{
+		return;
 	}
 }
 
@@ -75,3 +94,95 @@ void AAbyssItemBase::OnLostFocus_Implementation()
 		InteractWidgetComp->SetVisibility(false);
 	}
 }
+
+void AAbyssItemBase::SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USceneComponent* AttachParent, bool bVisibleInHand)
+{
+	OwnerCharacter = NewOwnerCharacter;
+	bPickedUp = true;
+
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+	if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(GetRootComponent()))
+	{
+		RootPrim->SetSimulatePhysics(false);
+		RootPrim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		RootPrim->SetCollisionProfileName(TEXT("NoCollision"));
+	}
+
+	SetActorEnableCollision(false);
+
+	if (AttachParent)
+	{
+		AttachToComponent(AttachParent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	}
+
+	SetActorHiddenInGame(!bVisibleInHand);
+
+	if (InteractWidgetComp)
+	{
+		InteractWidgetComp->SetVisibility(false);
+	}
+}
+
+void AAbyssItemBase::SetAsDropped(const FVector& DropLocation, const FRotator& DropRotation, const FVector& ThrowImpulse)
+{
+	OwnerCharacter = nullptr;
+	bPickedUp = false;
+
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+	SetActorLocation(DropLocation);
+	SetActorRotation(DropRotation);
+
+	ApplyPickedUpState();
+
+	if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(GetRootComponent()))
+	{
+		RootPrim->SetSimulatePhysics(true);
+		RootPrim->WakeAllRigidBodies();
+		RootPrim->AddImpulse(ThrowImpulse, NAME_None, true);
+	}
+}
+
+void AAbyssItemBase::OnRep_PickedUp()
+{
+	ApplyPickedUpState();
+
+}
+
+void AAbyssItemBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AAbyssItemBase, bPickedUp);
+}
+
+void AAbyssItemBase::ApplyPickedUpState()
+{
+	if (bPickedUp)
+	{
+		SetActorEnableCollision(false);
+
+		if (ItemMesh)
+		{
+			ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			ItemMesh->SetCollisionProfileName(TEXT("NoCollision"));
+		}
+
+		if (InteractWidgetComp)
+		{
+			InteractWidgetComp->SetVisibility(false);
+		}
+	}
+	else
+	{
+		SetActorHiddenInGame(false);
+		SetActorEnableCollision(true);
+
+		if (ItemMesh)
+		{
+			ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			ItemMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+		}
+	}
+}
+

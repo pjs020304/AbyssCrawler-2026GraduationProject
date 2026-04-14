@@ -1,7 +1,9 @@
 #include "HarpoonGunItem.h"
 #include "HarpoonProjectile.h"
+#include "AbyssDiverCharacter.h"
 #include "GameFramework/Character.h"
 #include "Camera/CameraComponent.h"
+
 
 void AHarpoonGunItem::UseItem()
 {

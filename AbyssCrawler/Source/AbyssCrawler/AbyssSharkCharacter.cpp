@@ -9,8 +9,6 @@ AAbyssSharkCharacter::AAbyssSharkCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	
-
 	// 1. [AI 설정] 맵에 배치되거나 스폰될 때 자동으로 AI Controller가 빙의(Possess)하도록 설정
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
