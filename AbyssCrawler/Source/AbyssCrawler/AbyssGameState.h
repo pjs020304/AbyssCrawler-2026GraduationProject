@@ -69,6 +69,21 @@ public:
 
 	void AddMissionProgress(int32 MissionIndex, int32 Amount = 1);
 
-protected:
+	// 멀티플레이어 변수 동기화 필수 함수
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	// 돈을 추가하거나 뺄 때 사용할 서버 전용 함수
+	UFUNCTION(BlueprintCallable, Category = "Economy")
+	bool ConsumeSharedMoney(int32 Amount);
+
+	UFUNCTION(BlueprintCallable, Category = "Economy")
+	void AddSharedMoney(int32 Amount);
+
+	UFUNCTION(BlueprintPure, Category = "Economy")
+	int32 GetSharedMoney() const { return SharedMoney; }
+
+protected:
+	// 팀이 공유하는 돈 (서버에서 클라이언트로 동기화됨)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Economy")
+	int32 SharedMoney;
 };

@@ -10,7 +10,7 @@ AAbyssGameMode::AAbyssGameMode()
     GameStateClass = AAbyssGameState::StaticClass();
     PlayerStateClass = AAbyssPlayerState::StaticClass();
 
-    
+    bDelayedStart = false;
 }
 
 void AAbyssGameMode::PostLogin(APlayerController* NewPlayer)
