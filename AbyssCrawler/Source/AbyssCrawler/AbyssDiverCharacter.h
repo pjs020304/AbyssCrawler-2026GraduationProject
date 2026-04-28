@@ -20,6 +20,7 @@ class USpringArmComponent;
 class UAbyssCharacterMovementComponent;
 class UAbilitySystemComponent;
 class UAbyssAttributeSet;
+class UMainHUDWidget;
 
 
 UCLASS()
@@ -149,6 +150,25 @@ public:
 
 	void RefreshEquippedVisual();
 
+	// 미션 아이템 수집 클라 -> 서버 요청
+	UFUNCTION(Server, Reliable)
+	void Server_OnItemCollected();
+
+	UPROPERTY(BlueprintReadWrite, Category = "UI")
+	UMainHUDWidget* MainHUDRef;
+
+	UFUNCTION(Client, Reliable)
+	void Client_ShowWorkUI();
+
+	UFUNCTION(Client, Reliable)
+	void Client_HideWorkUI();
+
+	UFUNCTION(Client, Reliable)
+	void Client_UpdateWorkProgress(float Progress);
+
+	UFUNCTION(Client, Reliable)
+	void Client_ShowMissionComplete(const FText& MissionName);
+
 protected:
 	// 이동 함수
 	void Move(const FInputActionValue& Value);
@@ -181,8 +201,6 @@ protected:
 	void Server_SwitchToSlot(int32 NewIndex);
 
 	void ApplyCurrentSlotVisual();
-
-
 
 	// 상호작용 시도 함수
 	void TryInteract();

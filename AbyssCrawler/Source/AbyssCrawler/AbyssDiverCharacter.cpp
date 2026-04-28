@@ -10,6 +10,8 @@
 #include "GameFramework/PlayerController.h"
 #include "Net/UnrealNetwork.h"
 #include <AbyssFlashLight.h>
+#include <AbyssGameMode.h>
+#include "MainHUDWidget.h"
 
 // 중요: 커스텀 무브먼트 컴포넌트를 사용하려면 FObjectInitializer를 받는 생성자를 써야 함
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
@@ -230,6 +232,38 @@ void AAbyssDiverCharacter::StopDash()
 	}
 }
 
+void AAbyssDiverCharacter::Client_ShowWorkUI_Implementation()
+{
+	if (MainHUDRef)
+	{
+		MainHUDRef->BP_ShowWorkUI();
+	}
+}
+
+void AAbyssDiverCharacter::Client_HideWorkUI_Implementation()
+{
+	if (MainHUDRef)
+	{
+		MainHUDRef->BP_HideWorkUI();
+	}
+}
+
+void AAbyssDiverCharacter::Client_UpdateWorkProgress_Implementation(float Progress)
+{
+	if (MainHUDRef)
+	{
+		MainHUDRef->BP_UpdateWorkProgress(Progress);
+	}
+}
+
+void AAbyssDiverCharacter::Client_ShowMissionComplete_Implementation(const FText& MissionName)
+{
+	if (MainHUDRef)
+	{
+		MainHUDRef->BP_ShowMissionComplete(MissionName);
+	}
+}
+
 void AAbyssDiverCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -358,7 +392,14 @@ void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
 
 	OnInventoryUpdated();
 	*/
+
+	UE_LOG(LogTemp, Warning, TEXT("[Slot] CurrentSlotIndex = %d, Local=%s, Authority=%s"),
+		CurrentSlotIndex,
+		IsLocallyControlled() ? TEXT("true") : TEXT("false"),
+		HasAuthority() ? TEXT("true") : TEXT("false"));
+
 	Server_SwitchToSlot(NewIndex);
+
 }
 
 void AAbyssDiverCharacter::Server_SwitchToSlot_Implementation(int32 NewIndex)
@@ -375,6 +416,12 @@ void AAbyssDiverCharacter::Server_SwitchToSlot_Implementation(int32 NewIndex)
 
 	CurrentSlotIndex = NewIndex;
 	ApplyCurrentSlotVisual();
+
+	// 리슨 서버 호스트 UI 갱신 보정
+	if (IsLocallyControlled())
+	{
+		OnInventoryUpdated();
+	}
 }
 
 void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
@@ -429,6 +476,14 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 void AAbyssDiverCharacter::RefreshEquippedVisual()
 {
 	ApplyCurrentSlotVisual();
+}
+
+void AAbyssDiverCharacter::Server_OnItemCollected_Implementation()
+{
+	if (AAbyssGameMode* GM = GetWorld()->GetAuthGameMode<AAbyssGameMode>())
+	{
+		GM->OnItemCollected();
+	}
 }
 
 /*
@@ -495,12 +550,12 @@ void AAbyssDiverCharacter::Server_TryInteract_Implementation(AActor* TargetActor
 
 void AAbyssDiverCharacter::OnRep_Inventory()
 {
-	UE_LOG(LogTemp, Warning, TEXT("[UI] OnRep_Inventory"));
 
 	ApplyCurrentSlotVisual();
 
 	if (IsLocallyControlled())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[UI] OnRep_CurrentSlotIndex"));
 		OnInventoryUpdated();
 	}
 }

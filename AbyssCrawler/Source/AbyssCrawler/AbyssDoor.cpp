@@ -1,5 +1,6 @@
 #include "AbyssDoor.h"
 #include "Math/UnrealMathUtility.h"
+#include "Net/UnrealNetwork.h"
 
 AAbyssDoor::AAbyssDoor()
 {
@@ -15,6 +16,7 @@ AAbyssDoor::AAbyssDoor()
 	DoorMesh->SetupAttachment(DoorFrame);
 
 	bIsOpen = false;
+    DirectionMultiplier = 1.0f;
 	CurrentYaw = 0.0f;
 }
 
@@ -27,6 +29,7 @@ void AAbyssDoor::BeginPlay()
 // [핵심] 상호작용이 들어오면 그냥 상태만 뒤집습니다.
 void AAbyssDoor::Interact_Implementation(AActor* InstigatorActor)
 {
+    if (!HasAuthority()) return;
     if (!InstigatorActor) return;
 
     if (!bIsOpen) // 문이 닫혀있어서 '열어야' 할 때만 방향을 계산합니다.
@@ -41,6 +44,8 @@ void AAbyssDoor::Interact_Implementation(AActor* InstigatorActor)
         // 3. 두 벡터의 내적(Dot Product: 얼마나 같은 방향인가) 계산
         float DotResult = FVector::DotProduct(DoorForward, DirToPlayer);
 
+        /*
+        
         // 4. 플레이어 위치에 따라 문이 열릴 방향(부호) 결정
         if (DotResult > 0)
         {
@@ -52,6 +57,8 @@ void AAbyssDoor::Interact_Implementation(AActor* InstigatorActor)
             // 플레이어가 문 뒤에 있음 -> 문을 밀어내려면 양수 방향으로 회전
             DirectionMultiplier = 1.0f;
         }
+
+        */
     }
 
     // 상태 뒤집기 (열림 <-> 닫힘)
@@ -59,6 +66,18 @@ void AAbyssDoor::Interact_Implementation(AActor* InstigatorActor)
 
 	// 여기에 문 열리는 소리 추가 가능
 	// UGameplayStatics::PlaySoundAtLocation(this, DoorSound, GetActorLocation());
+}
+
+void AAbyssDoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(AAbyssDoor, bIsOpen);
+    DOREPLIFETIME(AAbyssDoor, DirectionMultiplier);
+}
+
+void AAbyssDoor::OnRep_DoorState()
+{
 }
 
 void AAbyssDoor::Tick(float DeltaTime)

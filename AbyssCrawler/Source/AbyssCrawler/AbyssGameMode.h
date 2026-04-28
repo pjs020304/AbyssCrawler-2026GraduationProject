@@ -18,8 +18,15 @@ public:
 	// 플레이어 사망 처리 (관전 모드 전환 등)
 	virtual void OnPlayerDied(AController* DeadPlayer);
 
+	UFUNCTION()
+	void OnItemCollected();
+
 	// 게임 클리어 조건 체크
 	//void CheckMissionComplete();
+
+	void OnMissionItemCollected(int32 MissionIndex);
+
+	void AddMissionProgress(int32 MissionIndex, int32 Amount = 1);
 
 protected:
 	// 시작 시 미션 타이머 가동 등
