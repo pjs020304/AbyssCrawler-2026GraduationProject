@@ -823,3 +823,15 @@ void AAbyssDiverCharacter::OnRep_Controller()
 	Super::OnRep_Controller();
 	SetupEnhancedInput();
 }
+
+bool AAbyssDiverCharacter::HasEmptyInventorySlot() const
+{
+	for (int32 i = 0; i < Inventory.Num(); ++i)
+	{
+		if (Inventory[i] == nullptr)
+		{
+			return true; // ºóÄ­ ÀÖÀ½!
+		}
+	}
+	return false; // ²Ë Âü
+}
