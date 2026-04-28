@@ -103,3 +103,24 @@ void AAbyssGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
     DOREPLIFETIME(AAbyssGameState, ProgressPoint);
     DOREPLIFETIME(AAbyssGameState, TargetProgressPoint);
 }
+
+bool AAbyssGameState::ConsumeSharedMoney(int32 Amount)
+{
+    if (HasAuthority())
+    {
+        if (SharedMoney >= Amount)
+        {
+            SharedMoney -= Amount;
+            return true;
+        }
+    }
+    return false;
+}
+
+void AAbyssGameState::AddSharedMoney(int32 Amount)
+{
+    if (HasAuthority() && Amount > 0)
+    {
+        SharedMoney += Amount;
+    }
+}

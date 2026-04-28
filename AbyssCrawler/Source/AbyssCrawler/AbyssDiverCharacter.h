@@ -169,6 +169,8 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_ShowMissionComplete(const FText& MissionName);
 
+	bool HasEmptyInventorySlot() const;
+
 protected:
 	// 이동 함수
 	void Move(const FInputActionValue& Value);
