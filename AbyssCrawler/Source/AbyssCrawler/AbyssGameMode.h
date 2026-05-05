@@ -28,6 +28,11 @@ public:
 
 	void AddMissionProgress(int32 MissionIndex, int32 Amount = 1);
 
+	UFUNCTION(BlueprintCallable)
+	void AddMissionProgressById(FName MissionId, int32 Amount);
+
+	void AcceptMissionById(FName MissionId);
+
 protected:
 	// 시작 시 미션 타이머 가동 등
 	//virtual void BeginPlay() override;

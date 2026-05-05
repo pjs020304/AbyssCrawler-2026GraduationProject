@@ -9,9 +9,11 @@
 #include "AbyssAttributeSet.h"
 #include "GameFramework/PlayerController.h"
 #include "Net/UnrealNetwork.h"
-#include <AbyssFlashLight.h>
-#include <AbyssGameMode.h>
+#include "AbyssFlashLight.h"
+#include "AbyssGameMode.h"
 #include "MainHUDWidget.h"
+#include "Mission/UI/MissionSelectUIWidget.h"
+#include "Blueprint/UserWidget.h"
 
 // 중요: 커스텀 무브먼트 컴포넌트를 사용하려면 FObjectInitializer를 받는 생성자를 써야 함
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
@@ -264,6 +266,30 @@ void AAbyssDiverCharacter::Client_ShowMissionComplete_Implementation(const FText
 	}
 }
 
+void AAbyssDiverCharacter::Client_OpenMissionSelectUI_Implementation(const TArray<FAbyssMissionData>& AvailableMissions)
+{
+	if (!MissionSelectUIClass) return;
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	UMissionSelectUIWidget* SelectUI =
+		CreateWidget<UMissionSelectUIWidget>(PC, MissionSelectUIClass);
+
+	if (!SelectUI) return;
+
+	SelectUI->AddToViewport();
+	SelectUI->InitializeMissionList(AvailableMissions);
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(SelectUI->TakeWidget());
+	PC->SetInputMode(InputMode);
+	PC->bShowMouseCursor = true;
+
+	PC->SetIgnoreMoveInput(true);
+	PC->SetIgnoreLookInput(true);
+}
+
 void AAbyssDiverCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -359,16 +385,21 @@ void AAbyssDiverCharacter::ConvertMove()
 
 void AAbyssDiverCharacter::UseCurrentItem()
 {
-	// 현재 슬롯에 아이템이 있는지 확인
-	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[UseCurrentItem] Item=%s"), *Inventory[CurrentSlotIndex]->GetName());
-		Inventory[CurrentSlotIndex]->UseItem();
-	}
-	else
+	if (!Inventory.IsValidIndex(CurrentSlotIndex) || Inventory[CurrentSlotIndex] == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Abyss] Empty Slot"));
+		return;
 	}
+
+	// 클라는 서버에게 사용 요청만 보냄
+	if (!HasAuthority())
+	{
+		Server_UseCurrentItem();
+		return;
+	}
+
+	// 서버만 실제 아이템 사용
+	Inventory[CurrentSlotIndex]->UseItem();
 }
 
 void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
@@ -690,6 +721,16 @@ void AAbyssDiverCharacter::DropItem()
 	Server_DropItem();
 }
 
+void AAbyssDiverCharacter::Server_UseCurrentItem_Implementation()
+{
+	if (!Inventory.IsValidIndex(CurrentSlotIndex) || Inventory[CurrentSlotIndex] == nullptr)
+	{
+		return;
+	}
+
+	Inventory[CurrentSlotIndex]->UseItem();
+}
+
 void AAbyssDiverCharacter::Client_OnInventoryUpdated_Implementation()
 {
 	OnInventoryUpdated();
@@ -834,4 +875,12 @@ bool AAbyssDiverCharacter::HasEmptyInventorySlot() const
 		}
 	}
 	return false; // 꽉 참
+}
+
+void AAbyssDiverCharacter::Server_AcceptMissionById_Implementation(FName MissionId)
+{
+	if (AAbyssGameMode* GM = GetWorld()->GetAuthGameMode<AAbyssGameMode>())
+	{
+		GM->AcceptMissionById(MissionId);
+	}
 }

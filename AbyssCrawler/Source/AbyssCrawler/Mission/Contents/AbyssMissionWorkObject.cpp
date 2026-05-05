@@ -74,7 +74,7 @@ void AAbyssMissionWorkObject::CompleteWork()
 
 	if (AAbyssGameMode* GM = GetWorld()->GetAuthGameMode<AAbyssGameMode>())
 	{
-		GM->AddMissionProgress(MissionIndex, 1);
+		GM->AddMissionProgressById(MissionId, 1);
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("[MissionWork] Work Completed MissionIndex=%d"), MissionIndex);

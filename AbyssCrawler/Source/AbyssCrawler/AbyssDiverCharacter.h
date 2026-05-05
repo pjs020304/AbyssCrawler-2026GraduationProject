@@ -21,6 +21,8 @@ class UAbyssCharacterMovementComponent;
 class UAbilitySystemComponent;
 class UAbyssAttributeSet;
 class UMainHUDWidget;
+class UMissionSelectUIWidget;
+struct FAbyssMissionData;
 
 
 UCLASS()
@@ -171,6 +173,15 @@ public:
 
 	bool HasEmptyInventorySlot() const;
 
+	UFUNCTION(Server, Reliable)
+	void Server_AcceptMissionById(FName MissionId);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+	TSubclassOf<UMissionSelectUIWidget> MissionSelectUIClass;
+
+	UFUNCTION(Client, Reliable)
+	void Client_OpenMissionSelectUI(const TArray<FAbyssMissionData>& AvailableMissions);
+
 protected:
 	// 이동 함수
 	void Move(const FInputActionValue& Value);
@@ -218,6 +229,9 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_DropItem();
 	
+	UFUNCTION(Server, Reliable)
+	void Server_UseCurrentItem();
+
 	UFUNCTION(Client, Reliable)
 	void Client_OnInventoryUpdated();
 	

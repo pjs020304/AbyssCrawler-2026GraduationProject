@@ -39,6 +39,9 @@ protected:
 	UPROPERTY()
 	AAbyssDiverCharacter* WorkingCharacter;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
+	FName MissionId;
+
 	FTimerHandle WorkTimerHandle;
 
 	bool bIsWorking = false;
