@@ -43,7 +43,7 @@ void ALobbyGameMode::TryStartGame()
 	if (IsEverybodyReady())
 	{
 		// Append
-		FString Commnad = TEXT("ServerTravel TestMap");
+		FString Commnad = TEXT("ServerTravel L_DeepSea_VerLightStudio");
 
 		// Execute Console Command
 		if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
