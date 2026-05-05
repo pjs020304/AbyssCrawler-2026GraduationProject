@@ -34,7 +34,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* MeshComp;
 
-	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWidgetComponent* PriceWidget;
 
 	// 블루프린트에서 설정할 아이템 후보군 배열
@@ -48,4 +48,8 @@ protected:
 	// 선택된 아이템의 가격
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Shop")
 	int32 SelectedItemPrice;
+
+	// 선택된 아이템의 이름	
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Shop")
+	FString SelectedItemName;
 };

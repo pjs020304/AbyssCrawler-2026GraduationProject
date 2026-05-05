@@ -15,6 +15,8 @@ AShopItemDisplay::AShopItemDisplay()
 	PriceWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PriceWidget"));
 	PriceWidget->SetupAttachment(RootComponent);
 	PriceWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	PriceWidget->SetDrawSize(FVector2D(250.0f, 100.0f));
+
 	PriceWidget->SetVisibility(false);
 }
 
@@ -70,7 +72,10 @@ void AShopItemDisplay::UpdateVisuals()
 			MeshComp->SetStaticMesh(DefaultItem->ItemMesh->GetStaticMesh());
 
 			// 가격 위젯 갱신 (블루프린트 위젯 내 함수를 호출하거나 텍스트 세팅 필요)
-			// 예: PriceWidget->SetItemInfo(DefaultItem->ItemName, SelectedItemPrice);
+			SelectedItemPrice = DefaultItem->ItemPrice;
+			SelectedItemName = DefaultItem->ItemName;
+			 // 위젯 내 텍스트를 갱신하는 로직은 블루프린트에서 구현해야 합니다.
+			 // 예: PriceWidget->GetUserWidgetObject()->SetPriceText(SelectedItemPrice);
 		}
 	}
 }
