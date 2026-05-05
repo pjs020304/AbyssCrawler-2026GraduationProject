@@ -1,6 +1,8 @@
 #include "AbyssItemBase.h"
 #include "AbyssDiverCharacter.h" // 캐릭터 함수 호출용
 #include "Net/UnrealNetwork.h"
+#include "AbilitySystemComponent.h"
+#include "AbyssAttributeSet.h"
 
 AAbyssItemBase::AAbyssItemBase()
 {
@@ -28,11 +30,44 @@ AAbyssItemBase::AAbyssItemBase()
 
 	// 기본적으로는 안 보이게 꺼둠 (쳐다볼 때만 켜짐)
 	InteractWidgetComp->SetVisibility(false);
+
+	BatteryCost = 10.0f;
 }
 
 void AAbyssItemBase::UseItem()
 {
 	UE_LOG(LogTemp, Log, TEXT("Item Used: %s"), *ItemName);
+
+	// 1. 서버에서만 소모 로직을 처리합니다.
+	if (!HasAuthority() || !OwnerCharacter || !BatteryConsumeEffectClass) return;
+
+	UAbilitySystemComponent* ASC = OwnerCharacter->GetAbilitySystemComponent();
+	if (ASC)
+	{
+		// 2. [검사] 현재 배터리 잔량이 소모량보다 많은지 확인
+		float CurrentBattery = ASC->GetNumericAttribute(UAbyssAttributeSet::GetBatteryAttribute());
+		if (CurrentBattery < BatteryCost)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Low Battery: %s"), *ItemName);
+			return; // 배터리 부족 시 실행 취소
+		}
+
+		// 3. [소모] SetByCaller를 통해 다이내믹하게 배터리 차감 적용
+		FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+		Context.AddInstigator(this, OwnerCharacter);
+
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(BatteryConsumeEffectClass, 1.0f, Context);
+		if (SpecHandle.IsValid())
+		{
+			// 블루프린트 GE에 우리가 정한 소모량(-BatteryCost)을 태그를 통해 주입합니다.
+			SpecHandle.Data->SetSetByCallerMagnitude(BatteryCostTag, -BatteryCost);
+			ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+			UE_LOG(LogTemp, Log, TEXT("Item Used: %s, Battery Consumed: %f"), *ItemName, BatteryCost);
+
+			// 4. (옵션) 이 아래에 실제 아이템 고유의 기능(빛 켜기 등)을 구현하거나 서브클래스에서 Super::UseItem() 호출 후 구현합니다.
+		}
+	}
 }
 
 // [핵심] E키를 눌러 상호작용했을 때 실행되는 함수

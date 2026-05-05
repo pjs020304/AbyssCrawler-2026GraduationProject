@@ -7,6 +7,7 @@
 #include "AbyssInteractionInterface.h"
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "GameplayTagContainer.h" // 태그 사용을 위해 필요
 #include "AbyssItemBase.generated.h"
 
 class AAbyssDiverCharacter;
@@ -61,4 +62,16 @@ protected:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void ApplyPickedUpState();
+
+	// 이 아이템을 사용할 때 소모될 배터리 양
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
+	float BatteryCost;
+
+	// 배터리를 깎을 공용 이펙트 클래스 (GE_ConsumeBattery)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
+	TSubclassOf<class UGameplayEffect> BatteryConsumeEffectClass;
+
+	// SetByCaller로 값을 넘겨주기 위한 연결 고리 태그 (예: "Data.Cost.Battery")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
+	FGameplayTag BatteryCostTag;
 };
