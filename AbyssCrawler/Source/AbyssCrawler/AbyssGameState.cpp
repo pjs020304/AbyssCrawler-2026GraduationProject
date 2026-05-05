@@ -11,9 +11,9 @@ AAbyssGameState::AAbyssGameState()
     CollectedItemsCount = 0;
     TargetItemsCount = 10;
 
-    Missions.Add({ FText::FromString(TEXT("Collect Parts")), 0, 10, false, 30 });
-    Missions.Add({ FText::FromString(TEXT("Repair Generator")), 0, 3, false, 40 });
-    Missions.Add({ FText::FromString(TEXT("Reach Escape Area")), 0, 1, false, 20 });
+    //Missions.Add({ FText::FromString(TEXT("Collect Parts")), 0, 10, false, 30 });
+    //Missions.Add({ FText::FromString(TEXT("Repair Generator")), 0, 3, false, 40 });
+    //Missions.Add({ FText::FromString(TEXT("Reach Escape Area")), 0, 1, false, 20 });
 }
 
 void AAbyssGameState::OnRep_CollectedItems()
@@ -91,6 +91,24 @@ void AAbyssGameState::AddMissionProgress(int32 MissionIndex, int32 Amount)
     OnRep_Missions();
 }
 
+bool AAbyssGameState::AddMission(const FAbyssMissionData& NewMission)
+{
+    if (!HasAuthority()) return false;
+
+    if (Missions.Num() >= MaxActiveMissionCount)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[Mission] Cannot add mission. Mission list full."));
+        return false;
+    }
+
+    Missions.Add(NewMission);
+
+    UE_LOG(LogTemp, Warning, TEXT("[Mission] Added: %s"), *NewMission.MissionTitle.ToString());
+
+    OnRep_Missions();
+    return true;
+}
+
 // Replicated 변수가 있다면 이 함수를 반드시 구현해야 함
 void AAbyssGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -136,3 +154,96 @@ void AAbyssGameState::OnRep_SharedMoney()
 }
 
 
+void AAbyssGameState::AddMissionProgressById(FName MissionId, int32 Amount)
+{
+    if (!HasAuthority()) return;
+
+    for (FAbyssMissionData& Mission : Missions)
+    {
+        if (Mission.MissionId == MissionId && !Mission.bCompleted)
+        {
+            Mission.CurrentCount += Amount;
+
+            if (Mission.CurrentCount >= Mission.TargetCount)
+            {
+                Mission.CurrentCount = Mission.TargetCount;
+                Mission.bCompleted = true;
+
+                ProgressPoint += Mission.RewardProgressPoint;
+                ProgressPoint = FMath::Clamp(ProgressPoint, 0, TargetProgressPoint);
+
+                UE_LOG(LogTemp, Warning, TEXT("[Mission] Completed: %s"), *Mission.MissionId.ToString());
+            }
+
+            break;
+        }
+    }
+
+    OnRep_Missions();
+}
+
+bool AAbyssGameState::AddMissionById(FName MissionId)
+{
+    if (!HasAuthority()) return false;
+
+    if (Missions.Num() >= MaxActiveMissionCount)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[Mission] Mission list full"));
+        return false;
+    }
+
+    for (const FAbyssMissionData& Mission : MissionPool)
+    {
+        if (Mission.MissionId == MissionId)
+        {
+            Missions.Add(Mission);
+
+            UE_LOG(LogTemp, Warning, TEXT("[Mission] Added: %s"), *MissionId.ToString());
+
+            OnRep_Missions();
+            return true;
+        }
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("[Mission] MissionId not found: %s"), *MissionId.ToString());
+    return false;
+}
+
+bool AAbyssGameState::HasActiveMission(FName MissionId) const
+{
+    for (const FAbyssMissionData& Mission : Missions)
+    {
+        if (Mission.MissionId == MissionId && !Mission.bCompleted)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+TArray<FAbyssMissionData> AAbyssGameState::GetAvailableMissions() const
+{
+    TArray<FAbyssMissionData> Result;
+
+    for (const FAbyssMissionData& PoolMission : MissionPool)
+    {
+        bool bAlreadyActive = false;
+
+        for (const FAbyssMissionData& ActiveMission : Missions)
+        {
+            if (ActiveMission.MissionId == PoolMission.MissionId && !ActiveMission.bCompleted)
+            {
+                bAlreadyActive = true;
+                break;
+            }
+        }
+
+        if (!bAlreadyActive)
+        {
+            Result.Add(PoolMission);
+        }
+    }
+
+    return Result;
+}

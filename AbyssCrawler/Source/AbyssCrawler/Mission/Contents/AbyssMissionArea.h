@@ -28,6 +28,9 @@ protected:
 	UPROPERTY(Replicated)
 	bool bTriggered = false;
 
+	UPROPERTY(EditAnywhere)
+	FName MissionId;
+
 	UFUNCTION()
 	void OnTriggerBeginOverlap(
 		UPrimitiveComponent* OverlappedComponent,

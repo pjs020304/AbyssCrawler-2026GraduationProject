@@ -9,6 +9,11 @@ void AHarpoonGunItem::UseItem()
 {
 	Super::UseItem();
 
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (OwnerCharacter && ProjectileClass)
 	{
 		// 카메라가 바라보는 방향으로 발사 위치와 회전값 계산
@@ -18,6 +23,7 @@ void AHarpoonGunItem::UseItem()
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = OwnerCharacter;
 		SpawnParams.Instigator = OwnerCharacter; // 총을 쏜 주체를 플레이어로 명시
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 		// 월드에 발사체 소환
 		GetWorld()->SpawnActor<AHarpoonProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);

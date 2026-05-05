@@ -9,6 +9,9 @@ struct FAbyssMissionData
 {
 	GENERATED_BODY()
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName MissionId;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FText MissionTitle;
 
@@ -75,6 +78,14 @@ public:
 	// 돈이 변경될 때마다 UI를 갱신하기 위한 델리게이트
 	UPROPERTY(BlueprintAssignable, Category = "Economy")
 	FOnMoneyChanged OnMoneyChanged;
+	UFUNCTION(BlueprintCallable)
+	bool AddMission(const FAbyssMissionData& NewMission);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abyss Mission")
+	TArray<FAbyssMissionData> MissionPool;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abyss Mission")
+	int32 MaxActiveMissionCount = 3;
 
 	// 멀티플레이어 변수 동기화 필수 함수
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -88,6 +99,19 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Economy")
 	int32 GetSharedMoney() const { return SharedMoney; }
+
+	UFUNCTION(BlueprintCallable)
+	void AddMissionProgressById(FName MissionId, int32 Amount);
+
+	UFUNCTION(BlueprintCallable)
+	bool AddMissionById(FName MissionId);
+
+	// 중복 제외
+	UFUNCTION(BlueprintCallable)
+	bool HasActiveMission(FName MissionId) const;
+
+	UFUNCTION(BlueprintCallable)
+	TArray<FAbyssMissionData> GetAvailableMissions() const;
 
 protected:
 	// 팀이 공유하는 돈 (서버에서 클라이언트로 동기화됨)

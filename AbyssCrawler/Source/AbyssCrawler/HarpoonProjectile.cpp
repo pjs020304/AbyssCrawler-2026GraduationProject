@@ -7,6 +7,9 @@ AHarpoonProjectile::AHarpoonProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	bReplicates = true;
+	SetReplicateMovement(true);
+
 	// 1. 충돌체 설정
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	CollisionComp->InitSphereRadius(5.0f);
@@ -36,6 +39,11 @@ void AHarpoonProjectile::BeginPlay()
 
 void AHarpoonProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	// 자기 자신을 쏜 사람(플레이어)은 무시
 	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherActor != GetInstigator()))
 	{

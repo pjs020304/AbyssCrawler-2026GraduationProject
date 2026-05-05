@@ -110,3 +110,50 @@ void AAbyssGameMode::AddMissionProgress(int32 MissionIndex, int32 Amount)
         }
     }
 }
+
+void AAbyssGameMode::AddMissionProgressById(FName MissionId, int32 Amount)
+{
+    if (AAbyssGameState* GS = GetGameState<AAbyssGameState>())
+    {
+        int32 MissionIndex = INDEX_NONE;
+
+        for (int32 i = 0; i < GS->Missions.Num(); ++i)
+        {
+            if (GS->Missions[i].MissionId == MissionId)
+            {
+                MissionIndex = i;
+                break;
+            }
+        }
+
+        if (MissionIndex == INDEX_NONE) return;
+
+        const bool bWasCompleted = GS->Missions[MissionIndex].bCompleted;
+
+        GS->AddMissionProgressById(MissionId, Amount);
+
+        const FAbyssMissionData& Mission = GS->Missions[MissionIndex];
+
+        if (!bWasCompleted && Mission.bCompleted)
+        {
+            for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+            {
+                if (APlayerController* PC = It->Get())
+                {
+                    if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(PC->GetPawn()))
+                    {
+                        Diver->Client_ShowMissionComplete(Mission.MissionTitle);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void AAbyssGameMode::AcceptMissionById(FName MissionId)
+{
+    if (AAbyssGameState* GS = GetGameState<AAbyssGameState>())
+    {
+        GS->AddMissionById(MissionId);
+    }
+}
