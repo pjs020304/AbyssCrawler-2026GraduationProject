@@ -47,5 +47,16 @@ public:
 protected:
 	UPROPERTY(meta = (BindWidget))
 	UMissionUIWidget* MissionUI;
+
+	// 위젯이 초기화될 때 호출
+	virtual void NativeConstruct() override;
+
+	// 돈이 변했을 때 실행될 UI 업데이트 함수
+	UFUNCTION()
+	void UpdateMoneyDisplay(int32 NewMoney);
+
+	// 블루프린트에서 텍스트를 바꿀 수 있도록 이벤트 생성
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void OnUpdateMoneyText(int32 Money);
 	
 };
