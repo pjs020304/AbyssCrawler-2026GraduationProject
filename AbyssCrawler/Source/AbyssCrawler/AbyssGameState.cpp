@@ -111,16 +111,28 @@ bool AAbyssGameState::ConsumeSharedMoney(int32 Amount)
         if (SharedMoney >= Amount)
         {
             SharedMoney -= Amount;
+            // 서버에서도 값이 바뀌었으니 즉시 방송 (OnRep은 클라이언트에서만 호출됨)
+            OnMoneyChanged.Broadcast(SharedMoney);
             return true;
         }
     }
     return false;
 }
 
+
 void AAbyssGameState::AddSharedMoney(int32 Amount)
 {
     if (HasAuthority() && Amount > 0)
     {
         SharedMoney += Amount;
+        OnMoneyChanged.Broadcast(SharedMoney);
     }
 }
+
+void AAbyssGameState::OnRep_SharedMoney()
+{
+    // 서버로부터 새로운 돈 데이터가 도착하면 UI에 방송합니다.
+    OnMoneyChanged.Broadcast(SharedMoney);
+}
+
+

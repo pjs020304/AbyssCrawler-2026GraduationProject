@@ -25,6 +25,9 @@ struct FAbyssMissionData
 	int32 RewardProgressPoint = 10;
 };
 
+// 델리게이트 선언 (새로운 돈 액수를 인자로 전달)
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMoneyChanged, int32, NewMoney);
+
 UCLASS()
 class ABYSSCRAWLER_API AAbyssGameState : public AGameState
 {
@@ -69,6 +72,10 @@ public:
 
 	void AddMissionProgress(int32 MissionIndex, int32 Amount = 1);
 
+	// 돈이 변경될 때마다 UI를 갱신하기 위한 델리게이트
+	UPROPERTY(BlueprintAssignable, Category = "Economy")
+	FOnMoneyChanged OnMoneyChanged;
+
 	// 멀티플레이어 변수 동기화 필수 함수
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -84,6 +91,9 @@ public:
 
 protected:
 	// 팀이 공유하는 돈 (서버에서 클라이언트로 동기화됨)
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Economy")
+	UPROPERTY(ReplicatedUsing = OnRep_SharedMoney, VisibleAnywhere, BlueprintReadOnly, Category = "Economy")
 	int32 SharedMoney;
+
+	UFUNCTION()
+	void OnRep_SharedMoney();
 };
