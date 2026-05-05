@@ -148,6 +148,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
 	FOnResourceChanged OnHealthChanged;
 
+	// 배터리가 변할 때 블루프린트로 쏴줄 이벤트
+	UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
+	FOnResourceChanged OnBatteryChanged;
+
 	void RefreshEquippedVisual();
 
 	// 미션 아이템 수집 클라 -> 서버 요청
@@ -238,6 +242,9 @@ protected:
 	void OnOxygenChangedCallback(const struct FOnAttributeChangeData& Data);
 
 	void OnHealthChangedCallback(const struct FOnAttributeChangeData& Data);
+
+	void OnBatteryChangedCallback(const struct FOnAttributeChangeData& Data);
+
 
 	void SetupEnhancedInput();
 	virtual void OnRep_Controller() override;

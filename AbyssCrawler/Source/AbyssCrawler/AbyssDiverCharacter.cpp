@@ -64,6 +64,7 @@ void AAbyssDiverCharacter::BeginPlay()
 		// 1. [UI 바인딩]  값이 변할 때마다 OnChangedCallback 함수를 실행하라고 예약!
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetOxygenAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnOxygenChangedCallback);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnHealthChangedCallback);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetBatteryAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnBatteryChangedCallback);
 
 		// 2. [GE 적용] 산소 감소 이펙트(GE_DrainOxygen)를 내 몸에 적용하기
 		if (OxygenDrainEffectClass)
@@ -770,6 +771,13 @@ void AAbyssDiverCharacter::OnHealthChangedCallback(const FOnAttributeChangeData&
 {
 	// 블루프린트(UI) 쪽으로 "체력 변했다!" 하고 현재값과 최대값을 방송(Broadcast)합니다.
 	OnHealthChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxHealth());
+}
+
+// 배터리 값이 변할 때마다 엔진이 알아서 호출해 주는 함수
+void AAbyssDiverCharacter::OnBatteryChangedCallback(const FOnAttributeChangeData& Data)
+{
+	// 블루프린트(UI) 쪽으로 "체력 변했다!" 하고 현재값과 최대값을 방송(Broadcast)합니다.
+	OnBatteryChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxBattery());
 }
 
 void AAbyssDiverCharacter::SetupEnhancedInput()
