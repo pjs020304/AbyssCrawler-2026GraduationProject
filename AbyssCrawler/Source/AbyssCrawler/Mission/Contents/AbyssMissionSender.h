@@ -8,6 +8,8 @@
 #include "AbyssGameState.h"
 #include "AbyssMissionSender.generated.h"
 
+class AAbyssDiverCharacter;
+
 UCLASS()
 class ABYSSCRAWLER_API AAbyssMissionSender : public AActor, public IAbyssInteractionInterface
 {
@@ -18,6 +20,10 @@ public:
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
+	void ReleaseMissionSender(AAbyssDiverCharacter* Character);
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* Mesh;
@@ -27,4 +33,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
 	bool bGiveAllAtOnce = true;
+
+	UPROPERTY(Replicated)
+	bool bIsInUse = false;
+
+	UPROPERTY()
+	AAbyssDiverCharacter* UsingCharacter = nullptr;
 };

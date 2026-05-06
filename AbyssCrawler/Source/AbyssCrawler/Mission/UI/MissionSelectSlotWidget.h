@@ -44,5 +44,7 @@ protected:
 
 private:
 	FName CachedMissionId;
+
+	
 	
 };

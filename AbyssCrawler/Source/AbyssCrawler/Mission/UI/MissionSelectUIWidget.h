@@ -8,6 +8,8 @@
 class UVerticalBox;
 class UButton;
 class UMissionSelectSlotWidget;
+class AAbyssDiverCharacter;
+class AAbyssMissionSender;
 
 UCLASS()
 class ABYSSCRAWLER_API UMissionSelectUIWidget : public UUserWidget
@@ -17,6 +19,10 @@ class ABYSSCRAWLER_API UMissionSelectUIWidget : public UUserWidget
 public:
 	UFUNCTION(BlueprintCallable)
 	void InitializeMissionList(const TArray<FAbyssMissionData>& Missions);
+
+	void SetOwnerCharacter(AAbyssDiverCharacter* InCharacter);
+
+	void SetMissionSender(AAbyssMissionSender* InSender);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -54,5 +60,12 @@ protected:
 	bool bIsClosing = false;
 
 	void CloseUI();
+
+private:
+	UPROPERTY()
+	AAbyssDiverCharacter* OwnerCharacterRef = nullptr;
+
+	UPROPERTY()
+	AAbyssMissionSender* MissionSenderRef = nullptr;
 
 };
