@@ -892,3 +892,31 @@ void AAbyssDiverCharacter::Server_AcceptMissionById_Implementation(FName Mission
 		GM->AcceptMissionById(MissionId);
 	}
 }
+
+void AAbyssDiverCharacter::SetInsideSubmarine(bool bInside)
+{
+	UCharacterMovementComponent* MoveComp = Cast<UCharacterMovementComponent>(GetCharacterMovement());
+	if (!MoveComp) return;
+
+	if (bInside)
+	{
+		// 1. 수영 능력 강제 차단 (물 속 물리 볼륨을 무시하게 됨)
+		MoveComp->NavAgentProps.bCanSwim = false;
+
+		// 2. 강제로 걷기/낙하 모드로 변경 (수중에서도 중력이 적용되어 바닥으로 떨어짐)
+		MoveComp->SetMovementMode(MOVE_Falling);
+		IsSwimming = false;
+	}
+	else
+	{
+		// 1. 잠수함 밖으로 나가면 수영 능력 복구
+		MoveComp->NavAgentProps.bCanSwim = true;
+
+		// 2. 만약 현재 맵의 물 볼륨 안에 있다면 즉시 수영 모드로 전환
+		if (MoveComp->IsInWater())
+		{
+			MoveComp->SetMovementMode(MOVE_Swimming);
+			IsSwimming = true;
+		}
+	}
+}

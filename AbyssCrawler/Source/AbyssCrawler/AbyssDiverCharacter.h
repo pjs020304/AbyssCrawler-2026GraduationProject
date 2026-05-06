@@ -186,6 +186,9 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_OpenMissionSelectUI(const TArray<FAbyssMissionData>& AvailableMissions);
 
+	// 잠수함 탑승/하차 시 외부(잠수함)에서 호출해 줄 함수
+	void SetInsideSubmarine(bool bInside);
+
 protected:
 	// 이동 함수
 	void Move(const FInputActionValue& Value);
