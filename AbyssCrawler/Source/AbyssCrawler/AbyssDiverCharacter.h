@@ -22,8 +22,8 @@ class UAbilitySystemComponent;
 class UAbyssAttributeSet;
 class UMainHUDWidget;
 class UMissionSelectUIWidget;
+class AAbyssMissionSender;
 struct FAbyssMissionData;
-
 
 UCLASS()
 class ABYSSCRAWLER_API AAbyssDiverCharacter : public ACharacter, public IAbilitySystemInterface 
@@ -184,7 +184,15 @@ public:
 	TSubclassOf<UMissionSelectUIWidget> MissionSelectUIClass;
 
 	UFUNCTION(Client, Reliable)
-	void Client_OpenMissionSelectUI(const TArray<FAbyssMissionData>& AvailableMissions);
+	void Client_OpenMissionSelectUI(const TArray<FAbyssMissionData>& AvailableMissions, AAbyssMissionSender* MissionSender);
+
+	UFUNCTION(Server, Reliable)
+	void Server_ReleaseMissionSender(AAbyssMissionSender* MissionSender);
+
+	UPROPERTY()
+	UMissionSelectUIWidget* MissionSelectUIRef = nullptr;
+
+	void ClearMissionSelectUIRef();
 
 protected:
 	// 이동 함수

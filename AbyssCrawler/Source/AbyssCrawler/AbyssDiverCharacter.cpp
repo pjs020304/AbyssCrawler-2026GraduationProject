@@ -13,6 +13,7 @@
 #include "AbyssGameMode.h"
 #include "MainHUDWidget.h"
 #include "Mission/UI/MissionSelectUIWidget.h"
+#include "Mission/Contents/AbyssMissionSender.h"
 #include "Blueprint/UserWidget.h"
 
 // 중요: 커스텀 무브먼트 컴포넌트를 사용하려면 FObjectInitializer를 받는 생성자를 써야 함
@@ -267,28 +268,48 @@ void AAbyssDiverCharacter::Client_ShowMissionComplete_Implementation(const FText
 	}
 }
 
-void AAbyssDiverCharacter::Client_OpenMissionSelectUI_Implementation(const TArray<FAbyssMissionData>& AvailableMissions)
+void AAbyssDiverCharacter::Client_OpenMissionSelectUI_Implementation(const TArray<FAbyssMissionData>& AvailableMissions, AAbyssMissionSender* MissionSender)
 {
+	if (!IsLocallyControlled()) return;
 	if (!MissionSelectUIClass) return;
 
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
-	UMissionSelectUIWidget* SelectUI =
-		CreateWidget<UMissionSelectUIWidget>(PC, MissionSelectUIClass);
+	// 이미 열려 있으면 새로 만들지 말고 내용만 갱신
+	if (MissionSelectUIRef && MissionSelectUIRef->IsInViewport())
+	{
+		return;
+	}
 
-	if (!SelectUI) return;
+	MissionSelectUIRef = CreateWidget<UMissionSelectUIWidget>(PC, MissionSelectUIClass);
+	if (!MissionSelectUIRef) return;
 
-	SelectUI->AddToViewport();
-	SelectUI->InitializeMissionList(AvailableMissions);
+	MissionSelectUIRef->SetOwnerCharacter(this);
+	MissionSelectUIRef->SetMissionSender(MissionSender);
+
+	MissionSelectUIRef->AddToViewport();
+	MissionSelectUIRef->InitializeMissionList(AvailableMissions);
 
 	FInputModeGameAndUI InputMode;
-	InputMode.SetWidgetToFocus(SelectUI->TakeWidget());
+	InputMode.SetWidgetToFocus(MissionSelectUIRef->TakeWidget());
 	PC->SetInputMode(InputMode);
 	PC->bShowMouseCursor = true;
 
 	PC->SetIgnoreMoveInput(true);
 	PC->SetIgnoreLookInput(true);
+}
+
+void AAbyssDiverCharacter::Server_ReleaseMissionSender_Implementation(AAbyssMissionSender* MissionSender)
+{
+	if (!MissionSender) return;
+
+	MissionSender->ReleaseMissionSender(this);
+}
+
+void AAbyssDiverCharacter::ClearMissionSelectUIRef()
+{
+	MissionSelectUIRef = nullptr;
 }
 
 void AAbyssDiverCharacter::Move(const FInputActionValue& Value)

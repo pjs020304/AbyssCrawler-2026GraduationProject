@@ -5,6 +5,7 @@
 #include "Components/VerticalBox.h"
 #include "Components/Button.h"
 #include "Mission/UI/MissionSelectSlotWidget.h"
+#include "Mission/Contents/AbyssMissionSender.h"
 #include "AbyssDiverCharacter.h"
 
 void UMissionSelectUIWidget::NativeConstruct()
@@ -134,6 +135,12 @@ void UMissionSelectUIWidget::CloseUI()
 	if (bIsClosing) return;
 	bIsClosing = true;
 
+	if (OwnerCharacterRef)
+	{
+		OwnerCharacterRef->Server_ReleaseMissionSender(MissionSenderRef);
+		OwnerCharacterRef->ClearMissionSelectUIRef();
+	}
+
 	if (APlayerController* PC = GetOwningPlayer())
 	{
 		FInputModeGameOnly InputMode;
@@ -141,16 +148,29 @@ void UMissionSelectUIWidget::CloseUI()
 
 		PC->bShowMouseCursor = false;
 
-		// 막힌 입력 해제
 		PC->SetIgnoreMoveInput(false);
 		PC->SetIgnoreLookInput(false);
 
-		// 마우스 캡처 복구
-		PC->SetMouseLocation(
-			GEngine->GameViewport->Viewport->GetSizeXY().X / 2,
-			GEngine->GameViewport->Viewport->GetSizeXY().Y / 2
-		);
+		if (GEngine && GEngine->GameViewport && GEngine->GameViewport->Viewport)
+		{
+			FIntPoint ViewportSize = GEngine->GameViewport->Viewport->GetSizeXY();
+
+			PC->SetMouseLocation(
+				ViewportSize.X / 2,
+				ViewportSize.Y / 2
+			);
+		}
 	}
 
 	RemoveFromParent();
+}
+
+void UMissionSelectUIWidget::SetOwnerCharacter(AAbyssDiverCharacter* InCharacter)
+{
+	OwnerCharacterRef = InCharacter;
+}
+
+void UMissionSelectUIWidget::SetMissionSender(AAbyssMissionSender* InSender)
+{
+	MissionSenderRef = InSender;
 }
