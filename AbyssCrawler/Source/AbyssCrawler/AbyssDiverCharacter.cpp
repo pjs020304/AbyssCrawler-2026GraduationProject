@@ -15,6 +15,7 @@
 #include "Mission/UI/MissionSelectUIWidget.h"
 #include "Mission/Contents/AbyssMissionSender.h"
 #include "Blueprint/UserWidget.h"
+#include "Mission/Contents/AbyssMissionWorkObject.h"
 
 // 중요: 커스텀 무브먼트 컴포넌트를 사용하려면 FObjectInitializer를 받는 생성자를 써야 함
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
@@ -296,6 +297,8 @@ void AAbyssDiverCharacter::Client_OpenMissionSelectUI_Implementation(const TArra
 	PC->SetInputMode(InputMode);
 	PC->bShowMouseCursor = true;
 
+	bInputLockedByUI = true;
+
 	PC->SetIgnoreMoveInput(true);
 	PC->SetIgnoreLookInput(true);
 }
@@ -310,6 +313,22 @@ void AAbyssDiverCharacter::Server_ReleaseMissionSender_Implementation(AAbyssMiss
 void AAbyssDiverCharacter::ClearMissionSelectUIRef()
 {
 	MissionSelectUIRef = nullptr;
+}
+
+void AAbyssDiverCharacter::Client_SetWorkInputBlocked_Implementation(bool bBlocked)
+{
+	bIsWorkingLocked = bBlocked;
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	PC->SetIgnoreMoveInput(bBlocked);
+	PC->SetIgnoreLookInput(bBlocked);
+
+	if (bBlocked)
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+	}
 }
 
 void AAbyssDiverCharacter::Move(const FInputActionValue& Value)
@@ -407,6 +426,9 @@ void AAbyssDiverCharacter::ConvertMove()
 
 void AAbyssDiverCharacter::UseCurrentItem()
 {
+	if (bInputLockedByUI) return;
+	if (bIsWorkingLocked) return;
+
 	if (!Inventory.IsValidIndex(CurrentSlotIndex) || Inventory[CurrentSlotIndex] == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Abyss] Empty Slot"));
@@ -547,17 +569,40 @@ void AAbyssDiverCharacter::EquipSlot4() { SwitchToSlot(3); }
 void AAbyssDiverCharacter::EquipSlot5() { SwitchToSlot(4); }
 */
 
-void AAbyssDiverCharacter::EquipSlot1() { Server_SwitchToSlot(0); }
-void AAbyssDiverCharacter::EquipSlot2() { Server_SwitchToSlot(1); }
-void AAbyssDiverCharacter::EquipSlot3() { Server_SwitchToSlot(2); }
-void AAbyssDiverCharacter::EquipSlot4() { Server_SwitchToSlot(3); }
-void AAbyssDiverCharacter::EquipSlot5() { Server_SwitchToSlot(4); }
+void AAbyssDiverCharacter::EquipSlot1() 
+{ 
+	if (bInputLockedByUI || bIsWorkingLocked) return;
+	Server_SwitchToSlot(0); 
+}
+void AAbyssDiverCharacter::EquipSlot2() 
+{ 
+	if (bInputLockedByUI || bIsWorkingLocked) return;
+	Server_SwitchToSlot(1); 
+}
+void AAbyssDiverCharacter::EquipSlot3() 
+{ 
+	if (bInputLockedByUI || bIsWorkingLocked) return;
+	Server_SwitchToSlot(2); 
+}
+void AAbyssDiverCharacter::EquipSlot4() 
+{ 
+	if (bInputLockedByUI || bIsWorkingLocked) return;
+	Server_SwitchToSlot(3); 
+}
+void AAbyssDiverCharacter::EquipSlot5() 
+{ 
+	if (bInputLockedByUI || bIsWorkingLocked) return;
+	Server_SwitchToSlot(4); 
+}
 
 
 
 // E키를 눌렀을 때 실행되는 함수
 void AAbyssDiverCharacter::TryInteract()
 {
+	if (bInputLockedByUI) return;
+	if (bIsWorkingLocked) return;
+
 	if (!FirstPersonCameraComponent) return;
 
 	// 1. 레이캐스트 시작점(카메라 위치)과 끝점(카메라가 바라보는 방향 * 거리) 계산
@@ -593,6 +638,8 @@ void AAbyssDiverCharacter::TryInteract()
 
 void AAbyssDiverCharacter::Server_TryInteract_Implementation(AActor* TargetActor)
 {
+	if (CurrentWorkObject) return;
+
 	if (!TargetActor) return;
 
 	if (TargetActor->Implements<UAbyssInteractionInterface>())
@@ -740,11 +787,16 @@ void AAbyssDiverCharacter::CheckForInteractables()
 
 void AAbyssDiverCharacter::DropItem()
 {
+	if (bIsWorkingLocked) return;
+	if (bInputLockedByUI) return;
+
 	Server_DropItem();
 }
 
 void AAbyssDiverCharacter::Server_UseCurrentItem_Implementation()
 {
+	if (CurrentWorkObject) return;
+
 	if (!Inventory.IsValidIndex(CurrentSlotIndex) || Inventory[CurrentSlotIndex] == nullptr)
 	{
 		return;
@@ -760,6 +812,8 @@ void AAbyssDiverCharacter::Client_OnInventoryUpdated_Implementation()
 
 void AAbyssDiverCharacter::Server_DropItem_Implementation()
 {
+	if (CurrentWorkObject) return;
+
 	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr)
 	{
 		AAbyssItemBase* ItemToDrop = Inventory[CurrentSlotIndex];
@@ -940,4 +994,38 @@ void AAbyssDiverCharacter::SetInsideSubmarine(bool bInside)
 			IsSwimming = true;
 		}
 	}
+}
+
+void AAbyssDiverCharacter::SetCurrentWorkObject(AAbyssMissionWorkObject* WorkObject)
+{
+	CurrentWorkObject = WorkObject;
+}
+
+void AAbyssDiverCharacter::ClearCurrentWorkObject(AAbyssMissionWorkObject* WorkObject)
+{
+	if (CurrentWorkObject == WorkObject)
+	{
+		CurrentWorkObject = nullptr;
+	}
+}
+
+void AAbyssDiverCharacter::CancelCurrentWorkByEnemyAttack()
+{
+	if (!HasAuthority()) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("[Diver] CancelCurrentWorkByEnemyAttack Called"));
+
+	if (CurrentWorkObject)
+	{
+		CurrentWorkObject->CancelWork();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Diver] CurrentWorkObject is NULL"));
+	}
+}
+
+void AAbyssDiverCharacter::SetInputLockedByUI(bool bLocked)
+{
+	bInputLockedByUI = bLocked;
 }

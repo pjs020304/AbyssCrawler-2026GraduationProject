@@ -137,6 +137,7 @@ void UMissionSelectUIWidget::CloseUI()
 
 	if (OwnerCharacterRef)
 	{
+		OwnerCharacterRef->SetInputLockedByUI(false);
 		OwnerCharacterRef->Server_ReleaseMissionSender(MissionSenderRef);
 		OwnerCharacterRef->ClearMissionSelectUIRef();
 	}
