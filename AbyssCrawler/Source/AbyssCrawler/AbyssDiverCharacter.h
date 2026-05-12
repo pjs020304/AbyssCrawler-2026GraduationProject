@@ -24,6 +24,7 @@ class UMainHUDWidget;
 class UMissionSelectUIWidget;
 class AAbyssMissionSender;
 struct FAbyssMissionData;
+class AAbyssMissionWorkObject;
 
 UCLASS()
 class ABYSSCRAWLER_API AAbyssDiverCharacter : public ACharacter, public IAbilitySystemInterface 
@@ -194,8 +195,26 @@ public:
 
 	void ClearMissionSelectUIRef();
 
+	UFUNCTION(Client, Reliable)
+	void Client_SetWorkInputBlocked(bool bBlocked);
+
 	// 잠수함 탑승/하차 시 외부(잠수함)에서 호출해 줄 함수
 	void SetInsideSubmarine(bool bInside);
+
+	void SetCurrentWorkObject(AAbyssMissionWorkObject* WorkObject);
+	void ClearCurrentWorkObject(AAbyssMissionWorkObject* WorkObject);
+	void CancelCurrentWorkByEnemyAttack();
+
+	UPROPERTY()
+	bool bIsWorkingLocked = false;
+
+	void SetInputLockedByUI(bool bLocked);
+
+private:
+	UPROPERTY()
+	AAbyssMissionWorkObject* CurrentWorkObject = nullptr;
+
+	bool bInputLockedByUI = false;
 
 protected:
 	// 이동 함수
@@ -269,7 +288,6 @@ protected:
 	void OnHealthChangedCallback(const struct FOnAttributeChangeData& Data);
 
 	void OnBatteryChangedCallback(const struct FOnAttributeChangeData& Data);
-
 
 	void SetupEnhancedInput();
 	virtual void OnRep_Controller() override;

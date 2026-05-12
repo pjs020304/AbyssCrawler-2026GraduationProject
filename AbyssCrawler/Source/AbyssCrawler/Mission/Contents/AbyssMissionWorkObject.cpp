@@ -5,6 +5,9 @@
 #include "Components/StaticMeshComponent.h"
 #include "AbyssDiverCharacter.h"
 #include "AbyssGameMode.h"
+#include "AbyssSharkCharacter.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AAbyssMissionWorkObject::AAbyssMissionWorkObject()
 {
@@ -29,6 +32,9 @@ void AAbyssMissionWorkObject::Interact_Implementation(AActor* InstigatorActor)
 
 	CurrentWorkTime = 0.0f;
 
+	WorkingCharacter->SetCurrentWorkObject(this);
+
+	WorkingCharacter->Client_SetWorkInputBlocked(true);
 	WorkingCharacter->Client_ShowWorkUI();
 	WorkingCharacter->Client_UpdateWorkProgress(0.0f);
 
@@ -51,6 +57,12 @@ void AAbyssMissionWorkObject::Tick(float DeltaTime)
 	if (!bIsWorking || bCompleted) return;
 	if (!WorkingCharacter) return;
 
+	if (IsEnemyNearWorkingCharacter())
+	{
+		CancelWork();
+		return;
+	}
+
 	CurrentWorkTime += DeltaTime;
 
 	const float Progress = FMath::Clamp(CurrentWorkTime / WorkDuration, 0.0f, 1.0f);
@@ -70,6 +82,9 @@ void AAbyssMissionWorkObject::CompleteWork()
 	{
 		WorkingCharacter->Client_UpdateWorkProgress(1.0f);
 		WorkingCharacter->Client_HideWorkUI();
+		WorkingCharacter->Client_SetWorkInputBlocked(false);
+
+		WorkingCharacter->ClearCurrentWorkObject(this);
 	}
 
 	if (AAbyssGameMode* GM = GetWorld()->GetAuthGameMode<AAbyssGameMode>())
@@ -77,7 +92,62 @@ void AAbyssMissionWorkObject::CompleteWork()
 		GM->AddMissionProgressById(MissionId, 1);
 	}
 
+	WorkingCharacter = nullptr;
+
 	UE_LOG(LogTemp, Warning, TEXT("[MissionWork] Work Completed MissionIndex=%d"), MissionIndex);
+}
+
+void AAbyssMissionWorkObject::CancelWork()
+{
+	if (!HasAuthority()) return;
+	if (!bIsWorking) return;
+
+	GetWorldTimerManager().ClearTimer(WorkTimerHandle);
+
+	bIsWorking = false;
+	CurrentWorkTime = 0.0f;
+
+	if (WorkingCharacter)
+	{
+		WorkingCharacter->Client_UpdateWorkProgress(0.0f);
+		WorkingCharacter->Client_HideWorkUI();
+		WorkingCharacter->Client_SetWorkInputBlocked(false);
+
+		WorkingCharacter->ClearCurrentWorkObject(this);
+	}
+
+	WorkingCharacter = nullptr;
+
+	UE_LOG(LogTemp, Warning, TEXT("[MissionWork] Work Canceled by Enemy"));
+}
+
+bool AAbyssMissionWorkObject::IsEnemyNearWorkingCharacter() const
+{
+	if (!WorkingCharacter) return false;
+
+	TArray<AActor*> Sharks;
+	UGameplayStatics::GetAllActorsOfClass(
+		GetWorld(),
+		AAbyssSharkCharacter::StaticClass(),
+		Sharks
+	);
+
+	for (AActor* Shark : Sharks)
+	{
+		if (!Shark) continue;
+
+		const float Distance = FVector::Dist(
+			WorkingCharacter->GetActorLocation(),
+			Shark->GetActorLocation()
+		);
+
+		if (Distance <= EnemyCancelRadius)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 

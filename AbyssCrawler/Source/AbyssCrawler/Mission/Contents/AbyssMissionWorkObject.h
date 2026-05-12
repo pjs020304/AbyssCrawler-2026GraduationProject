@@ -10,6 +10,7 @@
 
 class UStaticMeshComponent;
 class UWidgetComponent;
+class AAbyssSharkCharacter;
 
 UCLASS()
 class ABYSSCRAWLER_API AAbyssMissionWorkObject : public AActor, public IAbyssInteractionInterface
@@ -22,6 +23,8 @@ public:
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	virtual void Tick(float DeltaTime) override;
+
+	void CancelWork();
 
 	float CurrentWorkTime = 0.0f;
 
@@ -42,6 +45,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
 	FName MissionId;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
+	float EnemyCancelRadius = 600.0f;
+
 	FTimerHandle WorkTimerHandle;
 
 	bool bIsWorking = false;
@@ -49,4 +55,5 @@ protected:
 
 	void CompleteWork();
 
+	bool IsEnemyNearWorkingCharacter() const;
 };
