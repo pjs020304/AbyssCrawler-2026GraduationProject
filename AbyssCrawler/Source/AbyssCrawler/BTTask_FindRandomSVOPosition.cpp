@@ -12,6 +12,9 @@ UBTTask_FindRandomSVOPosition::UBTTask_FindRandomSVOPosition()
 	NodeName = TEXT("SVO Patrol & Move");
 	// 매 프레임 상어를 움직여야 하므로 Tick 활성화
 	bNotifyTick = true;
+
+	// 이 태스크를 AI(상어)마다 개별적으로 생성하도록 강제
+	bCreateNodeInstance = true;
 }
 
 EBTNodeResult::Type UBTTask_FindRandomSVOPosition::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
