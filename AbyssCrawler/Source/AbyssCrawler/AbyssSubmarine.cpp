@@ -1,6 +1,7 @@
 #include "AbyssSubmarine.h"
 #include "Components/BoxComponent.h"
-#include "Components/StaticMeshComponent.h" // [추가됨]
+#include "Components/StaticMeshComponent.h"
+#include "Components/TextRenderComponent.h" // [추가됨]
 #include "AbyssDiverCharacter.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/GameStateBase.h"
@@ -14,6 +15,7 @@ AAbyssSubmarine::AAbyssSubmarine()
 
 	DescentSpeed = 200.0f;
 	bIsDescending = false;
+	bIsAscending = false;
 
 	// 1. 최상위 루트 컴포넌트 생성
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
@@ -28,6 +30,16 @@ AAbyssSubmarine::AAbyssSubmarine()
 	ConsoleMesh->SetupAttachment(SubmarineMesh); // 잠수함 내부에 배치되도록 설정
 	// 상호작용 레이저에 맞아야 하므로 Block 설정
 	ConsoleMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+
+	// 텍스트 컴포넌트 추가
+	InteractionText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("InteractionText"));
+	InteractionText->SetupAttachment(ConsoleMesh);
+	InteractionText->SetHorizontalAlignment(EHTA_Center);
+	InteractionText->SetVerticalAlignment(EVRTA_TextCenter);
+	InteractionText->SetText(FText::GetEmpty());
+	InteractionText->SetVisibility(false);
+	InteractionText->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
+	InteractionText->SetTextRenderColor(FColor::Cyan);
 
 	// 4. 탑승 확인용 박스 설정
 	InteriorVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("InteriorVolume"));
@@ -44,16 +56,24 @@ AAbyssSubmarine::AAbyssSubmarine()
 void AAbyssSubmarine::BeginPlay()
 {
 	Super::BeginPlay();
+	InitialLocation = GetActorLocation();
 }
 
 void AAbyssSubmarine::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
-	if (bIsDescending) return;
+	if (bIsDescending || bIsAscending) return;
 
 	if (AreAllPlayersBoarded())
 	{
-		StartDescent();
+		if (FVector::Dist(GetActorLocation(), TargetLocation) < 50.0f)
+		{
+			StartAscent();
+		}
+		else
+		{
+			StartDescent();
+		}
 	}
 	else
 	{
@@ -61,9 +81,47 @@ void AAbyssSubmarine::Interact_Implementation(AActor* InstigatorActor)
 	}
 }
 
-// (선택) 콘솔을 쳐다볼 때 텍스트 띄우기 (필요시 구현)
-void AAbyssSubmarine::OnFocus_Implementation() {}
-void AAbyssSubmarine::OnLostFocus_Implementation() {}
+// 콘솔을 쳐다볼 때 텍스트 띄우기 (필요시 구현)
+void AAbyssSubmarine::OnFocus_Implementation()
+{
+	if (InteractionText)
+	{
+		UpdateInteractionText();
+		InteractionText->SetVisibility(true);
+	}
+}
+
+void AAbyssSubmarine::OnLostFocus_Implementation()
+{
+	if (InteractionText)
+	{
+		InteractionText->SetVisibility(false);
+	}
+}
+
+void AAbyssSubmarine::UpdateInteractionText()
+{
+	AGameStateBase* GS = GetWorld()->GetGameState();
+	if (!GS) return;
+
+	int32 TotalPlayers = GS->PlayerArray.Num();
+	if (TotalPlayers == 0) TotalPlayers = 1;
+
+	TArray<AActor*> OverlappingDivers;
+	InteriorVolume->GetOverlappingActors(OverlappingDivers, AAbyssDiverCharacter::StaticClass());
+	int32 BoardedPlayers = OverlappingDivers.Num();
+
+	FString StateString = TEXT("Ready to Descend");
+	if (FVector::Dist(GetActorLocation(), TargetLocation) < 50.0f)
+	{
+		StateString = TEXT("Ready to Return");
+	}
+
+	FString DisplayString = FString::Printf(TEXT("Boarded: %d / %d\n%s"), BoardedPlayers, TotalPlayers, *StateString);
+	InteractionText->SetText(FText::FromString(DisplayString));
+
+	UE_LOG(LogTemp, Warning, TEXT("UpdateSubmarineText"));
+}
 
 bool AAbyssSubmarine::AreAllPlayersBoarded()
 {
@@ -71,6 +129,7 @@ bool AAbyssSubmarine::AreAllPlayersBoarded()
 	if (!GS) return false;
 
 	int32 TotalPlayers = GS->PlayerArray.Num();
+	if (TotalPlayers == 0) TotalPlayers = 1;
 
 	TArray<AActor*> OverlappingDivers;
 	InteriorVolume->GetOverlappingActors(OverlappingDivers, AAbyssDiverCharacter::StaticClass());
@@ -85,6 +144,11 @@ void AAbyssSubmarine::OnInteriorOverlapBegin(UPrimitiveComponent* OverlappedComp
 	{
 		// 서버와 클라이언트 모두 예측을 위해 실행합니다.
 		Diver->SetInsideSubmarine(true);
+
+		if (InteractionText && InteractionText->IsVisible())
+		{
+			UpdateInteractionText();
+		}
 	}
 }
 
@@ -93,30 +157,55 @@ void AAbyssSubmarine::OnInteriorOverlapEnd(UPrimitiveComponent* OverlappedComp, 
 	if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(OtherActor))
 	{
 		Diver->SetInsideSubmarine(false);
+
+		if (InteractionText && InteractionText->IsVisible())
+		{
+			UpdateInteractionText();
+		}
 	}
 }
 
 void AAbyssSubmarine::StartDescent()
 {
 	bIsDescending = true;
+	bIsAscending = false;
+}
+
+void AAbyssSubmarine::StartAscent()
+{
+	bIsAscending = true;
+	bIsDescending = false;
 }
 
 void AAbyssSubmarine::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (HasAuthority() && bIsDescending)
+	if (HasAuthority())
 	{
-		FVector CurrentLoc = GetActorLocation();
-		FVector NewLoc = UKismetMathLibrary::VInterpTo_Constant(CurrentLoc, TargetLocation, DeltaTime, DescentSpeed);
-
-		// bSweep=true 옵션을 추가하여 바닥이나 지형을 통과해버리지 않고 물리 충돌을 연산하게 합니다.
-		SetActorLocation(NewLoc, true);
-
-		if (FVector::Dist(NewLoc, TargetLocation) < 10.0f)
+		if (bIsDescending)
 		{
-			bIsDescending = false;
+			FVector CurrentLoc = GetActorLocation();
+			FVector NewLoc = UKismetMathLibrary::VInterpTo_Constant(CurrentLoc, TargetLocation, DeltaTime, DescentSpeed);
 
+			SetActorLocation(NewLoc, true);
+
+			if (FVector::Dist(NewLoc, TargetLocation) < 10.0f)
+			{
+				bIsDescending = false;
+			}
+		}
+		else if (bIsAscending)
+		{
+			FVector CurrentLoc = GetActorLocation();
+			FVector NewLoc = UKismetMathLibrary::VInterpTo_Constant(CurrentLoc, InitialLocation, DeltaTime, DescentSpeed);
+
+			SetActorLocation(NewLoc, true);
+
+			if (FVector::Dist(NewLoc, InitialLocation) < 10.0f)
+			{
+				bIsAscending = false;
+			}
 		}
 	}
 }
@@ -125,4 +214,5 @@ void AAbyssSubmarine::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AAbyssSubmarine, bIsDescending);
+	DOREPLIFETIME(AAbyssSubmarine, bIsAscending);
 }

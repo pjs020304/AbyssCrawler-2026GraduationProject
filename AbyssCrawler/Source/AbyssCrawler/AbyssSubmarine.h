@@ -7,6 +7,7 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
+class UTextRenderComponent;
 
 UCLASS()
 class ABYSSCRAWLER_API AAbyssSubmarine : public AActor, public IAbyssInteractionInterface
@@ -16,10 +17,10 @@ class ABYSSCRAWLER_API AAbyssSubmarine : public AActor, public IAbyssInteraction
 public:
 	AAbyssSubmarine();
 
-	// [ÀÎÅÍÆäÀÌ½º ±¸Çö] EÅ° »óÈ£ÀÛ¿ë
+	// [ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„] Eí‚¤ ìƒí˜¸ì‘ìš©
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
-	// (¼±ÅÃ) ½Ã¼±ÀÌ ´ê¾ÒÀ» ¶§ UI Ç¥½Ã¿ë
+	// (ì„ íƒ) ì‹œì„ ì´ ë‹¿ì•˜ì„ ë•Œ UI í‘œì‹œìš©
 	virtual void OnFocus_Implementation() override;
 	virtual void OnLostFocus_Implementation() override;
 
@@ -27,42 +28,59 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
-	// --- [Ãß°¡µÊ] ½Ã°¢Àû ÄÄÆ÷³ÍÆ® ---
+	// --- [ì¶”ê°€ë¨] ì‹œê°ì  ì»´í¬ë„ŒíŠ¸ ---
 
-	// Àá¼öÇÔÀÇ ÀüÃ¼ ¿ÜÇü ¸Ş½¬
+	// ì ìˆ˜í•¨ì˜ ì „ì²´ ì™¸í˜• ë©”ì‰¬
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* SubmarineMesh;
 
-	// ÇÃ·¹ÀÌ¾î°¡ »óÈ£ÀÛ¿ë(E) ÇÒ ÄÜ¼Ö ¸Ş½¬
+	// í”Œë ˆì´ì–´ê°€ ìƒí˜¸ì‘ìš©(E) í•  ì½˜ì†” ë©”ì‰¬
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* ConsoleMesh;
 
+	// ìƒí˜¸ì‘ìš© ì‹œ ì¸ì›ìˆ˜ë¥¼ í‘œì‹œí•  í…ìŠ¤íŠ¸ ì»´í¬ë„ŒíŠ¸
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UTextRenderComponent* InteractionText;
+
 	// ------------------------------
 
-	// ÇÃ·¹ÀÌ¾î Å¾½Â È®ÀÎ¿ë ±¸¿ª
+	// í”Œë ˆì´ì–´ íƒ‘ìŠ¹ í™•ì¸ìš© êµ¬ì—­
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UBoxComponent* InteriorVolume;
 
-	// ÇÏ°­ ¸ñÇ¥ ÁöÁ¡ (¿¡µğÅÍ¿¡¼­ ½ÉÇØ ÁÂÇ¥·Î ¼³Á¤)
+	// í•˜ê°• ëª©í‘œ ì§€ì  (ì—ë””í„°ì—ì„œ ì‹¬í•´ ì¢Œí‘œë¡œ ì„¤ì •)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", meta = (MakeEditWidget = true))
 	FVector TargetLocation;
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float DescentSpeed;
 
-	// ÇöÀç Àá¼öÇÔÀÇ »óÅÂ
+	// í˜„ì¬ ì ìˆ˜í•¨ì˜ ìƒíƒœ
 	UPROPERTY(Replicated)
 	bool bIsDescending;
 
-	// ¸ğµç ÇÃ·¹ÀÌ¾î°¡ ÅÀ´ÂÁö °Ë»çÇÏ´Â ÇÔ¼ö
+	// ìƒìŠ¹ ì¤‘ì¸ì§€ ì—¬ë¶€
+	UPROPERTY(Replicated)
+	bool bIsAscending;
+
+	// ì´ˆê¸° ë² ì´ìŠ¤ìº í”„ ìœ„ì¹˜
+	FVector InitialLocation;
+
+	// ëª¨ë“  í”Œë ˆì´ì–´ê°€ íƒ”ëŠ”ì§€ ê²€ì‚¬í•˜ëŠ” í•¨ìˆ˜
 	bool AreAllPlayersBoarded();
 
-	// ½ÇÁ¦ ÇÏ°­ ·ÎÁ÷ (¼­¹ö ½ÇÇà)
+	// ì‹¤ì œ í•˜ê°• ë¡œì§ (ì„œë²„ ì‹¤í–‰)
 	void StartDescent();
+
+	// ìƒìŠ¹ ì‹œì‘ (ì„œë²„ ì „ìš©)
+	void StartAscent();
+
+	// í…ìŠ¤íŠ¸ ì—…ë°ì´íŠ¸ í•¨ìˆ˜
+	void UpdateInteractionText();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// InteriorVolume¿¡ µé¾î¿À°í ³ª°¥ ¶§ ½ÇÇàµÉ ÀÌº¥Æ® ÇÔ¼ö
+	// InteriorVolumeì— ë“¤ì–´ì˜¤ê³  ë‚˜ê°ˆ ë•Œ ì‹¤í–‰ë  ì´ë²¤íŠ¸ í•¨ìˆ˜
 	UFUNCTION()
 	void OnInteriorOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION()
