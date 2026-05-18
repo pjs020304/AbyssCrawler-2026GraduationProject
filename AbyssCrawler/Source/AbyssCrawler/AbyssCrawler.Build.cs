@@ -21,7 +21,8 @@ PublicDependencyModuleNames.AddRange(new string[] {
     	"AIModule",         // AI 및 Behavior Tree용
     	"GameplayTasks",    // GAS 필수 모듈 1
     	"GameplayAbilities",// GAS 필수 모듈 2
-    	"GameplayTags"      // GAS 필수 모듈 3 (FGameplayTag 사용을 위해)
+    	"GameplayTags",      // GAS 필수 모듈 3 (FGameplayTag 사용을 위해)
+		"Niagara"
 });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
