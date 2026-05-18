@@ -3,33 +3,34 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
-#include "AbyssDiverCharacter.h" // ÇÃ·¹ÀÌ¾î Å¬·¡½º È®ÀÎ¿ë
+#include "AbyssDiverCharacter.h" // í”Œë ˆì´ì–´ í´ë˜ìŠ¤ í™•ì¸ìš©
+#include "DecoyActor.h"
 
 AAbyssSharkAIController::AAbyssSharkAIController()
 {
-	// 1. Perception ÄÄÆ÷³ÍÆ® »ı¼º
+	// 1. Perception ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	SharkPerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("SharkPerceptionComp"));
 
-	// 2. ½Ã°¢(Sight) ¼³Á¤ °´Ã¼ »ı¼º
+	// 2. ì‹œê°(Sight) ì„¤ì • ê°ì²´ ìƒì„±
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
 
 	if (SightConfig)
 	{
-		// ½Ã¾ß °Å¸® (¿¹: 3000 = 30¹ÌÅÍ ¹Û¿¡¼­ °¨Áö °¡´É)
+		// ì‹œì•¼ ê±°ë¦¬ (ì˜ˆ: 3000 = 30ë¯¸í„° ë°–ì—ì„œ ê°ì§€ ê°€ëŠ¥)
 		SightConfig->SightRadius = 3000.0f;
 
-		// ½Ã¾ß¿¡¼­ »ç¶óÁ³´Ù°í ÆÇ´ÜÇÏ´Â °Å¸® (»ìÂ¦ ´õ ¸Ö°Ô ¼³Á¤ÇÏ¿© ³õÄ¡´Â °ÍÀ» Áö¿¬)
+		// ì‹œì•¼ì—ì„œ ì‚¬ë¼ì¡Œë‹¤ê³  íŒë‹¨í•˜ëŠ” ê±°ë¦¬ (ì‚´ì§ ë” ë©€ê²Œ ì„¤ì •í•˜ì—¬ ë†“ì¹˜ëŠ” ê²ƒì„ ì§€ì—°)
 		SightConfig->LoseSightRadius = 3500.0f;
 
-		// ½Ã¾ß°¢ (¾ç¿·À¸·Î 90µµ¾¿, ÃÑ 180µµ)
+		// ì‹œì•¼ê° (ì–‘ì˜†ìœ¼ë¡œ 90ë„ì”©, ì´ 180ë„)
 		SightConfig->PeripheralVisionAngleDegrees = 90.0f;
 
-		// °¨ÁöÇÒ ´ë»ó ¼³Á¤ (Àû, Áß¸³, ¾Æ±º ¸ğµÎ °¨Áö)
+		// ê°ì§€í•  ëŒ€ìƒ ì„¤ì • (ì , ì¤‘ë¦½, ì•„êµ° ëª¨ë‘ ê°ì§€)
 		SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 		SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 		SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
 
-		// ¼³Á¤ ¿Ï·á ÈÄ ÄÄÆ÷³ÍÆ®¿¡ ½Ã°¢ °¨Áö µî·Ï
+		// ì„¤ì • ì™„ë£Œ í›„ ì»´í¬ë„ŒíŠ¸ì— ì‹œê° ê°ì§€ ë“±ë¡
 		SharkPerceptionComp->ConfigureSense(*SightConfig);
 		SharkPerceptionComp->SetDominantSense(SightConfig->GetSenseImplementation());
 	}
@@ -39,44 +40,53 @@ void AAbyssSharkAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	// 1. ºùÀÇ ½Ã ½Ã°¢ °¨Áö ÀÌº¥Æ® ¹ÙÀÎµù
+	// 1. ë¹™ì˜ ì‹œ ì‹œê° ê°ì§€ ì´ë²¤íŠ¸ ë°”ì¸ë”©
 	if (SharkPerceptionComp)
 	{
 		SharkPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AAbyssSharkAIController::OnTargetDetected);
 	}
 
-	// 2. Çàµ¿ Æ®¸®(Behavior Tree)°¡ ¼³Á¤µÇ¾î ÀÖ´Ù¸é ½ÇÇà!
+	// 2. í–‰ë™ íŠ¸ë¦¬(Behavior Tree)ê°€ ì„¤ì •ë˜ì–´ ìˆë‹¤ë©´ ì‹¤í–‰!
 	if (AIBehavior)
 	{
 		RunBehaviorTree(AIBehavior);
 	}
 }
 
-// ¹«¾ğ°¡¸¦ º¸°Å³ª(True), ½Ã¾ß¿¡¼­ ³õÃÆÀ» ¶§(False) ¿£ÁøÀÌ ÀÚµ¿À¸·Î È£ÃâÇØÁİ´Ï´Ù.
+// ë¬´ì–¸ê°€ë¥¼ ë³´ê±°ë‚˜(True), ì‹œì•¼ì—ì„œ ë†“ì³¤ì„ ë•Œ(False) ì—”ì§„ì´ ìë™ìœ¼ë¡œ í˜¸ì¶œí•´ì¤ë‹ˆë‹¤.
 void AAbyssSharkAIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimulus)
 {
-	// 1. °¨ÁöÇÑ ¾×ÅÍ°¡ ¿ì¸®°¡ Ã£´Â ÇÃ·¹ÀÌ¾î(AbyssDiverCharacter)ÀÎÁö È®ÀÎ
+	if (GetBlackboardComponent())
+	{
+		AActor* CurrentTarget = Cast<AActor>(GetBlackboardComponent()->GetValueAsObject(FName("TargetActor")));
+		if (CurrentTarget && CurrentTarget->IsA(ADecoyActor::StaticClass()))
+		{
+			return; // Do not override target if currently chasing decoy
+		}
+	}
+
+	// 1. ê°ì§€í•œ ì•¡í„°ê°€ ìš°ë¦¬ê°€ ì°¾ëŠ” í”Œë ˆì´ì–´(AbyssDiverCharacter)ì¸ì§€ í™•ì¸
 	AAbyssDiverCharacter* PlayerDiver = Cast<AAbyssDiverCharacter>(Actor);
 
 	if (PlayerDiver && GetBlackboardComponent())
 	{
-		// 2. ½Ã¾ß¿¡ µé¾î¿Ô´Â°¡? (Stimulus.WasSuccessfullySensed()°¡ true¸é º½, false¸é ³õÄ§)
+		// 2. ì‹œì•¼ì— ë“¤ì–´ì™”ëŠ”ê°€? (Stimulus.WasSuccessfullySensed()ê°€ trueë©´ ë´„, falseë©´ ë†“ì¹¨)
 		if (Stimulus.WasSuccessfullySensed())
 		{
-			// ºí·¢º¸µå¿¡ "TargetActor"¶ó´Â ÀÌ¸§À¸·Î ÇÃ·¹ÀÌ¾î¸¦ ÀúÀåÇÕ´Ï´Ù.
+			// ë¸”ë™ë³´ë“œì— "TargetActor"ë¼ëŠ” ì´ë¦„ìœ¼ë¡œ í”Œë ˆì´ì–´ë¥¼ ì €ì¥í•©ë‹ˆë‹¤.
 			GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), PlayerDiver);
 
-			// ºí·¢º¸µå¿¡ "HasLineOfSight"¸¦ true·Î ¹Ù²ß´Ï´Ù.
+			// ë¸”ë™ë³´ë“œì— "HasLineOfSight"ë¥¼ trueë¡œ ë°”ê¿‰ë‹ˆë‹¤.
 			GetBlackboardComponent()->SetValueAsBool(FName("HasLineOfSight"), true);
 
 			UE_LOG(LogTemp, Warning, TEXT("Shark Find Player"));
 		}
 		else
 		{
-			// ½Ã¾ß¿¡¼­ ¹ş¾î³² (º® µÚ¿¡ ¼û°Å³ª ¸Ö¾îÁü)
+			// ì‹œì•¼ì—ì„œ ë²—ì–´ë‚¨ (ë²½ ë’¤ì— ìˆ¨ê±°ë‚˜ ë©€ì–´ì§)
 			GetBlackboardComponent()->SetValueAsBool(FName("HasLineOfSight"), false);
 
-			// (¼±ÅÃ) ¿©±â¼­ TargetActor¸¦ nullptr·Î ¸¸µé¸é Áï½Ã ÃßÀûÀ» Æ÷±âÇÕ´Ï´Ù.
+			// (ì„ íƒ) ì—¬ê¸°ì„œ TargetActorë¥¼ nullptrë¡œ ë§Œë“¤ë©´ ì¦‰ì‹œ ì¶”ì ì„ í¬ê¸°í•©ë‹ˆë‹¤.
 			// GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), nullptr);
 
 			UE_LOG(LogTemp, Warning, TEXT("Shark not found player"));
