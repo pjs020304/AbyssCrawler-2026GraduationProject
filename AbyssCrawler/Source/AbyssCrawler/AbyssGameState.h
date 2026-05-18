@@ -113,6 +113,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	TArray<FAbyssMissionData> GetAvailableMissions() const;
 
+	UPROPERTY(Replicated)
+	TArray<FName> CompletedMissionIds;
+
 protected:
 	// 팀이 공유하는 돈 (서버에서 클라이언트로 동기화됨)
 	UPROPERTY(ReplicatedUsing = OnRep_SharedMoney, VisibleAnywhere, BlueprintReadOnly, Category = "Economy")

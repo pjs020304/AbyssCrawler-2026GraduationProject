@@ -6,6 +6,7 @@
 #include "AbyssDiverCharacter.h"
 #include "AbyssGameMode.h"
 #include "AbyssSharkCharacter.h"
+#include "AbyssGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
@@ -24,6 +25,15 @@ void AAbyssMissionWorkObject::Interact_Implementation(AActor* InstigatorActor)
 	if (!HasAuthority()) return;
 	if (bCompleted) return;
 	if (bIsWorking) return;
+
+	AAbyssGameState* GS = GetWorld()->GetGameState<AAbyssGameState>();
+	if (!GS) return;
+
+	if (!GS->HasActiveMission(MissionId))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[MissionWork] Mission not active: %s"), *MissionId.ToString());
+		return;
+	}
 
 	WorkingCharacter = Cast<AAbyssDiverCharacter>(InstigatorActor);
 	if (!WorkingCharacter) return;

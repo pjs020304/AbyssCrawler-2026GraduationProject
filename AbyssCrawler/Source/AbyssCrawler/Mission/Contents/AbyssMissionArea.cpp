@@ -6,6 +6,7 @@
 #include "Net/UnrealNetwork.h"
 #include "AbyssDiverCharacter.h"
 #include "AbyssGameMode.h"
+#include "AbyssGameState.h"
 
 // Sets default values
 AAbyssMissionArea::AAbyssMissionArea()
@@ -47,6 +48,15 @@ void AAbyssMissionArea::OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedCom
 
 	AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(OtherActor);
 	if (!Diver) return;
+
+	AAbyssGameState* GS = GetWorld()->GetGameState<AAbyssGameState>();
+	if (!GS) return;
+
+	if (!GS->HasActiveMission(MissionId))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[MissionArea] Mission not active: %s"), *MissionId.ToString());
+		return;
+	}
 
 	bTriggered = true;
 

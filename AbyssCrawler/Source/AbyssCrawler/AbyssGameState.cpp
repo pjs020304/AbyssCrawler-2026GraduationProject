@@ -120,6 +120,7 @@ void AAbyssGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
     DOREPLIFETIME(AAbyssGameState, Missions);
     DOREPLIFETIME(AAbyssGameState, ProgressPoint);
     DOREPLIFETIME(AAbyssGameState, TargetProgressPoint);
+    DOREPLIFETIME(AAbyssGameState, CompletedMissionIds);
 }
 
 bool AAbyssGameState::ConsumeSharedMoney(int32 Amount)
@@ -168,6 +169,11 @@ void AAbyssGameState::AddMissionProgressById(FName MissionId, int32 Amount)
             {
                 Mission.CurrentCount = Mission.TargetCount;
                 Mission.bCompleted = true;
+
+                if (!CompletedMissionIds.Contains(Mission.MissionId))
+                {
+                    CompletedMissionIds.Add(Mission.MissionId);
+                }
 
                 ProgressPoint += Mission.RewardProgressPoint;
                 ProgressPoint = FMath::Clamp(ProgressPoint, 0, TargetProgressPoint);
@@ -228,6 +234,11 @@ TArray<FAbyssMissionData> AAbyssGameState::GetAvailableMissions() const
 
     for (const FAbyssMissionData& PoolMission : MissionPool)
     {
+        if (CompletedMissionIds.Contains(PoolMission.MissionId))
+        {
+            continue;
+        }
+
         bool bAlreadyActive = false;
 
         for (const FAbyssMissionData& ActiveMission : Missions)
