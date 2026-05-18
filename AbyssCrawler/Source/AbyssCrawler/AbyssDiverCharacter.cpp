@@ -11,6 +11,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Net/UnrealNetwork.h"
 #include "AbyssFlashLight.h"
+#include "AbyssCorpseItem.h"
 #include "AbyssGameMode.h"
 #include "MainHUDWidget.h"
 #include "Mission/UI/MissionSelectUIWidget.h"
@@ -578,6 +579,8 @@ void AAbyssDiverCharacter::Server_SwitchToSlot_Implementation(int32 NewIndex)
 
 void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 {
+	TSet<AAbyssItemBase*> ProcessedItems;
+
 	for (int32 i = 0; i < Inventory.Num(); ++i)
 	{
 		AAbyssItemBase* Item = Inventory[i];
@@ -586,7 +589,23 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 			continue;
 		}
 
-		const bool bShouldBeVisible = (i == CurrentSlotIndex);
+		if (ProcessedItems.Contains(Item))
+		{
+			continue;
+		}
+
+		ProcessedItems.Add(Item);
+
+		bool bShouldBeVisible = false;
+
+		for (int32 SlotIndex = 0; SlotIndex < Inventory.Num(); ++SlotIndex)
+		{
+			if (Inventory[SlotIndex] == Item && SlotIndex == CurrentSlotIndex)
+			{
+				bShouldBeVisible = true;
+				break;
+			}
+		}
 
 		if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(Item->GetRootComponent()))
 		{
@@ -617,11 +636,6 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 		}
 
 		Item->SetActorHiddenInGame(!bShouldBeVisible);
-
-		UE_LOG(LogTemp, Warning, TEXT("[Inventory] Slot=%d Item=%s Visible=%d"),
-			i,
-			*Item->GetName(),
-			bShouldBeVisible ? 1 : 0);
 	}
 }
 
@@ -751,9 +765,64 @@ void AAbyssDiverCharacter::OnRep_CurrentSlotIndex()
 
 bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 {
+	for (AAbyssItemBase* Item : Inventory)
+	{
+		if (Item == ItemToAdd)
+		{
+			return false;
+		}
+	}
+
 	if (!ItemToAdd) return false;
 
 	// Ïù∏Î≤§ÌÜ†Î¶¨ Î∞∞Ïó¥(5Ïπ∏)ÏùÑ ÏàúÌöåÌïòÎ©¥ÏÑú ÎπàÏπ∏(nullptr) Ï∞æÍ∏∞
+	if (AAbyssCorpseItem* CorpseItem = Cast<AAbyssCorpseItem>(ItemToAdd))
+	{
+		if (!HasEnoughEmptyInventorySlots(CorpseItem->SlotCost))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Inventory] Not enough slots for corpse"));
+			return false;
+		}
+
+		int32 FilledCount = 0;
+		bool bFirstSlot = true;
+
+		for (int32 i = 0; i < Inventory.Num(); ++i)
+		{
+			if (Inventory[i] == nullptr)
+			{
+				Inventory[i] = CorpseItem;
+				FilledCount++;
+
+				if (bFirstSlot)
+				{
+					CurrentSlotIndex = i;
+					bFirstSlot = false;
+				}
+
+				if (FilledCount >= CorpseItem->SlotCost)
+				{
+					break;
+				}
+			}
+		}
+
+		CorpseItem->SetAsPickedUp(this, FirstPersonCameraComponent, true);
+
+		ApplyCorpseCarryPenalty();
+		ApplyCurrentSlotVisual();
+
+		if (IsLocallyControlled())
+		{
+			OnInventoryUpdated();
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("[Inventory] Picked corpse item, SlotCost=%d"), CorpseItem->SlotCost);
+		return true;
+
+	}
+
+	// ¿Œ∫•≈‰∏Æ πËø≠(5ƒ≠)¿ª º¯»∏«œ∏Èº≠ ∫Ûƒ≠(nullptr) √£±‚
 	for (int32 i = 0; i < Inventory.Num(); ++i)
 	{
 		if (Inventory[i] == nullptr)
@@ -761,6 +830,7 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 
 			// ÎπàÏπ∏ Î∞úÍ≤¨! ÏïÑÏù¥ÌÖú ÎÑ£Í∏∞
 			Inventory[i] = ItemToAdd;
+
 			/*
 			// Ï∂©Îèå ÎÅÑÍ∏∞
 			ItemToAdd->SetActorEnableCollision(false);
@@ -903,45 +973,93 @@ void AAbyssDiverCharacter::Server_DropItem_Implementation()
 {
 	if (CurrentWorkObject) return;
 
-	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr)
+	if (!Inventory.IsValidIndex(CurrentSlotIndex) || Inventory[CurrentSlotIndex] == nullptr)
 	{
-		AAbyssItemBase* ItemToDrop = Inventory[CurrentSlotIndex];
-		Inventory[CurrentSlotIndex] = nullptr;
+		UE_LOG(LogTemp, Warning, TEXT("[Abyss] Empty Slot"));
+		return;
+	}
 
-		if (FirstPersonCameraComponent)
+	AAbyssItemBase* ItemToDrop = Inventory[CurrentSlotIndex];
+
+	// Ω√√º∏È ∞∞¿∫ ∆˜¿Œ≈Õ∞° µÈæÓ∞£ ΩΩ∑‘ ¿¸∫Œ ∫ÒøÏ±‚
+	if (AAbyssCorpseItem* CorpseItem = Cast<AAbyssCorpseItem>(ItemToDrop))
+	{
+		for (int32 i = 0; i < Inventory.Num(); ++i)
 		{
-			const FVector DropLocation =
-				FirstPersonCameraComponent->GetComponentLocation() +
-				(FirstPersonCameraComponent->GetForwardVector() * 120.0f);
-
-			const FRotator DropRotation = FirstPersonCameraComponent->GetComponentRotation();
-
-			FVector ThrowDirection = FirstPersonCameraComponent->GetForwardVector();
-			ThrowDirection.Z += 0.2f;
-			ThrowDirection.Normalize();
-
-			const float ThrowForce = 600.0f;
-			const FVector ThrowImpulse = ThrowDirection * ThrowForce;
-
-			if (AAbyssFlashLight* FlashLight = Cast<AAbyssFlashLight>(ItemToDrop))
+			if (Inventory[i] == CorpseItem)
 			{
-				FlashLight->SetLightEnabled(false);
-			}
-
-			ItemToDrop->SetAsDropped(DropLocation, DropRotation, ThrowImpulse);
-
-			if (IsLocallyControlled())
-			{
-				OnInventoryUpdated();
+				Inventory[i] = nullptr;
 			}
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("Throw Item: %s"), *ItemToDrop->ItemName);
+		RemoveCorpseCarryPenalty();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Abyss] Empty Slot"));
+		Inventory[CurrentSlotIndex] = nullptr;
 	}
+
+	bool bFoundNewSlot = false;
+
+	for (int32 i = 0; i < Inventory.Num(); ++i)
+	{
+		if (Inventory[i] != nullptr)
+		{
+			CurrentSlotIndex = i;
+			bFoundNewSlot = true;
+			break;
+		}
+	}
+
+	if (!bFoundNewSlot)
+	{
+		CurrentSlotIndex = 0;
+	}
+
+	if (FirstPersonCameraComponent)
+	{
+		const FVector DropLocation =
+			FirstPersonCameraComponent->GetComponentLocation() +
+			(FirstPersonCameraComponent->GetForwardVector() * 120.0f);
+
+		FRotator DropRotation = FirstPersonCameraComponent->GetComponentRotation();
+
+		// Ω√√º¥¬ »∏¿¸ √ ±‚»≠
+		if (Cast<AAbyssCorpseItem>(ItemToDrop))
+		{
+			DropRotation = FRotator::ZeroRotator;
+		}
+
+		FVector ThrowDirection = FirstPersonCameraComponent->GetForwardVector();
+		ThrowDirection.Z += 0.2f;
+		ThrowDirection.Normalize();
+
+		const float ThrowForce = 600.0f;
+		const FVector ThrowImpulse = ThrowDirection * ThrowForce;
+
+		ItemToDrop->SetAsDropped(DropLocation, DropRotation, ThrowImpulse);
+
+		if (AAbyssCorpseItem* CorpseItem = Cast<AAbyssCorpseItem>(ItemToDrop))
+		{
+			CorpseItem->SetActorRotation(FRotator::ZeroRotator);
+		}
+
+		if (AAbyssFlashLight* FlashLight = Cast<AAbyssFlashLight>(ItemToDrop))
+		{
+			FlashLight->SetLightEnabled(false);
+		}
+
+		ItemToDrop->SetAsDropped(DropLocation, DropRotation, ThrowImpulse);
+	}
+
+	ApplyCurrentSlotVisual();
+
+	if (IsLocallyControlled())
+	{
+		OnInventoryUpdated();
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Drop Item: %s"), *ItemToDrop->ItemName);
 }
 
 // Ïù∏ÌÑ∞ÌéòÏù¥Ïä§ ÌïÑÏàò Íµ¨ÌòÑ: Ïã¨Ïû•(Ïª¥Ìè¨ÎÑåÌä∏) Î∞òÌôò
@@ -1206,3 +1324,25 @@ void AAbyssDiverCharacter::ApplyGrabDamage()
 	}
 }
 
+bool AAbyssDiverCharacter::HasEnoughEmptyInventorySlots(int32 NeededSlots) const
+{
+	int32 EmptyCount = 0;
+
+	for (AAbyssItemBase* Item : Inventory)
+	{
+		if (Item == nullptr)
+		{
+			EmptyCount++;
+		}
+	}
+
+	return EmptyCount >= NeededSlots;
+}
+
+void AAbyssDiverCharacter::ApplyCorpseCarryPenalty()
+{
+}
+
+void AAbyssDiverCharacter::RemoveCorpseCarryPenalty()
+{
+}

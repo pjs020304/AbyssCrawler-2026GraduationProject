@@ -48,6 +48,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
 	float EnemyCancelRadius = 600.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
+	FText WorkDisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
+	FText WorkDescription;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
+	bool bCancelByEnemyNearby = true;
+
 	FTimerHandle WorkTimerHandle;
 
 	bool bIsWorking = false;

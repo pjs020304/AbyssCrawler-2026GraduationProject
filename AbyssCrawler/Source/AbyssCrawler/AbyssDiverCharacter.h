@@ -224,6 +224,10 @@ public:
 
   void SetInputLockedByUI(bool bLocked);
 
+	bool HasEnoughEmptyInventorySlots(int32 NeededSlots) const;
+	void ApplyCorpseCarryPenalty();
+	void RemoveCorpseCarryPenalty();
+
 private:
   UPROPERTY()
   AAbyssMissionWorkObject *CurrentWorkObject = nullptr;

@@ -3,6 +3,9 @@
 #include "AbyssPlayerState.h"
 #include "AbyssDiverCharacter.h"
 #include "UObject/ConstructorHelpers.h"
+#include "Kismet/GameplayStatics.h"
+#include "Mission/Contents/AbyssMissionLight.h"
+#include "EngineUtils.h"
 
 AAbyssGameMode::AAbyssGameMode()
 {
@@ -97,6 +100,16 @@ void AAbyssGameMode::AddMissionProgress(int32 MissionIndex, int32 Amount)
         {
             UE_LOG(LogTemp, Warning, TEXT("[Mission] Completed: %s"), *Mission.MissionTitle.ToString());
 
+            for (TActorIterator<AAbyssMissionLight> It(GetWorld()); It; ++It)
+            {
+                AAbyssMissionLight* LightController = *It;
+
+                if (LightController && LightController->MissionId == Mission.MissionId)
+                {
+                    LightController->SetLightsEnabled(true);
+                }
+            }
+
             for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
             {
                 if (APlayerController* PC = It->Get())
@@ -136,6 +149,19 @@ void AAbyssGameMode::AddMissionProgressById(FName MissionId, int32 Amount)
 
         if (!bWasCompleted && Mission.bCompleted)
         {
+            for (TActorIterator<AAbyssMissionLight> It(GetWorld()); It; ++It)
+            {
+                AAbyssMissionLight* LightController = *It;
+
+                if (LightController && LightController->MissionId == Mission.MissionId)
+                {
+                    LightController->SetLightsEnabled(true);
+
+                    UE_LOG(LogTemp, Warning, TEXT("[MissionLight] Light ON: %s"),
+                        *Mission.MissionId.ToString());
+                }
+            }
+
             for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
             {
                 if (APlayerController* PC = It->Get())

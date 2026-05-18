@@ -18,6 +18,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
 	int32 MissionIndex = 0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
+	FName MissionId;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
+	FText ItemDisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
+	bool bDestroyOnCollect = true;
+
 protected:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;
