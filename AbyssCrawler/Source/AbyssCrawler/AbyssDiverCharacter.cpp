@@ -1,4 +1,5 @@
 #include "AbyssDiverCharacter.h"
+#include "AbyssOctopusCharacter.h"
 #include "AbyssCharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -17,45 +18,45 @@
 #include "Blueprint/UserWidget.h"
 #include "Mission/Contents/AbyssMissionWorkObject.h"
 
-// Áß¿ä: Ä¿½ºÅÒ ¹«ºê¸ÕÆ® ÄÄÆ÷³ÍÆ®¸¦ »ç¿ëÇÏ·Á¸é FObjectInitializer¸¦ ¹Ş´Â »ı¼ºÀÚ¸¦ ½á¾ß ÇÔ
+// ì¤‘ìš”: ì»¤ìŠ¤í…€ ë¬´ë¸Œë¨¼íŠ¸ ì»´í¬ë„ŒíŠ¸ë¥¼ ì‚¬ìš©í•˜ë ¤ë©´ FObjectInitializerë¥¼ ë°›ëŠ” ìƒì„±ìë¥¼ ì¨ì•¼ í•¨
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UAbyssCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// 1. Ä¸½¶ ÄÄÆ÷³ÍÆ® ¼³Á¤ (±âÈ¹¼­ ½ÅÀå 1.2m °í·Á ÇÊ¿ä, ±âº»Àº 1.8m Á¤µµÀÓ)
+	// 1. ìº¡ìŠ ì»´í¬ë„ŒíŠ¸ ì„¤ì • (ê¸°íšì„œ ì‹ ì¥ 1.2m ê³ ë ¤ í•„ìš”, ê¸°ë³¸ì€ 1.8m ì •ë„ì„)
 	GetCapsuleComponent()->InitCapsuleSize(40.f, 90.0f);
 
-	// 2. Ä«¸Ş¶ó ¼³Á¤ (1ÀÎÄª)
+	// 2. ì¹´ë©”ë¼ ì„¤ì • (1ì¸ì¹­)
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetMesh(), TEXT("Bone_004"));
 
-	// Ä«¸Ş¶ó À§Ä¡ ¹Ì¼¼ Á¶Á¤ (´« À§Ä¡·Î ¸ÂÃã, ¸ğµ¨¿¡ µû¶ó ´Ù¸§)
+	// ì¹´ë©”ë¼ ìœ„ì¹˜ ë¯¸ì„¸ ì¡°ì • (ëˆˆ ìœ„ì¹˜ë¡œ ë§ì¶¤, ëª¨ë¸ì— ë”°ë¼ ë‹¤ë¦„)
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.0f, 0.f, 0.f));
 
-	// ÄÁÆ®·Ñ·¯ È¸Àü¿¡ µû¶ó Ä«¸Ş¶ó°¡ µ¹µµ·Ï ¼³Á¤
+	// ì»¨íŠ¸ë¡¤ëŸ¬ íšŒì „ì— ë”°ë¼ ì¹´ë©”ë¼ê°€ ëŒë„ë¡ ì„¤ì •
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
-	// 3. ¸Ş½¬ ¼³Á¤ (±âº» ¸Ş½¬)
+	// 3. ë©”ì‰¬ ì„¤ì • (ê¸°ë³¸ ë©”ì‰¬)
 	GetMesh()->SetOwnerNoSee(false); 
 	GetMesh()->bCastHiddenShadow = false;
-	// ³ªÁß¿¡ ÆÈ¸¸ º¸ÀÌ´Â 1ÀÎÄª Àü¿ë ¸Ş½¬¸¦ Ãß°¡ÇÏ´Â °ÍÀÌ ÁÁÀ½
+	// ë‚˜ì¤‘ì— íŒ”ë§Œ ë³´ì´ëŠ” 1ì¸ì¹­ ì „ìš© ë©”ì‰¬ë¥¼ ì¶”ê°€í•˜ëŠ” ê²ƒì´ ì¢‹ìŒ
 
-	// 4. È¸Àü ¼³Á¤
-	// ÄÁÆ®·Ñ·¯°¡ È¸ÀüÇÒ ¶§ Ä³¸¯ÅÍ ¸öÅëµµ °°ÀÌ µ¹Áö ¿©ºÎ
-	// FPSÀÌ¹Ç·Î Yaw´Â °°ÀÌ µµ´Â °Ô ÀÏ¹İÀû
+	// 4. íšŒì „ ì„¤ì •
+	// ì»¨íŠ¸ë¡¤ëŸ¬ê°€ íšŒì „í•  ë•Œ ìºë¦­í„° ëª¸í†µë„ ê°™ì´ ëŒì§€ ì—¬ë¶€
+	// FPSì´ë¯€ë¡œ YawëŠ” ê°™ì´ ë„ëŠ” ê²Œ ì¼ë°˜ì 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 
-	// 1. GAS ½ÉÀå(ÄÄÆ÷³ÍÆ®) »ı¼º ¹× ¸ÖÆ¼ÇÃ·¹ÀÌ ¼³Á¤
+	// 1. GAS ì‹¬ì¥(ì»´í¬ë„ŒíŠ¸) ìƒì„± ë° ë©€í‹°í”Œë ˆì´ ì„¤ì •
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 
-	// ¸ÖÆ¼ÇÃ·¹ÀÌ ÃÖÀûÈ­ ¸ğµå: ³» Ä³¸¯ÅÍ(È¥ÇÕ ¸ğµå)·Î ¼³Á¤ÇÏ¸é ¼­¹ö ºÎÇÏ¸¦ ÁÙÀÌ¸é¼­µµ ³» È­¸é¿£ Áï°¢ ¹İ¿µµË´Ï´Ù.
+	// ë©€í‹°í”Œë ˆì´ ìµœì í™” ëª¨ë“œ: ë‚´ ìºë¦­í„°(í˜¼í•© ëª¨ë“œ)ë¡œ ì„¤ì •í•˜ë©´ ì„œë²„ ë¶€í•˜ë¥¼ ì¤„ì´ë©´ì„œë„ ë‚´ í™”ë©´ì—” ì¦‰ê° ë°˜ì˜ë©ë‹ˆë‹¤.
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
-	// 2. ÀÚ¿ø º¸°ü¼Ò(AttributeSet) »ı¼º
+	// 2. ìì› ë³´ê´€ì†Œ(AttributeSet) ìƒì„±
 	AttributeSet = CreateDefaultSubobject<UAbyssAttributeSet>(TEXT("AttributeSet"));
 }
 
@@ -65,30 +66,30 @@ void AAbyssDiverCharacter::BeginPlay()
 
 	if (AbilitySystemComponent && AttributeSet)
 	{
-		// 1. [UI ¹ÙÀÎµù]  °ªÀÌ º¯ÇÒ ¶§¸¶´Ù OnChangedCallback ÇÔ¼ö¸¦ ½ÇÇàÇÏ¶ó°í ¿¹¾à!
+		// 1. [UI ë°”ì¸ë”©]  ê°’ì´ ë³€í•  ë•Œë§ˆë‹¤ OnChangedCallback í•¨ìˆ˜ë¥¼ ì‹¤í–‰í•˜ë¼ê³  ì˜ˆì•½!
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetOxygenAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnOxygenChangedCallback);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnHealthChangedCallback);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetBatteryAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnBatteryChangedCallback);
 
-		// 2. [GE Àû¿ë] »ê¼Ò °¨¼Ò ÀÌÆåÆ®(GE_DrainOxygen)¸¦ ³» ¸ö¿¡ Àû¿ëÇÏ±â
+		// 2. [GE ì ìš©] ì‚°ì†Œ ê°ì†Œ ì´í™íŠ¸(GE_DrainOxygen)ë¥¼ ë‚´ ëª¸ì— ì ìš©í•˜ê¸°
 		if (OxygenDrainEffectClass)
 		{
-			// ÀÌÆåÆ®¸¦ Àû¿ëÇÏ±â À§ÇÑ Æ÷ÀåÁö(Context) ¸¸µé±â
+			// ì´í™íŠ¸ë¥¼ ì ìš©í•˜ê¸° ìœ„í•œ í¬ì¥ì§€(Context) ë§Œë“¤ê¸°
 			FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
 			Context.AddInstigator(this, this);
 
-			// Æ÷ÀåÁö¿Í ÀÌÆåÆ®¸¦ ÇÕÃÄ¼­ Àû¿ëÇÒ ÁØºñ(Spec) ¿Ï·á
+			// í¬ì¥ì§€ì™€ ì´í™íŠ¸ë¥¼ í•©ì³ì„œ ì ìš©í•  ì¤€ë¹„(Spec) ì™„ë£Œ
 			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(OxygenDrainEffectClass, 1.0f, Context);
 
 			if (SpecHandle.IsValid())
 			{
-				// µåµğ¾î ³» ¸ö¿¡ »ê¼Ò °¨¼Ò ÀÌÆåÆ® ºÎÂø!
+				// ë“œë””ì–´ ë‚´ ëª¸ì— ì‚°ì†Œ ê°ì†Œ ì´í™íŠ¸ ë¶€ì°©!
 				AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			}
 		}
 	}
 
-	// Enhanced Input ¸ÅÇÎ
+	// Enhanced Input ë§¤í•‘
 	/*if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -101,14 +102,14 @@ void AAbyssDiverCharacter::BeginPlay()
 
 	if (HasAuthority())
 	{
-		// 1. ÀÎº¥Åä¸® ÃÊ±âÈ­ (ºó ½½·Ô 5°³ »ı¼º)
+		// 1. ì¸ë²¤í† ë¦¬ ì´ˆê¸°í™” (ë¹ˆ ìŠ¬ë¡¯ 5ê°œ ìƒì„±)
 		Inventory.Init(nullptr, 5);
 		CurrentSlotIndex = 0;
 
-		// 2. ±âº» ¾ÆÀÌÅÛ(¼ÕÀüµî) »ı¼º ¹× Áö±Ş
+		// 2. ê¸°ë³¸ ì•„ì´í…œ(ì†ì „ë“±) ìƒì„± ë° ì§€ê¸‰
 		if (DefaultItemClass)
 		{
-			// ¿ùµå¿¡ ¾ÆÀÌÅÛ ¾×ÅÍ »ı¼º
+			// ì›”ë“œì— ì•„ì´í…œ ì•¡í„° ìƒì„±
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = this;
 			AAbyssItemBase* NewItem = GetWorld()->SpawnActor<AAbyssItemBase>(
@@ -120,7 +121,7 @@ void AAbyssDiverCharacter::BeginPlay()
 
 			if (NewItem)
 			{
-				// ÀÎº¥Åä¸® 0¹ø ½½·Ô¿¡ ³Ö±â
+				// ì¸ë²¤í† ë¦¬ 0ë²ˆ ìŠ¬ë¡¯ì— ë„£ê¸°
 				Inventory[0] = NewItem;
 				/*Inventory[1] = NewItem;
 				Inventory[2] = NewItem;
@@ -134,10 +135,10 @@ void AAbyssDiverCharacter::BeginPlay()
 					RootPrim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				}
 
-				// ¾ÆÀÌÅÛÀ» Ä«¸Ş¶ó¿¡ ºÙÀÌ±â (1ÀÎÄª ½ÃÁ¡)
+				// ì•„ì´í…œì„ ì¹´ë©”ë¼ì— ë¶™ì´ê¸° (1ì¸ì¹­ ì‹œì )
 				NewItem->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-				// ¾Ö´Ï¸ŞÀÌ¼Ç ¹°°ÇÀ» µé°í ÀÖ´Âµ¥, ±×³É °È´Â ¸ğ¼Ç + ¹°°ÇÀ» µé°íÀÖ´Â ¸ğ¼Ç(´ëºÎºĞ ÇÑ¼Õ ¾ÆÀÌÅÛ)
-				// ¾ÆÀÌÅÛ: °ø°İ, ¹æÇØ(ÀüÆÄ), ¼³Ä¡(¹æÇØ), ÀÌµ¿¼Óµµ(Á¦Æ®ÆÑ, ¼ÕÀ¸·Î µé°í »ç¿ë ÇÏ´Â°Å) Áõ°¡
+				// ì• ë‹ˆë©”ì´ì…˜ ë¬¼ê±´ì„ ë“¤ê³  ìˆëŠ”ë°, ê·¸ëƒ¥ ê±·ëŠ” ëª¨ì…˜ + ë¬¼ê±´ì„ ë“¤ê³ ìˆëŠ” ëª¨ì…˜(ëŒ€ë¶€ë¶„ í•œì† ì•„ì´í…œ)
+				// ì•„ì´í…œ: ê³µê²©, ë°©í•´(ì „íŒŒ), ì„¤ì¹˜(ë°©í•´), ì´ë™ì†ë„(ì œíŠ¸íŒ©, ì†ìœ¼ë¡œ ë“¤ê³  ì‚¬ìš© í•˜ëŠ”ê±°) ì¦ê°€
 
 				NewItem->SetActorEnableCollision(false);
 				*/
@@ -163,7 +164,7 @@ void AAbyssDiverCharacter::BeginPlay()
 void AAbyssDiverCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	// ¿©±â¿¡ ³ªÁß¿¡ »ê¼Ò ¼Ò¸ğ µîÀÇ ·ÎÁ÷ Ãß°¡
+	// ì—¬ê¸°ì— ë‚˜ì¤‘ì— ì‚°ì†Œ ì†Œëª¨ ë“±ì˜ ë¡œì§ ì¶”ê°€
 
 	CheckForInteractables();
 }
@@ -174,7 +175,7 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 	if (AbilitySystemComponent)
 	{
-		// Å¬¶óÀÌ¾ğÆ®¿¡¼­µµ ¶È°°ÀÌ ÃÊ±âÈ­ÇØ ÁÖ¾î¾ß UI ¿¬µ¿ ¹× ¿¹Ãø(Prediction)ÀÌ Á¤»ó ÀÛµ¿ÇÕ´Ï´Ù.
+		// í´ë¼ì´ì–¸íŠ¸ì—ì„œë„ ë˜‘ê°™ì´ ì´ˆê¸°í™”í•´ ì£¼ì–´ì•¼ UI ì—°ë™ ë° ì˜ˆì¸¡(Prediction)ì´ ì •ìƒ ì‘ë™í•©ë‹ˆë‹¤.
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 
@@ -194,20 +195,22 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 		EnhancedInputComponent->BindAction(ConvertAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::ConvertMove);
 
-		// ¾ÆÀÌÅÛ »ç¿ë (¸¶¿ì½º ÁÂÅ¬¸¯)
+		// ì•„ì´í…œ ì‚¬ìš© (ë§ˆìš°ìŠ¤ ì¢Œí´ë¦­)
 		EnhancedInputComponent->BindAction(UseItemAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::UseCurrentItem);
+		EnhancedInputComponent->BindAction(UseItemAction, ETriggerEvent::Completed, this, &AAbyssDiverCharacter::StopUseCurrentItem);
+		EnhancedInputComponent->BindAction(UseItemAction, ETriggerEvent::Canceled, this, &AAbyssDiverCharacter::StopUseCurrentItem);
 
-		// ½½·Ô º¯°æ (¼ıÀÚÅ° 1, 2)
+		// ìŠ¬ë¡¯ ë³€ê²½ (ìˆ«ìí‚¤ 1, 2)
 		EnhancedInputComponent->BindAction(Slot1Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot1);
 		EnhancedInputComponent->BindAction(Slot2Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot2);
 		EnhancedInputComponent->BindAction(Slot3Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot3);
 		EnhancedInputComponent->BindAction(Slot4Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot4);
 		EnhancedInputComponent->BindAction(Slot5Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot5);
 
-		// »óÈ£ÀÛ¿ë Interaction
+		// ìƒí˜¸ì‘ìš© Interaction
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::TryInteract);
 
-		// ¹ö¸®±â
+		// ë²„ë¦¬ê¸°
 		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::DropItem);
 	}
 }
@@ -222,7 +225,7 @@ void AAbyssDiverCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 void AAbyssDiverCharacter::StartDash()
 {
-	// Ä¿½ºÅÒ ¹«ºê¸ÕÆ® ÄÄÆ÷³ÍÆ® °¡Á®¿À±â
+	// ì»¤ìŠ¤í…€ ë¬´ë¸Œë¨¼íŠ¸ ì»´í¬ë„ŒíŠ¸ ê°€ì ¸ì˜¤ê¸°
 	if (UAbyssCharacterMovementComponent* MyCMC = Cast<UAbyssCharacterMovementComponent>(GetCharacterMovement()))
 	{
 		MyCMC->SetSprinting(true);
@@ -277,7 +280,7 @@ void AAbyssDiverCharacter::Client_OpenMissionSelectUI_Implementation(const TArra
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
-	// ÀÌ¹Ì ¿­·Á ÀÖÀ¸¸é »õ·Î ¸¸µéÁö ¸»°í ³»¿ë¸¸ °»½Å
+	// ì´ë¯¸ ì—´ë ¤ ìˆìœ¼ë©´ ìƒˆë¡œ ë§Œë“¤ì§€ ë§ê³  ë‚´ìš©ë§Œ ê°±ì‹ 
 	if (MissionSelectUIRef && MissionSelectUIRef->IsInViewport())
 	{
 		return;
@@ -331,18 +334,61 @@ void AAbyssDiverCharacter::Client_SetWorkInputBlocked_Implementation(bool bBlock
 	}
 }
 
+void AAbyssDiverCharacter::Client_SetMovementBlocked_Implementation(bool bBlocked)
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	PC->SetIgnoreMoveInput(bBlocked);
+
+	if (bBlocked)
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+	}
+}
+
+void AAbyssDiverCharacter::ConsumeItem(AAbyssItemBase* ItemToConsume)
+{
+	if (!ItemToConsume || !HasAuthority()) return;
+
+	for (int32 i = 0; i < Inventory.Num(); ++i)
+	{
+		if (Inventory[i] == ItemToConsume)
+		{
+			Inventory[i] = nullptr;
+			ItemToConsume->Destroy();
+			
+			// Refresh visual if we consumed the currently equipped item
+			if (CurrentSlotIndex == i)
+			{
+				ApplyCurrentSlotVisual();
+			}
+			
+			if (IsLocallyControlled())
+			{
+				OnInventoryUpdated();
+			}
+			else
+			{
+				Client_OnInventoryUpdated();
+			}
+			break;
+		}
+	}
+}
+
 void AAbyssDiverCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
 	{
-		// [ÇÙ½É] ¼ö¿µ ¸ğµåÀÏ ¶§´Â Ä«¸Ş¶ó°¡ º¸´Â ¹æÇâ(ZÃà Æ÷ÇÔ)À¸·Î ÀÌµ¿ÇØ¾ß ÇÔ (6DOF)
+		// [í•µì‹¬] ìˆ˜ì˜ ëª¨ë“œì¼ ë•ŒëŠ” ì¹´ë©”ë¼ê°€ ë³´ëŠ” ë°©í–¥(Zì¶• í¬í•¨)ìœ¼ë¡œ ì´ë™í•´ì•¼ í•¨ (6DOF)
 		bool bIsSwimming = GetCharacterMovement()->IsSwimming();
 
 		if (bIsSwimming && IsSwimming)
 		{
-			// ¼ö¿µ Áß: ControlRotationÀ» »ç¿ëÇÏ¿© 3Â÷¿ø ¹æÇâ È¹µæ
+			// ìˆ˜ì˜ ì¤‘: ControlRotationì„ ì‚¬ìš©í•˜ì—¬ 3ì°¨ì› ë°©í–¥ íšë“
 			FRotator ControlRot = GetControlRotation();
 			FVector ForwardDir = FRotationMatrix(ControlRot).GetUnitAxis(EAxis::X);
 			FVector RightDir = FRotationMatrix(ControlRot).GetUnitAxis(EAxis::Y);
@@ -355,7 +401,7 @@ void AAbyssDiverCharacter::Move(const FInputActionValue& Value)
 		}
 		else
 		{
-			// °È±â Áß: ¹Ù´Ú¿¡ ºÙ¾î ´Ù³à¾ß ÇÏ¹Ç·Î Yaw È¸Àü¸¸ °í·Á (ZÃà ¹èÁ¦)
+			// ê±·ê¸° ì¤‘: ë°”ë‹¥ì— ë¶™ì–´ ë‹¤ë…€ì•¼ í•˜ë¯€ë¡œ Yaw íšŒì „ë§Œ ê³ ë ¤ (Zì¶• ë°°ì œ)
 			FRotator YawRot(0, GetControlRotation().Yaw, 0);
 			FVector ForwardDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
 			FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
@@ -381,14 +427,14 @@ void AAbyssDiverCharacter::StartAscend()
 {
 	if (GetCharacterMovement()->IsSwimming())
 	{
-		// ¼ö¿µ Áß Space: ¼öÁ÷ »ó½Â
+		// ìˆ˜ì˜ ì¤‘ Space: ìˆ˜ì§ ìƒìŠ¹
 		AddMovementInput(FVector::UpVector, 1.0f);
 		//UE_LOG(LogTemp, Warning, TEXT("Swiming Ascend now"))
 		
 	}
 	else
 	{
-		// °È±â Áß Space: Á¡ÇÁ
+		// ê±·ê¸° ì¤‘ Space: ì í”„
 		Jump();
 	}
 }
@@ -402,12 +448,12 @@ void AAbyssDiverCharacter::StartDescend()
 {
 	if (GetCharacterMovement()->IsSwimming())
 	{
-		// ¼ö¿µ Áß Ctrl: ¼öÁ÷ ÇÏ°­
+		// ìˆ˜ì˜ ì¤‘ Ctrl: ìˆ˜ì§ í•˜ê°•
 		AddMovementInput(FVector::UpVector, -1.0f);
 	}
 	else
 	{
-		// °È±â Áß Ctrl: ¿õÅ©¸®±â (ÃßÈÄ ±¸Çö)
+		// ê±·ê¸° ì¤‘ Ctrl: ì›…í¬ë¦¬ê¸° (ì¶”í›„ êµ¬í˜„)
 		Crouch();
 	}
 }
@@ -429,21 +475,52 @@ void AAbyssDiverCharacter::UseCurrentItem()
 	if (bInputLockedByUI) return;
 	if (bIsWorkingLocked) return;
 
+	if (bIsGrabbed)
+	{
+		CurrentEscapeClicks++;
+		UE_LOG(LogTemp, Warning, TEXT("[Abyss] Escape Click! %d / %d"), CurrentEscapeClicks, RequiredEscapeClicks);
+		if (CurrentEscapeClicks >= RequiredEscapeClicks)
+		{
+			EscapeGrab();
+		}
+		return;
+	}
+
 	if (!Inventory.IsValidIndex(CurrentSlotIndex) || Inventory[CurrentSlotIndex] == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Abyss] Empty Slot"));
 		return;
 	}
 
-	// Å¬¶ó´Â ¼­¹ö¿¡°Ô »ç¿ë ¿äÃ»¸¸ º¸³¿
+	// í´ë¼ëŠ” ì„œë²„ì—ê²Œ ì‚¬ìš© ìš”ì²­ë§Œ ë³´ëƒ„
 	if (!HasAuthority())
 	{
 		Server_UseCurrentItem();
 		return;
 	}
 
-	// ¼­¹ö¸¸ ½ÇÁ¦ ¾ÆÀÌÅÛ »ç¿ë
+	// ì„œë²„ë§Œ ì‹¤ì œ ì•„ì´í…œ ì‚¬ìš©
 	Inventory[CurrentSlotIndex]->UseItem();
+}
+
+void AAbyssDiverCharacter::StopUseCurrentItem()
+{
+	if (bInputLockedByUI) return;
+	if (bIsWorkingLocked) return;
+	if (bIsGrabbed) return;
+
+	if (!Inventory.IsValidIndex(CurrentSlotIndex) || Inventory[CurrentSlotIndex] == nullptr)
+	{
+		return;
+	}
+
+	if (!HasAuthority())
+	{
+		Server_StopUseCurrentItem();
+		return;
+	}
+
+	Inventory[CurrentSlotIndex]->EndUseItem();
 }
 
 void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
@@ -451,8 +528,8 @@ void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
 	/*
 	if (CurrentSlotIndex == NewIndex) return;
 
-	// ±âÁ¸ ¾ÆÀÌÅÛ ¼û±â±â µîÀÇ ·ÎÁ÷ÀÌ ÇÊ¿äÇÏ´Ù¸é ¿©±â¿¡ ÀÛ¼º
-	// ¿¹: Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
+	// ê¸°ì¡´ ì•„ì´í…œ ìˆ¨ê¸°ê¸° ë“±ì˜ ë¡œì§ì´ í•„ìš”í•˜ë‹¤ë©´ ì—¬ê¸°ì— ì‘ì„±
+	// ì˜ˆ: Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
 	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr) 
 	{
 		Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
@@ -460,7 +537,7 @@ void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
 	CurrentSlotIndex = NewIndex;
 	UE_LOG(LogTemp, Log, TEXT("Slot Change: %d"), CurrentSlotIndex + 1);
 
-	// »õ ¾ÆÀÌÅÛ º¸ÀÌ±â
+	// ìƒˆ ì•„ì´í…œ ë³´ì´ê¸°
 	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr) {
 		Inventory[CurrentSlotIndex]->SetActorHiddenInGame(false);
 	}
@@ -492,7 +569,7 @@ void AAbyssDiverCharacter::Server_SwitchToSlot_Implementation(int32 NewIndex)
 	CurrentSlotIndex = NewIndex;
 	ApplyCurrentSlotVisual();
 
-	// ¸®½¼ ¼­¹ö È£½ºÆ® UI °»½Å º¸Á¤
+	// ë¦¬ìŠ¨ ì„œë²„ í˜¸ìŠ¤íŠ¸ UI ê°±ì‹  ë³´ì •
 	if (IsLocallyControlled())
 	{
 		OnInventoryUpdated();
@@ -520,7 +597,7 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 
 		Item->SetActorEnableCollision(false);
 
-		// ÇöÀç ½½·Ô ¾ÆÀÌÅÛÀº ´Ù½Ã Ä«¸Ş¶ó¿¡ ºÎÂø
+		// í˜„ì¬ ìŠ¬ë¡¯ ì•„ì´í…œì€ ë‹¤ì‹œ ì¹´ë©”ë¼ì— ë¶€ì°©
 		if (bShouldBeVisible && FirstPersonCameraComponent)
 		{
 			Item->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
@@ -530,7 +607,7 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 			);
 		}
 
-		// ÀåÂø ÇØÁ¦µÇ´Â ¼ÕÀüµîÀº °­Á¦·Î ²ô±â
+		// ì¥ì°© í•´ì œë˜ëŠ” ì†ì „ë“±ì€ ê°•ì œë¡œ ë„ê¸°
 		if (!bShouldBeVisible)
 		{
 			if (AAbyssFlashLight* FlashLight = Cast<AAbyssFlashLight>(Item))
@@ -597,7 +674,7 @@ void AAbyssDiverCharacter::EquipSlot5()
 
 
 
-// EÅ°¸¦ ´­·¶À» ¶§ ½ÇÇàµÇ´Â ÇÔ¼ö
+// Eí‚¤ë¥¼ ëˆŒë €ì„ ë•Œ ì‹¤í–‰ë˜ëŠ” í•¨ìˆ˜
 void AAbyssDiverCharacter::TryInteract()
 {
 	if (bInputLockedByUI) return;
@@ -605,32 +682,32 @@ void AAbyssDiverCharacter::TryInteract()
 
 	if (!FirstPersonCameraComponent) return;
 
-	// 1. ·¹ÀÌÄ³½ºÆ® ½ÃÀÛÁ¡(Ä«¸Ş¶ó À§Ä¡)°ú ³¡Á¡(Ä«¸Ş¶ó°¡ ¹Ù¶óº¸´Â ¹æÇâ * °Å¸®) °è»ê
+	// 1. ë ˆì´ìºìŠ¤íŠ¸ ì‹œì‘ì (ì¹´ë©”ë¼ ìœ„ì¹˜)ê³¼ ëì (ì¹´ë©”ë¼ê°€ ë°”ë¼ë³´ëŠ” ë°©í–¥ * ê±°ë¦¬) ê³„ì‚°
 	FVector Start = FirstPersonCameraComponent->GetComponentLocation();
 	FVector End = Start + (FirstPersonCameraComponent->GetForwardVector() * InteractDistance);
 
 	FHitResult HitResult;
 	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(this); // ³» Ä³¸¯ÅÍ´Â °Ë»ç¿¡¼­ Á¦¿Ü
+	CollisionParams.AddIgnoredActor(this); // ë‚´ ìºë¦­í„°ëŠ” ê²€ì‚¬ì—ì„œ ì œì™¸
 
-	// 2. ´«¿¡ º¸ÀÌ´Â ¹°Ã¼(ECC_Visibility: ±âº»À¸·Î StaticMesh Block, IgnoreºÎºĞ ¼³Á¤ °¡´É)¸¦ ±âÁØÀ¸·Î ·¹ÀÌÀú ½î±â
+	// 2. ëˆˆì— ë³´ì´ëŠ” ë¬¼ì²´(ECC_Visibility: ê¸°ë³¸ìœ¼ë¡œ StaticMesh Block, Ignoreë¶€ë¶„ ì„¤ì • ê°€ëŠ¥)ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ë ˆì´ì € ì˜ê¸°
 	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, CollisionParams);
 
-	// (µğ¹ö±×¿ë)
+	// (ë””ë²„ê·¸ìš©)
 	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
 
-	// 3. ¶óÀÎÆ®·¹ÀÌ½º¿¡ °É·ÈÀ» ¶§
+	// 3. ë¼ì¸íŠ¸ë ˆì´ìŠ¤ì— ê±¸ë ¸ì„ ë•Œ
 	if (bHit && HitResult.GetActor())
 	{
 		AActor* HitActor = HitResult.GetActor();
 
-		// 4. ±× ¹°Ã¼°¡ »óÈ£ÀÛ¿ë ÀÎÅÍÆäÀÌ½º¸¦ »ó¼Ó¹Ş¾Ò´ÂÁö È®ÀÎ
+		// 4. ê·¸ ë¬¼ì²´ê°€ ìƒí˜¸ì‘ìš© ì¸í„°í˜ì´ìŠ¤ë¥¼ ìƒì†ë°›ì•˜ëŠ”ì§€ í™•ì¸
 		if (HitActor->Implements<UAbyssInteractionInterface>())
 		{
-			// 5. ÀÎÅÍÆäÀÌ½ºÀÇ Interact ÇÔ¼ö ½ÇÇà 
+			// 5. ì¸í„°í˜ì´ìŠ¤ì˜ Interact í•¨ìˆ˜ ì‹¤í–‰ 
 			//IAbyssInteractionInterface::Execute_Interact(HitActor, this);
 
-			// ¼­¹ö ÇÔ¼ö·Î ½ÇÇà
+			// ì„œë²„ í•¨ìˆ˜ë¡œ ì‹¤í–‰
 			Server_TryInteract(HitActor);
 		}
 	}
@@ -676,32 +753,32 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 {
 	if (!ItemToAdd) return false;
 
-	// ÀÎº¥Åä¸® ¹è¿­(5Ä­)À» ¼øÈ¸ÇÏ¸é¼­ ºóÄ­(nullptr) Ã£±â
+	// ì¸ë²¤í† ë¦¬ ë°°ì—´(5ì¹¸)ì„ ìˆœíšŒí•˜ë©´ì„œ ë¹ˆì¹¸(nullptr) ì°¾ê¸°
 	for (int32 i = 0; i < Inventory.Num(); ++i)
 	{
 		if (Inventory[i] == nullptr)
 		{
 
-			// ºóÄ­ ¹ß°ß! ¾ÆÀÌÅÛ ³Ö±â
+			// ë¹ˆì¹¸ ë°œê²¬! ì•„ì´í…œ ë„£ê¸°
 			Inventory[i] = ItemToAdd;
 			/*
-			// Ãæµ¹ ²ô±â
+			// ì¶©ëŒ ë„ê¸°
 			ItemToAdd->SetActorEnableCollision(false);
 
-			// ¹°¸® ½Ã¹Ä·¹ÀÌ¼Ç ²ô±â 
+			// ë¬¼ë¦¬ ì‹œë®¬ë ˆì´ì…˜ ë„ê¸° 
 			UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(ItemToAdd->GetRootComponent());
 			if (RootPrim)
 			{
 				RootPrim->SetSimulatePhysics(false);
-				// ·çÆ® ¸Å½¬ Ãæµ¹ ²ô±â
+				// ë£¨íŠ¸ ë§¤ì‰¬ ì¶©ëŒ ë„ê¸°
 				RootPrim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				RootPrim->SetCollisionProfileName(TEXT("NoCollision"));
 			}
 
-			// ¾ÆÀÌÅÛÀ» Ä«¸Ş¶ó¿¡ ºÎÂø
+			// ì•„ì´í…œì„ ì¹´ë©”ë¼ì— ë¶€ì°©
 			ItemToAdd->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);	
 
-			// ¾×ÅÍ ÀüÃ¼¸¦ °ÔÀÓ¿¡¼­ ¼û±â±â
+			// ì•¡í„° ì „ì²´ë¥¼ ê²Œì„ì—ì„œ ìˆ¨ê¸°ê¸°
 			if (CurrentSlotIndex == i) {
 				ItemToAdd->SetActorHiddenInGame(false);
 			}
@@ -710,10 +787,10 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 				ItemToAdd->SetActorHiddenInGame(true);
 			}
 
-			// ¼ÒÀ¯±Ç ¼³Á¤
+			// ì†Œìœ ê¶Œ ì„¤ì •
 			//ItemToAdd->SetOwner(this);
 
-			// UI ¾÷µ¥ÀÌÆ® ¾Ë¸²
+			// UI ì—…ë°ì´íŠ¸ ì•Œë¦¼
 			if (IsLocallyControlled())
 			{
 				OnInventoryUpdated();
@@ -731,11 +808,11 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 
 			UE_LOG(LogTemp, Warning, TEXT("[Inventory] Picked item %s into slot %d"), *ItemToAdd->GetName(), i);
 
-			return true; // ¼º°øÀûÀ¸·Î ÁÖ¿ò
+			return true; // ì„±ê³µì ìœ¼ë¡œ ì£¼ì›€
 		}
 	}
 
-	// ºóÄ­ÀÌ ÇÏ³ªµµ ¾øÀ½
+	// ë¹ˆì¹¸ì´ í•˜ë‚˜ë„ ì—†ìŒ
 	return false;
 }
 
@@ -756,32 +833,32 @@ void AAbyssDiverCharacter::CheckForInteractables()
 	{
 		AActor* HitActor = HitResult.GetActor();
 
-		// ¸ÂÀº ¹°Ã¼°¡ ÀÎÅÍÆäÀÌ½º¸¦ °¡Áö°í ÀÖ´Ù¸é?
+		// ë§ì€ ë¬¼ì²´ê°€ ì¸í„°í˜ì´ìŠ¤ë¥¼ ê°€ì§€ê³  ìˆë‹¤ë©´?
 		if (HitActor->Implements<UAbyssInteractionInterface>())
 		{
-			// ¸¸¾à ÀÌÀü¿¡ ÃÄ´Ùº¸´ø ¹°Ã¼¿Í '´Ù¸¥' ¹°Ã¼¶ó¸é?
+			// ë§Œì•½ ì´ì „ì— ì³ë‹¤ë³´ë˜ ë¬¼ì²´ì™€ 'ë‹¤ë¥¸' ë¬¼ì²´ë¼ë©´?
 			if (HitActor != FocusedActor)
 			{
-				// ±âÁ¸ ¹°Ã¼¿¡°Ô´Â ½Ã¼±À» ¶Ã´Ù°í ¾Ë·ÁÁÜ
+				// ê¸°ì¡´ ë¬¼ì²´ì—ê²ŒëŠ” ì‹œì„ ì„ ë—ë‹¤ê³  ì•Œë ¤ì¤Œ
 				if (FocusedActor)
 				{
 					IAbyssInteractionInterface::Execute_OnLostFocus(FocusedActor);
 				}
 
-				// »õ ¹°Ã¼¿¡°Ô´Â ½Ã¼±ÀÌ ´ê¾Ò´Ù°í ¾Ë·ÁÁÜ
+				// ìƒˆ ë¬¼ì²´ì—ê²ŒëŠ” ì‹œì„ ì´ ë‹¿ì•˜ë‹¤ê³  ì•Œë ¤ì¤Œ
 				FocusedActor = HitActor;
 				IAbyssInteractionInterface::Execute_OnFocus(FocusedActor);
 			}
-			return; // ¼º°øÇßÀ¸´Ï ¿©±â¼­ ÇÔ¼ö Á¾·á
+			return; // ì„±ê³µí–ˆìœ¼ë‹ˆ ì—¬ê¸°ì„œ í•¨ìˆ˜ ì¢…ë£Œ
 		}
 	}
 
-	// Çã°øÀ» º¸°Å³ª »óÈ£ÀÛ¿ë ºÒ°¡´ÉÇÑ º®À» º¸¾ÒÀ» ¶§
+	// í—ˆê³µì„ ë³´ê±°ë‚˜ ìƒí˜¸ì‘ìš© ë¶ˆê°€ëŠ¥í•œ ë²½ì„ ë³´ì•˜ì„ ë•Œ
 	if (FocusedActor)
 	{
-		// ±âÁ¸¿¡ º¸´ø ¹°Ã¼ÀÇ UI¸¦ ²¨ÁÜ
+		// ê¸°ì¡´ì— ë³´ë˜ ë¬¼ì²´ì˜ UIë¥¼ êº¼ì¤Œ
 		IAbyssInteractionInterface::Execute_OnLostFocus(FocusedActor);
-		FocusedActor = nullptr; // ±â¾ï Áö¿ì±â
+		FocusedActor = nullptr; // ê¸°ì–µ ì§€ìš°ê¸°
 	}
 }
 
@@ -803,6 +880,18 @@ void AAbyssDiverCharacter::Server_UseCurrentItem_Implementation()
 	}
 
 	Inventory[CurrentSlotIndex]->UseItem();
+}
+
+void AAbyssDiverCharacter::Server_StopUseCurrentItem_Implementation()
+{
+	if (CurrentWorkObject) return;
+
+	if (!Inventory.IsValidIndex(CurrentSlotIndex) || Inventory[CurrentSlotIndex] == nullptr)
+	{
+		return;
+	}
+
+	Inventory[CurrentSlotIndex]->EndUseItem();
 }
 
 void AAbyssDiverCharacter::Client_OnInventoryUpdated_Implementation()
@@ -855,44 +944,44 @@ void AAbyssDiverCharacter::Server_DropItem_Implementation()
 	}
 }
 
-// ÀÎÅÍÆäÀÌ½º ÇÊ¼ö ±¸Çö: ½ÉÀå(ÄÄÆ÷³ÍÆ®) ¹İÈ¯
+// ì¸í„°í˜ì´ìŠ¤ í•„ìˆ˜ êµ¬í˜„: ì‹¬ì¥(ì»´í¬ë„ŒíŠ¸) ë°˜í™˜
 UAbilitySystemComponent* AAbyssDiverCharacter::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
 }
 
-// [¼­¹ö Ãø ÃÊ±âÈ­] Ä³¸¯ÅÍ°¡ ÄÁÆ®·Ñ·¯¿¡ ºùÀÇ(Possess)µÉ ¶§
+// [ì„œë²„ ì¸¡ ì´ˆê¸°í™”] ìºë¦­í„°ê°€ ì»¨íŠ¸ë¡¤ëŸ¬ì— ë¹™ì˜(Possess)ë  ë•Œ
 void AAbyssDiverCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
 	if (AbilitySystemComponent)
 	{
-		// GAS ÃÊ±âÈ­ÀÇ ÇÙ½É ÇÔ¼ö: (¼ÒÀ¯ÀÚ ¾×ÅÍ, ¹°¸®Àû ¾Æ¹ÙÅ¸ ¾×ÅÍ)
+		// GAS ì´ˆê¸°í™”ì˜ í•µì‹¬ í•¨ìˆ˜: (ì†Œìœ ì ì•¡í„°, ë¬¼ë¦¬ì  ì•„ë°”íƒ€ ì•¡í„°)
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 
 	SetupEnhancedInput();
 }
 
-// »ê¼Ò °ªÀÌ º¯ÇÒ ¶§¸¶´Ù ¿£ÁøÀÌ ¾Ë¾Æ¼­ È£ÃâÇØ ÁÖ´Â ÇÔ¼ö
+// ì‚°ì†Œ ê°’ì´ ë³€í•  ë•Œë§ˆë‹¤ ì—”ì§„ì´ ì•Œì•„ì„œ í˜¸ì¶œí•´ ì£¼ëŠ” í•¨ìˆ˜
 void AAbyssDiverCharacter::OnOxygenChangedCallback(const FOnAttributeChangeData& Data)
 {
-	// ºí·çÇÁ¸°Æ®(UI) ÂÊÀ¸·Î "»ê¼Ò º¯Çß´Ù!" ÇÏ°í ÇöÀç°ª°ú ÃÖ´ë°ªÀ» ¹æ¼Û(Broadcast)ÇÕ´Ï´Ù.
+	// ë¸”ë£¨í”„ë¦°íŠ¸(UI) ìª½ìœ¼ë¡œ "ì‚°ì†Œ ë³€í–ˆë‹¤!" í•˜ê³  í˜„ì¬ê°’ê³¼ ìµœëŒ€ê°’ì„ ë°©ì†¡(Broadcast)í•©ë‹ˆë‹¤.
 	OnOxygenChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxOxygen());
 }
 
-// Ã¼·Â °ªÀÌ º¯ÇÒ ¶§¸¶´Ù ¿£ÁøÀÌ ¾Ë¾Æ¼­ È£ÃâÇØ ÁÖ´Â ÇÔ¼ö
+// ì²´ë ¥ ê°’ì´ ë³€í•  ë•Œë§ˆë‹¤ ì—”ì§„ì´ ì•Œì•„ì„œ í˜¸ì¶œí•´ ì£¼ëŠ” í•¨ìˆ˜
 void AAbyssDiverCharacter::OnHealthChangedCallback(const FOnAttributeChangeData& Data)
 {
-	// ºí·çÇÁ¸°Æ®(UI) ÂÊÀ¸·Î "Ã¼·Â º¯Çß´Ù!" ÇÏ°í ÇöÀç°ª°ú ÃÖ´ë°ªÀ» ¹æ¼Û(Broadcast)ÇÕ´Ï´Ù.
+	// ë¸”ë£¨í”„ë¦°íŠ¸(UI) ìª½ìœ¼ë¡œ "ì²´ë ¥ ë³€í–ˆë‹¤!" í•˜ê³  í˜„ì¬ê°’ê³¼ ìµœëŒ€ê°’ì„ ë°©ì†¡(Broadcast)í•©ë‹ˆë‹¤.
 	OnHealthChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxHealth());
 }
 
-// ¹èÅÍ¸® °ªÀÌ º¯ÇÒ ¶§¸¶´Ù ¿£ÁøÀÌ ¾Ë¾Æ¼­ È£ÃâÇØ ÁÖ´Â ÇÔ¼ö
+// ë°°í„°ë¦¬ ê°’ì´ ë³€í•  ë•Œë§ˆë‹¤ ì—”ì§„ì´ ì•Œì•„ì„œ í˜¸ì¶œí•´ ì£¼ëŠ” í•¨ìˆ˜
 void AAbyssDiverCharacter::OnBatteryChangedCallback(const FOnAttributeChangeData& Data)
 {
-	// ºí·çÇÁ¸°Æ®(UI) ÂÊÀ¸·Î "Ã¼·Â º¯Çß´Ù!" ÇÏ°í ÇöÀç°ª°ú ÃÖ´ë°ªÀ» ¹æ¼Û(Broadcast)ÇÕ´Ï´Ù.
+	// ë¸”ë£¨í”„ë¦°íŠ¸(UI) ìª½ìœ¼ë¡œ "ì²´ë ¥ ë³€í–ˆë‹¤!" í•˜ê³  í˜„ì¬ê°’ê³¼ ìµœëŒ€ê°’ì„ ë°©ì†¡(Broadcast)í•©ë‹ˆë‹¤.
 	OnBatteryChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxBattery());
 }
 
@@ -936,7 +1025,7 @@ void AAbyssDiverCharacter::SetupEnhancedInput()
 	Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	UE_LOG(LogTemp, Warning, TEXT("[Input] MappingContext Added"));
 
-	// ·Îºñ¿¡¼­ ³Ñ¾î¿Ã ¶§ UI ÀÔ·Â ¸ğµå°¡ ³²¾ÆÀÖÀ» ¼ö ÀÖÀ¸¹Ç·Î º¹¿ø
+	// ë¡œë¹„ì—ì„œ ë„˜ì–´ì˜¬ ë•Œ UI ì…ë ¥ ëª¨ë“œê°€ ë‚¨ì•„ìˆì„ ìˆ˜ ìˆìœ¼ë¯€ë¡œ ë³µì›
 	FInputModeGameOnly InputMode;
 	PlayerController->SetInputMode(InputMode);
 	PlayerController->bShowMouseCursor = false;
@@ -954,10 +1043,10 @@ bool AAbyssDiverCharacter::HasEmptyInventorySlot() const
 	{
 		if (Inventory[i] == nullptr)
 		{
-			return true; // ºóÄ­ ÀÖÀ½!
+			return true; // ë¹ˆì¹¸ ìˆìŒ!
 		}
 	}
-	return false; // ²Ë Âü
+	return false; // ê½‰ ì°¸
 }
 
 void AAbyssDiverCharacter::Server_AcceptMissionById_Implementation(FName MissionId)
@@ -975,19 +1064,19 @@ void AAbyssDiverCharacter::SetInsideSubmarine(bool bInside)
 
 	if (bInside)
 	{
-		// 1. ¼ö¿µ ´É·Â °­Á¦ Â÷´Ü (¹° ¼Ó ¹°¸® º¼·ıÀ» ¹«½ÃÇÏ°Ô µÊ)
+		// 1. ìˆ˜ì˜ ëŠ¥ë ¥ ê°•ì œ ì°¨ë‹¨ (ë¬¼ ì† ë¬¼ë¦¬ ë³¼ë¥¨ì„ ë¬´ì‹œí•˜ê²Œ ë¨)
 		MoveComp->NavAgentProps.bCanSwim = false;
 
-		// 2. °­Á¦·Î °È±â/³«ÇÏ ¸ğµå·Î º¯°æ (¼öÁß¿¡¼­µµ Áß·ÂÀÌ Àû¿ëµÇ¾î ¹Ù´ÚÀ¸·Î ¶³¾îÁü)
+		// 2. ê°•ì œë¡œ ê±·ê¸°/ë‚™í•˜ ëª¨ë“œë¡œ ë³€ê²½ (ìˆ˜ì¤‘ì—ì„œë„ ì¤‘ë ¥ì´ ì ìš©ë˜ì–´ ë°”ë‹¥ìœ¼ë¡œ ë–¨ì–´ì§)
 		MoveComp->SetMovementMode(MOVE_Falling);
 		IsSwimming = false;
 	}
 	else
 	{
-		// 1. Àá¼öÇÔ ¹ÛÀ¸·Î ³ª°¡¸é ¼ö¿µ ´É·Â º¹±¸
+		// 1. ì ìˆ˜í•¨ ë°–ìœ¼ë¡œ ë‚˜ê°€ë©´ ìˆ˜ì˜ ëŠ¥ë ¥ ë³µêµ¬
 		MoveComp->NavAgentProps.bCanSwim = true;
 
-		// 2. ¸¸¾à ÇöÀç ¸ÊÀÇ ¹° º¼·ı ¾È¿¡ ÀÖ´Ù¸é Áï½Ã ¼ö¿µ ¸ğµå·Î ÀüÈ¯
+		// 2. ë§Œì•½ í˜„ì¬ ë§µì˜ ë¬¼ ë³¼ë¥¨ ì•ˆì— ìˆë‹¤ë©´ ì¦‰ì‹œ ìˆ˜ì˜ ëª¨ë“œë¡œ ì „í™˜
 		if (MoveComp->IsInWater())
 		{
 			MoveComp->SetMovementMode(MOVE_Swimming);
@@ -1029,3 +1118,91 @@ void AAbyssDiverCharacter::SetInputLockedByUI(bool bLocked)
 {
 	bInputLockedByUI = bLocked;
 }
+
+void AAbyssDiverCharacter::OnGrabbed(ACharacter* Grabber, int32 RequiredClicks, float DamagePerSecond)
+{
+	if (!HasAuthority())
+	{
+		Server_OnGrabbed(Grabber, RequiredClicks, DamagePerSecond);
+		return;
+	}
+
+	Multicast_OnGrabbed(Grabber);
+
+	RequiredEscapeClicks = RequiredClicks;
+	GrabDamagePerSecond = DamagePerSecond;
+	CurrentEscapeClicks = 0;
+	
+	// Start DOT timer
+	GetWorld()->GetTimerManager().SetTimer(GrabDOTTimerHandle, this, &AAbyssDiverCharacter::ApplyGrabDamage, 1.0f, true);
+}
+
+void AAbyssDiverCharacter::Server_OnGrabbed_Implementation(ACharacter* Grabber, int32 RequiredClicks, float DamagePerSecond)
+{
+	OnGrabbed(Grabber, RequiredClicks, DamagePerSecond);
+}
+
+void AAbyssDiverCharacter::Multicast_OnGrabbed_Implementation(ACharacter* Grabber)
+{
+	bIsGrabbed = true;
+	CurrentGrabber = Grabber;
+	CurrentEscapeClicks = 0;
+	
+	if (UAbyssCharacterMovementComponent* MyCMC = Cast<UAbyssCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		MyCMC->DisableMovement();
+	}
+}
+
+void AAbyssDiverCharacter::EscapeGrab()
+{
+	if (!HasAuthority())
+	{
+		Server_EscapeGrab();
+		return;
+	}
+
+	Multicast_EscapeGrab();
+	GetWorld()->GetTimerManager().ClearTimer(GrabDOTTimerHandle);
+
+	if (AAbyssOctopusCharacter* Octopus = Cast<AAbyssOctopusCharacter>(CurrentGrabber))
+	{
+		Octopus->OnGrabBroken();
+	}
+}
+
+void AAbyssDiverCharacter::Server_EscapeGrab_Implementation()
+{
+	EscapeGrab();
+}
+
+void AAbyssDiverCharacter::Multicast_EscapeGrab_Implementation()
+{
+	bIsGrabbed = false;
+	
+	if (UAbyssCharacterMovementComponent* MyCMC = Cast<UAbyssCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		MyCMC->bCheatFlying = false;
+		
+		if (IsSwimming || MyCMC->IsInWater())
+		{
+			MyCMC->SetMovementMode(MOVE_Swimming);
+		}
+		else
+		{
+			MyCMC->SetMovementMode(MOVE_Walking);
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Multicast Escape Grab"));
+	}
+}
+
+void AAbyssDiverCharacter::ApplyGrabDamage()
+{
+	if (HasAuthority() && bIsGrabbed && AbilitySystemComponent && AttributeSet)
+	{
+		float CurrentHealth = AttributeSet->GetHealth();
+		AttributeSet->SetHealth(FMath::Clamp(CurrentHealth - GrabDamagePerSecond, 0.0f, AttributeSet->GetMaxHealth()));
+	}
+}
+

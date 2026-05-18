@@ -1,18 +1,21 @@
 #pragma once
 
+#include "AbilitySystemInterface.h"
+#include "AbyssInteractionInterface.h"
+#include "AbyssItemBase.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "InputActionValue.h"
-#include "AbyssItemBase.h" 
-#include "AbyssInteractionInterface.h"
-#include "AbilitySystemInterface.h"
 #include "GameplayEffectTypes.h"
+#include "InputActionValue.h"
 #include "AbyssDiverCharacter.generated.h"
 
-// ºí·çÇÁ¸°Æ®(UI)·Î ½ÅÈ£¸¦ Delegate ¼±¾ğ
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnResourceChanged, float, CurrentValue, float, MaxValue);
 
-// Àü¹æ ¼±¾ğ
+
+// ë¸”ë£¨í”„ë¦°íŠ¸(UI)ë¡œ ì‹ í˜¸ë¥¼ Delegate ì„ ì–¸
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnResourceChanged, float,
+                                             CurrentValue, float, MaxValue);
+
+// ì „ë°© ì„ ì–¸
 class UInputMappingContext;
 class UInputAction;
 class UCameraComponent;
@@ -27,269 +30,323 @@ struct FAbyssMissionData;
 class AAbyssMissionWorkObject;
 
 UCLASS()
-class ABYSSCRAWLER_API AAbyssDiverCharacter : public ACharacter, public IAbilitySystemInterface 
-{
-	GENERATED_BODY()
+class ABYSSCRAWLER_API AAbyssDiverCharacter : public ACharacter,
+                                              public IAbilitySystemInterface {
+  GENERATED_BODY()
 
 public:
-	// Ä¿½ºÅÒ ¹«ºê¸ÕÆ® ÄÄÆ÷³ÍÆ® »ç¿ëÀ» À§ÇÑ »ı¼ºÀÚ ¼±¾ğ
-	AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer);
+  // ì»¤ìŠ¤í…€ ë¬´ë¸Œë¨¼íŠ¸ ì»´í¬ë„ŒíŠ¸ ì‚¬ìš©ì„ ìœ„í•œ ìƒì„±ì ì„ ì–¸
+  AAbyssDiverCharacter(const FObjectInitializer &ObjectInitializer);
 
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+  virtual UAbilitySystemComponent *GetAbilitySystemComponent() const override;
 
 protected:
-	virtual void BeginPlay() override;
+  virtual void BeginPlay() override;
 
 public:
-	virtual void Tick(float DeltaTime) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	// ¸®ÇÃ¸®ÄÉÀÌ¼Ç ¼³Á¤ (º¯¼ö µ¿±âÈ­)
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+  virtual void Tick(float DeltaTime) override;
+  virtual void SetupPlayerInputComponent(
+      class UInputComponent *PlayerInputComponent) override;
+  // ë¦¬í”Œë¦¬ì¼€ì´ì…˜ ì„¤ì • (ë³€ìˆ˜ ë™ê¸°í™”)
+  virtual void GetLifetimeReplicatedProps(
+      TArray<FLifetimeProperty> &OutLifetimeProps) const override;
 
-	// --- Components ---
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
-	UCameraComponent* FirstPersonCameraComponent;
+  // --- Components ---
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+  UCameraComponent *FirstPersonCameraComponent;
 
-	// ¸öÃ¼ ¸Ş½¬ (±×¸²ÀÚ ¹× ¸ÖÆ¼ÇÃ·¹ÀÌ Å¸ÀÎ ½ÃÁ¡¿ë)
-	// (Âü°í: ACharacterÀÇ ±âº» GetMesh()¸¦ »ç¿ëÇÏµÇ, 1ÀÎÄª¿ë ÆÈ ¸Ş½¬¸¦ µû·Î µÑ ¼öµµ ÀÖÀ½)
+  // ëª¸ì²´ ë©”ì‰¬ (ê·¸ë¦¼ì ë° ë©€í‹°í”Œë ˆì´ íƒ€ì¸ ì‹œì ìš©)
+  // (ì°¸ê³ : ACharacterì˜ ê¸°ë³¸ GetMesh()ë¥¼ ì‚¬ìš©í•˜ë˜, 1ì¸ì¹­ìš© íŒ” ë©”ì‰¬ë¥¼ ë”°ë¡œ ë‘˜
+  // ìˆ˜ë„ ìˆìŒ)
 
-	// --- Inputs ---
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputMappingContext* DefaultMappingContext;
+  // --- Inputs ---
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputMappingContext *DefaultMappingContext;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* MoveAction; // WASD
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *MoveAction; // WASD
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* LookAction; // Mouse XY
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *LookAction; // Mouse XY
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* JumpAction; // Space (¼öÁß »ó½Â)
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *JumpAction; // Space (ìˆ˜ì¤‘ ìƒìŠ¹)
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* CrouchAction; // Ctrl (¼öÁß ÇÏ°­)
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *CrouchAction; // Ctrl (ìˆ˜ì¤‘ í•˜ê°•)
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* DashAction; // Shift Å° ¸ÅÇÎ
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *DashAction; // Shift í‚¤ ë§¤í•‘
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* ConvertAction;	// CÅ°·Î ÀüÈ¯
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *ConvertAction; // Cí‚¤ë¡œ ì „í™˜
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool IsSwimming = true;
+  UPROPERTY(EditAnywhere, BlueprintReadOnly)
+  bool IsSwimming = true;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* UseItemAction; // ¸¶¿ì½º ÁÂÅ¬¸¯
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *UseItemAction; // ë§ˆìš°ìŠ¤ ì¢Œí´ë¦­
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* Slot1Action; // ¼ıÀÚÅ° 1
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *Slot1Action; // ìˆ«ìí‚¤ 1
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* Slot2Action; // ¼ıÀÚÅ° 2
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *Slot2Action; // ìˆ«ìí‚¤ 2
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* Slot3Action; // ¼ıÀÚÅ° 3
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *Slot3Action; // ìˆ«ìí‚¤ 3
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* Slot4Action; // ¼ıÀÚÅ° 4
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *Slot4Action; // ìˆ«ìí‚¤ 4
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* Slot5Action; // ¼ıÀÚÅ° 5
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *Slot5Action; // ìˆ«ìí‚¤ 5
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* InteractAction; // »óÈ£ÀÛ¿ëÅ° E
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *InteractAction; // ìƒí˜¸ì‘ìš©í‚¤ E
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputAction* DropAction; // ¹ö¸®±âÅ° Q
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction *DropAction; // ë²„ë¦¬ê¸°í‚¤ Q
 
-	UPROPERTY(EditAnywhere, Category = "Interaction")
-	float InteractDistance = 250.0f;
+  UPROPERTY(EditAnywhere, Category = "Interaction")
+  float InteractDistance = 250.0f;
 
-	// --- Inventory System ---
-	// ¾ÆÀÌÅÛ ½½·Ô (ÃÖ´ë 5°³)
-	UPROPERTY(ReplicatedUsing = OnRep_Inventory, VisibleInstanceOnly, BlueprintReadOnly, Category = "Inventory")
-	TArray<AAbyssItemBase*> Inventory;
+  // --- Inventory System ---
+  // ì•„ì´í…œ ìŠ¬ë¡¯ (ìµœëŒ€ 5ê°œ)
+  UPROPERTY(ReplicatedUsing = OnRep_Inventory, VisibleInstanceOnly,
+            BlueprintReadOnly, Category = "Inventory")
+  TArray<AAbyssItemBase *> Inventory;
 
-	// ÇöÀç ¼±ÅÃµÈ ½½·Ô ¹øÈ£ (0 ~ 4)
-	// UI(ºí·çÇÁ¸°Æ®)¿¡¼­ ÀÌ °ªÀ» ÀĞ¾î°¥ ¼ö ÀÖµµ·Ï Çã¶ô
-	UPROPERTY(ReplicatedUsing = OnRep_CurrentSlotIndex, VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
-	int32 CurrentSlotIndex;
+  // í˜„ì¬ ì„ íƒëœ ìŠ¬ë¡¯ ë²ˆí˜¸ (0 ~ 4)
+  // UI(ë¸”ë£¨í”„ë¦°íŠ¸)ì—ì„œ ì´ ê°’ì„ ì½ì–´ê°ˆ ìˆ˜ ìˆë„ë¡ í—ˆë½
+  UPROPERTY(ReplicatedUsing = OnRep_CurrentSlotIndex, VisibleAnywhere,
+            BlueprintReadOnly, Category = "Inventory")
+  int32 CurrentSlotIndex;
 
-	// ½ÃÀÛ ½Ã Áö±ŞÇÒ ¾ÆÀÌÅÛ Å¬·¡½º (¿¡µğÅÍ¿¡¼­ ¼³Á¤)
-	UPROPERTY(EditAnywhere, Category = "Inventory")
-	TSubclassOf<AAbyssItemBase> DefaultItemClass;
+  // ì‹œì‘ ì‹œ ì§€ê¸‰í•  ì•„ì´í…œ í´ë˜ìŠ¤ (ì—ë””í„°ì—ì„œ ì„¤ì •)
+  UPROPERTY(EditAnywhere, Category = "Inventory")
+  TSubclassOf<AAbyssItemBase> DefaultItemClass;
 
-	// ÇöÀç ½Ã¼±ÀÌ ¸Ó¹°°í ÀÖ´Â »óÈ£ÀÛ¿ë ¾×ÅÍ ±â¾ïÇÏ±â
-	UPROPERTY()
-	AActor* FocusedActor;
+  // í˜„ì¬ ì‹œì„ ì´ ë¨¸ë¬¼ê³  ìˆëŠ” ìƒí˜¸ì‘ìš© ì•¡í„° ê¸°ì–µí•˜ê¸°
+  UPROPERTY()
+  AActor *FocusedActor;
 
-	UFUNCTION()
-	void OnRep_Inventory();
+  UFUNCTION()
+  void OnRep_Inventory();
 
-	UFUNCTION()
-	void OnRep_CurrentSlotIndex();
+  UFUNCTION()
+  void OnRep_CurrentSlotIndex();
 
-	// --- public ÇÔ¼ö ---
-	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
-	void OnInventoryUpdated();
+  // --- public í•¨ìˆ˜ ---
+  UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+  void OnInventoryUpdated();
 
-	bool AddItemToInventory(AAbyssItemBase* AddedItem);
+  bool AddItemToInventory(AAbyssItemBase *AddedItem);
 
-	// ¸Å ÇÁ·¹ÀÓ ½Ã¼±À» °Ë»çÇÏ´Â ÇÔ¼ö
-	void CheckForInteractables();
+  // ë§¤ í”„ë ˆì„ ì‹œì„ ì„ ê²€ì‚¬í•˜ëŠ” í•¨ìˆ˜
+  void CheckForInteractables();
 
+  // ì‚°ì†Œê°€ ë³€í•  ë•Œ ë¸”ë£¨í”„ë¦°íŠ¸ë¡œ ì´ì¤„ ì´ë²¤íŠ¸
+  UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
+  FOnResourceChanged OnOxygenChanged;
 
-	// »ê¼Ò°¡ º¯ÇÒ ¶§ ºí·çÇÁ¸°Æ®·Î ½÷ÁÙ ÀÌº¥Æ®
-	UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
-	FOnResourceChanged OnOxygenChanged;
+  // ì—ë””í„°ì— GE_DrainOxygenì„ ë„£ì„ ì¹¸
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
+  TSubclassOf<class UGameplayEffect> OxygenDrainEffectClass;
 
-	// ¿¡µğÅÍ¿¡ GE_DrainOxygenÀ» ³ÖÀ» Ä­
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
-	TSubclassOf<class UGameplayEffect> OxygenDrainEffectClass;
+  // ì²´ë ¥ì´ ë³€í•  ë•Œ ë¸”ë£¨í”„ë¦°íŠ¸ë¡œ ì´ì¤„ ì´ë²¤íŠ¸
+  UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
+  FOnResourceChanged OnHealthChanged;
 
-	// Ã¼·ÂÀÌ º¯ÇÒ ¶§ ºí·çÇÁ¸°Æ®·Î ½÷ÁÙ ÀÌº¥Æ®
-	UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
-	FOnResourceChanged OnHealthChanged;
+  // ë°°í„°ë¦¬ê°€ ë³€í•  ë•Œ ë¸”ë£¨í”„ë¦°íŠ¸ë¡œ ì´ì¤„ ì´ë²¤íŠ¸
+  UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
+  FOnResourceChanged OnBatteryChanged;
 
-	// ¹èÅÍ¸®°¡ º¯ÇÒ ¶§ ºí·çÇÁ¸°Æ®·Î ½÷ÁÙ ÀÌº¥Æ®
-	UPROPERTY(BlueprintAssignable, Category = "Abilities|UI")
-	FOnResourceChanged OnBatteryChanged;
+  void RefreshEquippedVisual();
 
-	void RefreshEquippedVisual();
+  // ë¯¸ì…˜ ì•„ì´í…œ ìˆ˜ì§‘ í´ë¼ -> ì„œë²„ ìš”ì²­
+  UFUNCTION(Server, Reliable)
+  void Server_OnItemCollected();
 
-	// ¹Ì¼Ç ¾ÆÀÌÅÛ ¼öÁı Å¬¶ó -> ¼­¹ö ¿äÃ»
-	UFUNCTION(Server, Reliable)
-	void Server_OnItemCollected();
+  UPROPERTY(BlueprintReadWrite, Category = "UI")
+  UMainHUDWidget *MainHUDRef;
 
-	UPROPERTY(BlueprintReadWrite, Category = "UI")
-	UMainHUDWidget* MainHUDRef;
+  UFUNCTION(Client, Reliable)
+  void Client_ShowWorkUI();
 
-	UFUNCTION(Client, Reliable)
-	void Client_ShowWorkUI();
+  UFUNCTION(Client, Reliable)
+  void Client_HideWorkUI();
 
-	UFUNCTION(Client, Reliable)
-	void Client_HideWorkUI();
+  UFUNCTION(Client, Reliable)
+  void Client_UpdateWorkProgress(float Progress);
 
-	UFUNCTION(Client, Reliable)
-	void Client_UpdateWorkProgress(float Progress);
+  UFUNCTION(Client, Reliable)
+  void Client_ShowMissionComplete(const FText &MissionName);
 
-	UFUNCTION(Client, Reliable)
-	void Client_ShowMissionComplete(const FText& MissionName);
+  bool HasEmptyInventorySlot() const;
 
-	bool HasEmptyInventorySlot() const;
+  UFUNCTION(Server, Reliable)
+  void Server_AcceptMissionById(FName MissionId);
 
-	UFUNCTION(Server, Reliable)
-	void Server_AcceptMissionById(FName MissionId);
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+  TSubclassOf<UMissionSelectUIWidget> MissionSelectUIClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
-	TSubclassOf<UMissionSelectUIWidget> MissionSelectUIClass;
+  UFUNCTION(Client, Reliable)
+  void
+  Client_OpenMissionSelectUI(const TArray<FAbyssMissionData> &AvailableMissions,
+                             AAbyssMissionSender *MissionSender);
 
-	UFUNCTION(Client, Reliable)
-	void Client_OpenMissionSelectUI(const TArray<FAbyssMissionData>& AvailableMissions, AAbyssMissionSender* MissionSender);
+  UFUNCTION(Server, Reliable)
+  void Server_ReleaseMissionSender(AAbyssMissionSender *MissionSender);
 
-	UFUNCTION(Server, Reliable)
-	void Server_ReleaseMissionSender(AAbyssMissionSender* MissionSender);
+  UPROPERTY()
+  UMissionSelectUIWidget *MissionSelectUIRef = nullptr;
 
-	UPROPERTY()
-	UMissionSelectUIWidget* MissionSelectUIRef = nullptr;
+  void ClearMissionSelectUIRef();
 
-	void ClearMissionSelectUIRef();
+  UFUNCTION(Client, Reliable)
+  void Client_SetWorkInputBlocked(bool bBlocked);
 
-	UFUNCTION(Client, Reliable)
-	void Client_SetWorkInputBlocked(bool bBlocked);
+  UFUNCTION(Client, Reliable)
+  void Client_SetMovementBlocked(bool bBlocked);
 
-	// Àá¼öÇÔ Å¾½Â/ÇÏÂ÷ ½Ã ¿ÜºÎ(Àá¼öÇÔ)¿¡¼­ È£ÃâÇØ ÁÙ ÇÔ¼ö
-	void SetInsideSubmarine(bool bInside);
+  void ConsumeItem(AAbyssItemBase *ItemToConsume);
 
-	void SetCurrentWorkObject(AAbyssMissionWorkObject* WorkObject);
-	void ClearCurrentWorkObject(AAbyssMissionWorkObject* WorkObject);
-	void CancelCurrentWorkByEnemyAttack();
+  // ì ìˆ˜í•¨ íƒ‘ìŠ¹/í•˜ì°¨ ì‹œ ì™¸ë¶€(ì ìˆ˜í•¨)ì—ì„œ í˜¸ì¶œí•´ ì¤„ í•¨ìˆ˜
+  void SetInsideSubmarine(bool bInside);
 
-	UPROPERTY()
-	bool bIsWorkingLocked = false;
+  void SetCurrentWorkObject(AAbyssMissionWorkObject *WorkObject);
+  void ClearCurrentWorkObject(AAbyssMissionWorkObject *WorkObject);
+  void CancelCurrentWorkByEnemyAttack();
 
-	void SetInputLockedByUI(bool bLocked);
+  UPROPERTY()
+  bool bIsWorkingLocked = false;
+
+  void SetInputLockedByUI(bool bLocked);
 
 private:
-	UPROPERTY()
-	AAbyssMissionWorkObject* CurrentWorkObject = nullptr;
+  UPROPERTY()
+  AAbyssMissionWorkObject *CurrentWorkObject = nullptr;
 
-	bool bInputLockedByUI = false;
+  bool bInputLockedByUI = false;
 
 protected:
-	// ÀÌµ¿ ÇÔ¼ö
-	void Move(const FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
-	void StartAscend(); // »ó½Â (Á¡ÇÁ)
-	void StopAscend();
-	void StartDescend(); // ÇÏ°­ (Å©·±Ä¡)
-	void StopDescend();
-	void StartDash();
-	void StopDash();
+  // ì´ë™ í•¨ìˆ˜
+  void Move(const FInputActionValue &Value);
+  void Look(const FInputActionValue &Value);
+  void StartAscend(); // ìƒìŠ¹ (ì í”„)
+  void StopAscend();
+  void StartDescend(); // í•˜ê°• (í¬ëŸ°ì¹˜)
+  void StopDescend();
+  void StartDash();
+  void StopDash();
 
-	// ¼öÁß ÀÌµ¿ ÀüÈ¯
-	void ConvertMove();
+  // ìˆ˜ì¤‘ ì´ë™ ì „í™˜
+  void ConvertMove();
 
-	// ¾ÆÀÌÅÛ »ç¿ë (Å¬¸¯)
-	void UseCurrentItem();
+  // ì•„ì´í…œ ì‚¬ìš© (í´ë¦­)
+  void UseCurrentItem();
+  void StopUseCurrentItem();
 
-	// ½½·Ô º¯°æ (1, 2¹ø Å°)
-	void EquipSlot1();
-	void EquipSlot2();
-	void EquipSlot3();
-	void EquipSlot4();
-	void EquipSlot5();
+  // ìŠ¬ë¡¯ ë³€ê²½ (1, 2ë²ˆ í‚¤)
+  void EquipSlot1();
+  void EquipSlot2();
+  void EquipSlot3();
+  void EquipSlot4();
+  void EquipSlot5();
 
-	// ³»ºÎÀûÀ¸·Î ½½·Ô ¹Ù²Ù´Â ÇÔ¼ö
-	void SwitchToSlot(int32 NewIndex);
+  // ë‚´ë¶€ì ìœ¼ë¡œ ìŠ¬ë¡¯ ë°”ê¾¸ëŠ” í•¨ìˆ˜
+  void SwitchToSlot(int32 NewIndex);
 
-	// ¼­¹ö ½½·Ô ÀüÈ¯
-	UFUNCTION(Server, Reliable)
-	void Server_SwitchToSlot(int32 NewIndex);
+  // ì„œë²„ ìŠ¬ë¡¯ ì „í™˜
+  UFUNCTION(Server, Reliable)
+  void Server_SwitchToSlot(int32 NewIndex);
 
-	void ApplyCurrentSlotVisual();
+  void ApplyCurrentSlotVisual();
 
-	// »óÈ£ÀÛ¿ë ½Ãµµ ÇÔ¼ö
-	void TryInteract();
+  // ìƒí˜¸ì‘ìš© ì‹œë„ í•¨ìˆ˜
+  void TryInteract();
 
-	// Å¬¶ó -> ¼­¹ö È£Ãâ
-	// Reliable : ÆĞÅ¶ Àü¼Û º¸Àå, ¼­¹ö¿¡¼­¸¸ ½ÇÇà
-	// Å¬¶ó¿¡¼­ ¾î¶² µ¿ÀÛÀ» ¼­¹ö¿¡¼­ ¿äÃ» ÇÒ ¶§ »ç¿ë
-	UFUNCTION(Server, Reliable)
-	void Server_TryInteract(AActor* TargetActor);
+  // í´ë¼ -> ì„œë²„ í˜¸ì¶œ
+  // Reliable : íŒ¨í‚· ì „ì†¡ ë³´ì¥, ì„œë²„ì—ì„œë§Œ ì‹¤í–‰
+  // í´ë¼ì—ì„œ ì–´ë–¤ ë™ì‘ì„ ì„œë²„ì—ì„œ ìš”ì²­ í•  ë•Œ ì‚¬ìš©
+  UFUNCTION(Server, Reliable)
+  void Server_TryInteract(AActor *TargetActor);
 
-	void DropItem();
+  void DropItem();
 
-	UFUNCTION(Server, Reliable)
-	void Server_DropItem();
-	
-	UFUNCTION(Server, Reliable)
-	void Server_UseCurrentItem();
+  UFUNCTION(Server, Reliable)
+  void Server_DropItem();
 
-	UFUNCTION(Client, Reliable)
-	void Client_OnInventoryUpdated();
-	
-	// --- [GAS Components] ---
-	// GASÀÇ ½ÉÀå (¸ğµç ½ºÅ³°ú ÀÌÆåÆ®¸¦ Ã³¸®)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities", meta = (AllowPrivateAccess = "true"))
-	UAbilitySystemComponent* AbilitySystemComponent;
+  UFUNCTION(Server, Reliable)
+  void Server_UseCurrentItem();
 
-	// ÀÚ¿ø º¸°ü¼Ò (Ã¼·Â, »ê¼Ò, ¹èÅÍ¸®)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities", meta = (AllowPrivateAccess = "true"))
-	UAbyssAttributeSet* AttributeSet;
+  UFUNCTION(Server, Reliable)
+  void Server_StopUseCurrentItem();
 
-	// --- [GAS ÃÊ±âÈ­ ÇÔ¼öµé] ---
-	// ¼­¹ö¿¡¼­ Ä³¸¯ÅÍ¸¦ Á¶Á¾ÇÏ±â ½ÃÀÛÇÒ ¶§ È£Ãâ
-	virtual void PossessedBy(AController* NewController) override;
-	//GAS ³»ºÎ¿¡¼­ »ê¼Ò °ªÀÌ º¯ÇÏ¸é ÀÚµ¿À¸·Î ½ÇÇàµÉ Äİ¹é ÇÔ¼ö
+  UFUNCTION(Client, Reliable)
+  void Client_OnInventoryUpdated();
 
-	void OnOxygenChangedCallback(const struct FOnAttributeChangeData& Data);
+  // --- [GAS Components] ---
+  // GASì˜ ì‹¬ì¥ (ëª¨ë“  ìŠ¤í‚¬ê³¼ ì´í™íŠ¸ë¥¼ ì²˜ë¦¬)
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities",
+            meta = (AllowPrivateAccess = "true"))
+  UAbilitySystemComponent *AbilitySystemComponent;
 
-	void OnHealthChangedCallback(const struct FOnAttributeChangeData& Data);
+  // ìì› ë³´ê´€ì†Œ (ì²´ë ¥, ì‚°ì†Œ, ë°°í„°ë¦¬)
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities",
+            meta = (AllowPrivateAccess = "true"))
+  UAbyssAttributeSet *AttributeSet;
 
-	void OnBatteryChangedCallback(const struct FOnAttributeChangeData& Data);
+  // --- [GAS ì´ˆê¸°í™” í•¨ìˆ˜ë“¤] ---
+  // ì„œë²„ì—ì„œ ìºë¦­í„°ë¥¼ ì¡°ì¢…í•˜ê¸° ì‹œì‘í•  ë•Œ í˜¸ì¶œ
+  virtual void PossessedBy(AController *NewController) override;
+  // GAS ë‚´ë¶€ì—ì„œ ì‚°ì†Œ ê°’ì´ ë³€í•˜ë©´ ìë™ìœ¼ë¡œ ì‹¤í–‰ë  ì½œë°± í•¨ìˆ˜
 
-	void SetupEnhancedInput();
-	virtual void OnRep_Controller() override;
+  void OnOxygenChangedCallback(const struct FOnAttributeChangeData &Data);
 
+  void OnHealthChangedCallback(const struct FOnAttributeChangeData &Data);
+
+  void OnBatteryChangedCallback(const struct FOnAttributeChangeData &Data);
+
+  void SetupEnhancedInput();
+  virtual void OnRep_Controller() override;
+
+public:
+  // --- Grab Mechanics ---
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grab")
+  bool bIsGrabbed = false;
+
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grab")
+  int32 CurrentEscapeClicks = 0;
+
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grab")
+  int32 RequiredEscapeClicks = 10;
+
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Grab")
+  ACharacter *CurrentGrabber = nullptr;
+
+  FTimerHandle GrabDOTTimerHandle;
+  float GrabDamagePerSecond = 3.0f;
+
+  void OnGrabbed(ACharacter *Grabber, int32 RequiredClicks,
+                 float DamagePerSecond);
+
+  UFUNCTION(Server, Reliable)
+  void Server_OnGrabbed(ACharacter *Grabber, int32 RequiredClicks,
+                        float DamagePerSecond);
+
+  UFUNCTION(NetMulticast, Reliable)
+  void Multicast_OnGrabbed(ACharacter *Grabber);
+
+  void EscapeGrab();
+
+  UFUNCTION(Server, Reliable)
+  void Server_EscapeGrab();
+
+  UFUNCTION(NetMulticast, Reliable)
+  void Multicast_EscapeGrab();
+
+  UFUNCTION()
+  void ApplyGrabDamage();
 };
