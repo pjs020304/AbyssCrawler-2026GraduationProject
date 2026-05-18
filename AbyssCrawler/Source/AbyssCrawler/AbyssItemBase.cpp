@@ -1,5 +1,5 @@
 #include "AbyssItemBase.h"
-#include "AbyssDiverCharacter.h" // Ä³¸¯ÅÍ ÇÔ¼ö È£Ãâ¿ë
+#include "AbyssDiverCharacter.h" // ìºë¦­í„° í•¨ìˆ˜ í˜¸ì¶œìš©
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.h"
@@ -11,24 +11,24 @@ AAbyssItemBase::AAbyssItemBase()
 	bReplicates = true;
 	SetReplicateMovement(true);
 
-	// 1. ¸Ş½¬ »ı¼º ¹× ·çÆ® ¼³Á¤
+	// 1. ë©”ì‰¬ ìƒì„± ë° ë£¨íŠ¸ ì„¤ì •
 	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMesh"));
 	RootComponent = ItemMesh;
 
-	// 2. ·¹ÀÌÄ³½ºÆ®(LineTrace)¿¡ ¸ÂÀ» ¼ö ÀÖµµ·Ï Ãæµ¹ ¼³Á¤ È°¼ºÈ­
+	// 2. ë ˆì´ìºìŠ¤íŠ¸(LineTrace)ì— ë§ì„ ìˆ˜ ìˆë„ë¡ ì¶©ëŒ ì„¤ì • í™œì„±í™”
 	ItemMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
 
-	// ±âº» °¡°İ ¼³Á¤
+	// ê¸°ë³¸ ê°€ê²© ì„¤ì •
 	ItemPrice = 100;
 
 	InteractWidgetComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractWidgetComp"));
 	InteractWidgetComp->SetupAttachment(RootComponent);
 
-	// À§Á¬ ¼³Á¤: Screen °ø°£À¸·Î ¼³Á¤ÇØ¾ß ÇÃ·¹ÀÌ¾î¸¦ Ç×»ó ¶Ñ·ÇÇÏ°Ô ÃÄ´Ùº¸¸ç, º®¿¡ ÆÄ¹¯È÷Áö ¾Ê½À´Ï´Ù.
+	// ìœ„ì ¯ ì„¤ì •: Screen ê³µê°„ìœ¼ë¡œ ì„¤ì •í•´ì•¼ í”Œë ˆì´ì–´ë¥¼ í•­ìƒ ëšœë ·í•˜ê²Œ ì³ë‹¤ë³´ë©°, ë²½ì— íŒŒë¬»íˆì§€ ì•ŠìŠµë‹ˆë‹¤.
 	InteractWidgetComp->SetWidgetSpace(EWidgetSpace::Screen);
 	InteractWidgetComp->SetDrawSize(FVector2D(250.0f, 100.0f));
 
-	// ±âº»ÀûÀ¸·Î´Â ¾È º¸ÀÌ°Ô ²¨µÒ (ÃÄ´Ùº¼ ¶§¸¸ ÄÑÁü)
+	// ê¸°ë³¸ì ìœ¼ë¡œëŠ” ì•ˆ ë³´ì´ê²Œ êº¼ë‘  (ì³ë‹¤ë³¼ ë•Œë§Œ ì¼œì§)
 	InteractWidgetComp->SetVisibility(false);
 
 	BatteryCost = 10.0f;
@@ -38,39 +38,44 @@ void AAbyssItemBase::UseItem()
 {
 	UE_LOG(LogTemp, Log, TEXT("Item Used: %s"), *ItemName);
 
-	// 1. ¼­¹ö¿¡¼­¸¸ ¼Ò¸ğ ·ÎÁ÷À» Ã³¸®ÇÕ´Ï´Ù.
+	// 1. ì„œë²„ì—ì„œë§Œ ì†Œëª¨ ë¡œì§ì„ ì²˜ë¦¬í•©ë‹ˆë‹¤.
 	if (!HasAuthority() || !OwnerCharacter || !BatteryConsumeEffectClass) return;
 
 	UAbilitySystemComponent* ASC = OwnerCharacter->GetAbilitySystemComponent();
 	if (ASC)
 	{
-		// 2. [°Ë»ç] ÇöÀç ¹èÅÍ¸® ÀÜ·®ÀÌ ¼Ò¸ğ·®º¸´Ù ¸¹ÀºÁö È®ÀÎ
+		// 2. [ê²€ì‚¬] í˜„ì¬ ë°°í„°ë¦¬ ì”ëŸ‰ì´ ì†Œëª¨ëŸ‰ë³´ë‹¤ ë§ì€ì§€ í™•ì¸
 		float CurrentBattery = ASC->GetNumericAttribute(UAbyssAttributeSet::GetBatteryAttribute());
 		if (CurrentBattery < BatteryCost)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Low Battery: %s"), *ItemName);
-			return; // ¹èÅÍ¸® ºÎÁ· ½Ã ½ÇÇà Ãë¼Ò
+			return; // ë°°í„°ë¦¬ ë¶€ì¡± ì‹œ ì‹¤í–‰ ì·¨ì†Œ
 		}
 
-		// 3. [¼Ò¸ğ] SetByCaller¸¦ ÅëÇØ ´ÙÀÌ³»¹ÍÇÏ°Ô ¹èÅÍ¸® Â÷°¨ Àû¿ë
+		// 3. [ì†Œëª¨] SetByCallerë¥¼ í†µí•´ ë‹¤ì´ë‚´ë¯¹í•˜ê²Œ ë°°í„°ë¦¬ ì°¨ê° ì ìš©
 		FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
 		Context.AddInstigator(this, OwnerCharacter);
 
 		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(BatteryConsumeEffectClass, 1.0f, Context);
 		if (SpecHandle.IsValid())
 		{
-			// ºí·çÇÁ¸°Æ® GE¿¡ ¿ì¸®°¡ Á¤ÇÑ ¼Ò¸ğ·®(-BatteryCost)À» ÅÂ±×¸¦ ÅëÇØ ÁÖÀÔÇÕ´Ï´Ù.
+			// ë¸”ë£¨í”„ë¦°íŠ¸ GEì— ìš°ë¦¬ê°€ ì •í•œ ì†Œëª¨ëŸ‰(-BatteryCost)ì„ íƒœê·¸ë¥¼ í†µí•´ ì£¼ì…í•©ë‹ˆë‹¤.
 			SpecHandle.Data->SetSetByCallerMagnitude(BatteryCostTag, -BatteryCost);
 			ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 
 			UE_LOG(LogTemp, Log, TEXT("Item Used: %s, Battery Consumed: %f"), *ItemName, BatteryCost);
 
-			// 4. (¿É¼Ç) ÀÌ ¾Æ·¡¿¡ ½ÇÁ¦ ¾ÆÀÌÅÛ °íÀ¯ÀÇ ±â´É(ºû ÄÑ±â µî)À» ±¸ÇöÇÏ°Å³ª ¼­ºêÅ¬·¡½º¿¡¼­ Super::UseItem() È£Ãâ ÈÄ ±¸ÇöÇÕ´Ï´Ù.
+			// 4. (ì˜µì…˜) ì´ ì•„ë˜ì— ì‹¤ì œ ì•„ì´í…œ ê³ ìœ ì˜ ê¸°ëŠ¥(ë¹› ì¼œê¸° ë“±)ì„ êµ¬í˜„í•˜ê±°ë‚˜ ì„œë¸Œí´ë˜ìŠ¤ì—ì„œ Super::UseItem() í˜¸ì¶œ í›„ êµ¬í˜„í•©ë‹ˆë‹¤.
 		}
 	}
 }
 
-// [ÇÙ½É] EÅ°¸¦ ´­·¯ »óÈ£ÀÛ¿ëÇßÀ» ¶§ ½ÇÇàµÇ´Â ÇÔ¼ö
+void AAbyssItemBase::EndUseItem()
+{
+	UE_LOG(LogTemp, Log, TEXT("Item Use Ended: %s"), *ItemName);
+}
+
+// [í•µì‹¬] Eí‚¤ë¥¼ ëˆŒëŸ¬ ìƒí˜¸ì‘ìš©í–ˆì„ ë•Œ ì‹¤í–‰ë˜ëŠ” í•¨ìˆ˜
 void AAbyssItemBase::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority())
@@ -84,25 +89,25 @@ void AAbyssItemBase::Interact_Implementation(AActor* InstigatorActor)
 		return;
 	}
 
-	// 1. »óÈ£ÀÛ¿ëÇÑ »ç¶÷ÀÌ ÇÃ·¹ÀÌ¾î Ä³¸¯ÅÍÀÎÁö È®ÀÎ
+	// 1. ìƒí˜¸ì‘ìš©í•œ ì‚¬ëŒì´ í”Œë ˆì´ì–´ ìºë¦­í„°ì¸ì§€ í™•ì¸
 	AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(InstigatorActor);
 	if (Diver)
 	{
-		// 2. Ä³¸¯ÅÍÀÇ ÀÎº¥Åä¸®¿¡ ³Ö±â ½Ãµµ
+		// 2. ìºë¦­í„°ì˜ ì¸ë²¤í† ë¦¬ì— ë„£ê¸° ì‹œë„
 		if (Diver->AddItemToInventory(this))
 		{
-			// 3. ÀÎº¥Åä¸®¿¡ ¼º°øÀûÀ¸·Î µé¾î°¬´Ù¸é, ¹Ù´Ú¿¡¼­ ¾È º¸ÀÌ°Ô Ã³¸®
-			//ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // ´õ ÀÌ»ó »óÈ£ÀÛ¿ë ¾È µÇ°Ô Ãæµ¹ ²ô±â
-			//ItemMesh->SetVisibility(false); // ´«¿¡ ¾È º¸ÀÌ°Ô ¼û±â±â
+			// 3. ì¸ë²¤í† ë¦¬ì— ì„±ê³µì ìœ¼ë¡œ ë“¤ì–´ê°”ë‹¤ë©´, ë°”ë‹¥ì—ì„œ ì•ˆ ë³´ì´ê²Œ ì²˜ë¦¬
+			//ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // ë” ì´ìƒ ìƒí˜¸ì‘ìš© ì•ˆ ë˜ê²Œ ì¶©ëŒ ë„ê¸°
+			//ItemMesh->SetVisibility(false); // ëˆˆì— ì•ˆ ë³´ì´ê²Œ ìˆ¨ê¸°ê¸°
 
-			//UE_LOG(LogTemp, Log, TEXT("%s Get! °¡°İ: %d"), *ItemName, ItemPrice);
+			//UE_LOG(LogTemp, Log, TEXT("%s Get! ê°€ê²©: %d"), *ItemName, ItemPrice);
 
 			//OwnerCharacter = Diver;
 
 		}
 		else
 		{
-			// ÀÎº¥Åä¸®°¡ ²Ë Ã¡À» ¶§ÀÇ Ã³¸® (UI ¸Ş½ÃÁö Ãâ·Â µî)
+			// ì¸ë²¤í† ë¦¬ê°€ ê½‰ ì°¼ì„ ë•Œì˜ ì²˜ë¦¬ (UI ë©”ì‹œì§€ ì¶œë ¥ ë“±)
 			UE_LOG(LogTemp, Warning, TEXT("[Abyss] Getting Fail"));
 		}
 	}
@@ -112,7 +117,7 @@ void AAbyssItemBase::Interact_Implementation(AActor* InstigatorActor)
 	}
 }
 
-// ½Ã¼±ÀÌ ´ê¾ÒÀ» ¶§
+// ì‹œì„ ì´ ë‹¿ì•˜ì„ ë•Œ
 void AAbyssItemBase::OnFocus_Implementation()
 {
 	if (InteractWidgetComp)
@@ -121,7 +126,7 @@ void AAbyssItemBase::OnFocus_Implementation()
 	}
 }
 
-// ½Ã¼±ÀÌ ¹ş¾î³µÀ» ¶§
+// ì‹œì„ ì´ ë²—ì–´ë‚¬ì„ ë•Œ
 void AAbyssItemBase::OnLostFocus_Implementation()
 {
 	if (InteractWidgetComp)

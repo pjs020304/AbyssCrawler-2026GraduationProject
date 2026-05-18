@@ -7,7 +7,7 @@
 #include "AbyssInteractionInterface.h"
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "GameplayTagContainer.h" // ÅÂ±× »ç¿ëÀ» À§ÇØ ÇÊ¿ä
+#include "GameplayTagContainer.h" // íƒœê·¸ ì‚¬ìš©ì„ ìœ„í•´ í•„ìš”
 #include "AbyssItemBase.generated.h"
 
 class AAbyssDiverCharacter;
@@ -22,6 +22,7 @@ public:
 	AAbyssItemBase();
 	
 	virtual void UseItem();
+	virtual void EndUseItem();
 
 	UPROPERTY(EditDefaultsonly, BlueprintReadOnly, Category = "Item Info")
 	FString ItemName;
@@ -37,15 +38,15 @@ public:
 
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
-	// 3D Çã°ø¿¡ ¶ç¿ï UI ÄÄÆ÷³ÍÆ®
+	// 3D í—ˆê³µì— ë„ìš¸ UI ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
 	UWidgetComponent* InteractWidgetComp;
 
-	// ÀÎÅÍÆäÀÌ½º ¿À¹ö¶óÀÌµå
+	// ì¸í„°í˜ì´ìŠ¤ ì˜¤ë²„ë¼ì´ë“œ
 	virtual void OnFocus_Implementation() override;
 	virtual void OnLostFocus_Implementation() override;
 
-	// ¾ÆÀÌÅÛ »óÅÂ ÀüÈ¯
+	// ì•„ì´í…œ ìƒíƒœ ì „í™˜
 	void SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USceneComponent* AttachParent, bool bVisibleInHand);
 	void SetAsDropped(const FVector& DropLocation, const FRotator& DropRotation, const FVector& ThrowImpulse);
 
@@ -63,15 +64,15 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void ApplyPickedUpState();
 
-	// ÀÌ ¾ÆÀÌÅÛÀ» »ç¿ëÇÒ ¶§ ¼Ò¸ğµÉ ¹èÅÍ¸® ¾ç
+	// ì´ ì•„ì´í…œì„ ì‚¬ìš©í•  ë•Œ ì†Œëª¨ë  ë°°í„°ë¦¬ ì–‘
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
 	float BatteryCost;
 
-	// ¹èÅÍ¸®¸¦ ±ğÀ» °ø¿ë ÀÌÆåÆ® Å¬·¡½º (GE_ConsumeBattery)
+	// ë°°í„°ë¦¬ë¥¼ ê¹ì„ ê³µìš© ì´í™íŠ¸ í´ë˜ìŠ¤ (GE_ConsumeBattery)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
 	TSubclassOf<class UGameplayEffect> BatteryConsumeEffectClass;
 
-	// SetByCaller·Î °ªÀ» ³Ñ°ÜÁÖ±â À§ÇÑ ¿¬°á °í¸® ÅÂ±× (¿¹: "Data.Cost.Battery")
+	// SetByCallerë¡œ ê°’ì„ ë„˜ê²¨ì£¼ê¸° ìœ„í•œ ì—°ê²° ê³ ë¦¬ íƒœê·¸ (ì˜ˆ: "Data.Cost.Battery")
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
 	FGameplayTag BatteryCostTag;
 };
