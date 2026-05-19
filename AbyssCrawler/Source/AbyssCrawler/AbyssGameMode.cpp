@@ -1,6 +1,7 @@
 #include "AbyssGameMode.h"
 #include "AbyssGameState.h"
 #include "AbyssPlayerState.h"
+#include "AbyssPlayerController.h"
 #include "AbyssDiverCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -9,9 +10,10 @@
 
 AAbyssGameMode::AAbyssGameMode()
 {
-    // ¿ì¸®°¡ ¸¸µç Å¬·¡½ºµéÀ» ±âº»°ªÀ¸·Î ÁöÁ¤
+    // ìš°ë¦¬ê°€ ë§Œë“  í´ë˜ìŠ¤ë“¤ì„ ê¸°ë³¸ê°’ìœ¼ë¡œ ì§€ì •
     GameStateClass = AAbyssGameState::StaticClass();
     PlayerStateClass = AAbyssPlayerState::StaticClass();
+    PlayerControllerClass = AAbyssPlayerController::StaticClass();
 
     bDelayedStart = false;
 }
@@ -20,23 +22,23 @@ void AAbyssGameMode::PostLogin(APlayerController* NewPlayer)
 {
     Super::PostLogin(NewPlayer);
 
-    // GAS ÃÊ±âÈ­: PlayerState¿¡ ÀÖ´Â ASC¸¦ °»½Å
+    // GAS ì´ˆê¸°í™”: PlayerStateì— ìˆëŠ” ASCë¥¼ ê°±ì‹ 
     if (AAbyssPlayerState* PS = NewPlayer->GetPlayerState<AAbyssPlayerState>())
     {
-        // AbilitySystemComponent ÃÊ±âÈ­ ·ÎÁ÷ (InitAbilityActorInfo µî)
-        // º¸Åë Ä³¸¯ÅÍÀÇ PossessedBy¿¡¼­ È£ÃâÇÏÁö¸¸, ¿©±â¼­ È®½ÇÈ÷ Ã³¸®ÇÒ ¼öµµ ÀÖÀ½
+        // AbilitySystemComponent ì´ˆê¸°í™” ë¡œì§ (InitAbilityActorInfo ë“±)
+        // ë³´í†µ ìºë¦­í„°ì˜ PossessedByì—ì„œ í˜¸ì¶œí•˜ì§€ë§Œ, ì—¬ê¸°ì„œ í™•ì‹¤íˆ ì²˜ë¦¬í•  ìˆ˜ë„ ìˆìŒ
     }
 }
 
 void AAbyssGameMode::OnPlayerDied(AController* DeadPlayer)
 {
-    // 1. ÇØ´ç ÇÃ·¹ÀÌ¾îÀÇ PlayerState °¡Á®¿À±â
+    // 1. í•´ë‹¹ í”Œë ˆì´ì–´ì˜ PlayerState ê°€ì ¸ì˜¤ê¸°
     if (AAbyssPlayerState* PS = DeadPlayer->GetPlayerState<AAbyssPlayerState>())
     {
         PS->bIsAlive = false;
     }
 
-    // 2. ³²Àº »ıÁ¸ÀÚ°¡ ÀÖ´ÂÁö È®ÀÎ (Àü¸ê ½Ã °ÔÀÓ ¿À¹ö)
+    // 2. ë‚¨ì€ ìƒì¡´ìê°€ ìˆëŠ”ì§€ í™•ì¸ (ì „ë©¸ ì‹œ ê²Œì„ ì˜¤ë²„)
     bool bAnyAlive = false;
     for (APlayerState* PS : GameState->PlayerArray)
     {
@@ -62,12 +64,12 @@ void AAbyssGameMode::OnItemCollected()
     {
         GS->AddCollectedItem();
 
-        // ¹Ì¼Ç ¿Ï·á Ã¼Å©
+        // ë¯¸ì…˜ ì™„ë£Œ ì²´í¬
         if (GS->CollectedItemsCount >= GS->TargetItemsCount)
         {
             UE_LOG(LogTemp, Warning, TEXT("[Mission] COMPLETE!"));
 
-            // Å¬¸®¾î Ã³¸®
+            // í´ë¦¬ì–´ ì²˜ë¦¬
         }
     }
 }
@@ -86,16 +88,16 @@ void AAbyssGameMode::AddMissionProgress(int32 MissionIndex, int32 Amount)
     {
         if (!GS->Missions.IsValidIndex(MissionIndex)) return;
 
-        // ÀÌÀü »óÅÂ
+        // ì´ì „ ìƒíƒœ
         const bool bWasCompleted = GS->Missions[MissionIndex].bCompleted;
 
-        // ÁøÇàµµ Áõ°¡
+        // ì§„í–‰ë„ ì¦ê°€
         GS->AddMissionProgress(MissionIndex, Amount);
 
-        // ÀÌÈÄ¿¡ »óÅÂ È®ÀÎ
+        // ì´í›„ì— ìƒíƒœ í™•ì¸
         const FAbyssMissionData& Mission = GS->Missions[MissionIndex];
 
-        // ¿Ï·áµÈ °æ¿ì ½ÇÇà
+        // ì™„ë£Œëœ ê²½ìš° ì‹¤í–‰
         if (!bWasCompleted && Mission.bCompleted)
         {
             UE_LOG(LogTemp, Warning, TEXT("[Mission] Completed: %s"), *Mission.MissionTitle.ToString());

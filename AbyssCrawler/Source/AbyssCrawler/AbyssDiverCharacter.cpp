@@ -19,45 +19,34 @@
 #include "Blueprint/UserWidget.h"
 #include "Mission/Contents/AbyssMissionWorkObject.h"
 
-// 중요: 커스텀 무브먼트 컴포넌트를 사용하려면 FObjectInitializer를 받는 생성자를 써야 함
+// 以묒슂: 而ㅼ뒪? 臾대툕癒쇳듃 而댄룷?뚰듃瑜??ъ슜?섎젮硫?FObjectInitializer瑜?諛쏅뒗 ?앹꽦?먮? ?⑥빞 ??
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UAbyssCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// 1. 캡슐 컴포넌트 설정 (기획서 신장 1.2m 고려 필요, 기본은 1.8m 정도임)
 	GetCapsuleComponent()->InitCapsuleSize(40.f, 90.0f);
 
-	// 2. 카메라 설정 (1인칭)
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->SetupAttachment(GetMesh(), TEXT("Bone_004"));
+	FirstPersonCameraComponent->SetupAttachment(GetMesh(), TEXT("Head"));
 
-	// 카메라 위치 미세 조정 (눈 위치로 맞춤, 모델에 따라 다름)
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.0f, 0.f, 0.f));
+	FirstPersonCameraComponent->SetRelativeRotation(FRotator(0.0f, 0.f, -90.f));
 
-	// 컨트롤러 회전에 따라 카메라가 돌도록 설정
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
-	// 3. 메쉬 설정 (기본 메쉬)
 	GetMesh()->SetOwnerNoSee(false); 
 	GetMesh()->bCastHiddenShadow = false;
-	// 나중에 팔만 보이는 1인칭 전용 메쉬를 추가하는 것이 좋음
 
-	// 4. 회전 설정
-	// 컨트롤러가 회전할 때 캐릭터 몸통도 같이 돌지 여부
-	// FPS이므로 Yaw는 같이 도는 게 일반적
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 
-	// 1. GAS 심장(컴포넌트) 생성 및 멀티플레이 설정
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 
-	// 멀티플레이 최적화 모드: 내 캐릭터(혼합 모드)로 설정하면 서버 부하를 줄이면서도 내 화면엔 즉각 반영됩니다.
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
-	// 2. 자원 보관소(AttributeSet) 생성
 	AttributeSet = CreateDefaultSubobject<UAbyssAttributeSet>(TEXT("AttributeSet"));
 }
 
@@ -67,30 +56,27 @@ void AAbyssDiverCharacter::BeginPlay()
 
 	if (AbilitySystemComponent && AttributeSet)
 	{
-		// 1. [UI 바인딩]  값이 변할 때마다 OnChangedCallback 함수를 실행하라고 예약!
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetOxygenAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnOxygenChangedCallback);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnHealthChangedCallback);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetBatteryAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnBatteryChangedCallback);
 
-		// 2. [GE 적용] 산소 감소 이펙트(GE_DrainOxygen)를 내 몸에 적용하기
 		if (OxygenDrainEffectClass)
 		{
-			// 이펙트를 적용하기 위한 포장지(Context) 만들기
 			FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
 			Context.AddInstigator(this, this);
 
-			// 포장지와 이펙트를 합쳐서 적용할 준비(Spec) 완료
+			// ?ъ옣吏? ?댄럺?몃? ?⑹퀜???곸슜??以鍮?Spec) ?꾨즺
 			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(OxygenDrainEffectClass, 1.0f, Context);
 
 			if (SpecHandle.IsValid())
 			{
-				// 드디어 내 몸에 산소 감소 이펙트 부착!
+				// ?쒕뵒????紐몄뿉 ?곗냼 媛먯냼 ?댄럺??遺李?
 				AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			}
 		}
 	}
 
-	// Enhanced Input 매핑
+	// Enhanced Input 留ㅽ븨
 	/*if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -103,14 +89,14 @@ void AAbyssDiverCharacter::BeginPlay()
 
 	if (HasAuthority())
 	{
-		// 1. 인벤토리 초기화 (빈 슬롯 5개 생성)
+		// 1. ?몃깽?좊━ 珥덇린??(鍮??щ’ 5媛??앹꽦)
 		Inventory.Init(nullptr, 5);
 		CurrentSlotIndex = 0;
 
-		// 2. 기본 아이템(손전등) 생성 및 지급
+		// 2. 湲곕낯 ?꾩씠???먯쟾?? ?앹꽦 諛?吏湲?
 		if (DefaultItemClass)
 		{
-			// 월드에 아이템 액터 생성
+			// ?붾뱶???꾩씠???≫꽣 ?앹꽦
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = this;
 			AAbyssItemBase* NewItem = GetWorld()->SpawnActor<AAbyssItemBase>(
@@ -122,7 +108,7 @@ void AAbyssDiverCharacter::BeginPlay()
 
 			if (NewItem)
 			{
-				// 인벤토리 0번 슬롯에 넣기
+				// ?몃깽?좊━ 0踰??щ’???ｊ린
 				Inventory[0] = NewItem;
 				/*Inventory[1] = NewItem;
 				Inventory[2] = NewItem;
@@ -136,10 +122,10 @@ void AAbyssDiverCharacter::BeginPlay()
 					RootPrim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				}
 
-				// 아이템을 카메라에 붙이기 (1인칭 시점)
+				// ?꾩씠?쒖쓣 移대찓?쇱뿉 遺숈씠湲?(1?몄묶 ?쒖젏)
 				NewItem->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-				// 애니메이션 물건을 들고 있는데, 그냥 걷는 모션 + 물건을 들고있는 모션(대부분 한손 아이템)
-				// 아이템: 공격, 방해(전파), 설치(방해), 이동속도(제트팩, 손으로 들고 사용 하는거) 증가
+				// ?좊땲硫붿씠??臾쇨굔???ㅺ퀬 ?덈뒗?? 洹몃깷 嫄룸뒗 紐⑥뀡 + 臾쇨굔???ㅺ퀬?덈뒗 紐⑥뀡(?遺遺??쒖넀 ?꾩씠??
+				// ?꾩씠?? 怨듦꺽, 諛⑺빐(?꾪뙆), ?ㅼ튂(諛⑺빐), ?대룞?띾룄(?쒗듃?? ?먯쑝濡??ㅺ퀬 ?ъ슜 ?섎뒗嫄? 利앷?
 
 				NewItem->SetActorEnableCollision(false);
 				*/
@@ -165,7 +151,7 @@ void AAbyssDiverCharacter::BeginPlay()
 void AAbyssDiverCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	// 여기에 나중에 산소 소모 등의 로직 추가
+	// ?ш린???섏쨷???곗냼 ?뚮え ?깆쓽 濡쒖쭅 異붽?
 
 	CheckForInteractables();
 }
@@ -176,7 +162,7 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 	if (AbilitySystemComponent)
 	{
-		// 클라이언트에서도 똑같이 초기화해 주어야 UI 연동 및 예측(Prediction)이 정상 작동합니다.
+		// ?대씪?댁뼵?몄뿉?쒕룄 ?묎컳??珥덇린?뷀빐 二쇱뼱??UI ?곕룞 諛??덉륫(Prediction)???뺤긽 ?묐룞?⑸땲??
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 
@@ -196,22 +182,22 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 		EnhancedInputComponent->BindAction(ConvertAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::ConvertMove);
 
-		// 아이템 사용 (마우스 좌클릭)
+		// ?꾩씠???ъ슜 (留덉슦??醫뚰겢由?
 		EnhancedInputComponent->BindAction(UseItemAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::UseCurrentItem);
 		EnhancedInputComponent->BindAction(UseItemAction, ETriggerEvent::Completed, this, &AAbyssDiverCharacter::StopUseCurrentItem);
 		EnhancedInputComponent->BindAction(UseItemAction, ETriggerEvent::Canceled, this, &AAbyssDiverCharacter::StopUseCurrentItem);
 
-		// 슬롯 변경 (숫자키 1, 2)
+		// ?щ’ 蹂寃?(?レ옄??1, 2)
 		EnhancedInputComponent->BindAction(Slot1Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot1);
 		EnhancedInputComponent->BindAction(Slot2Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot2);
 		EnhancedInputComponent->BindAction(Slot3Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot3);
 		EnhancedInputComponent->BindAction(Slot4Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot4);
 		EnhancedInputComponent->BindAction(Slot5Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot5);
 
-		// 상호작용 Interaction
+		// ?곹샇?묒슜 Interaction
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::TryInteract);
 
-		// 버리기
+		// 踰꾨━湲?
 		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::DropItem);
 	}
 }
@@ -226,7 +212,7 @@ void AAbyssDiverCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 void AAbyssDiverCharacter::StartDash()
 {
-	// 커스텀 무브먼트 컴포넌트 가져오기
+	// 而ㅼ뒪? 臾대툕癒쇳듃 而댄룷?뚰듃 媛?몄삤湲?
 	if (UAbyssCharacterMovementComponent* MyCMC = Cast<UAbyssCharacterMovementComponent>(GetCharacterMovement()))
 	{
 		MyCMC->SetSprinting(true);
@@ -281,7 +267,7 @@ void AAbyssDiverCharacter::Client_OpenMissionSelectUI_Implementation(const TArra
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
-	// 이미 열려 있으면 새로 만들지 말고 내용만 갱신
+	// ?대? ?대젮 ?덉쑝硫??덈줈 留뚮뱾吏 留먭퀬 ?댁슜留?媛깆떊
 	if (MissionSelectUIRef && MissionSelectUIRef->IsInViewport())
 	{
 		return;
@@ -384,12 +370,12 @@ void AAbyssDiverCharacter::Move(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
-		// [핵심] 수영 모드일 때는 카메라가 보는 방향(Z축 포함)으로 이동해야 함 (6DOF)
+		// [?듭떖] ?섏쁺 紐⑤뱶???뚮뒗 移대찓?쇨? 蹂대뒗 諛⑺뼢(Z異??ы븿)?쇰줈 ?대룞?댁빞 ??(6DOF)
 		bool bIsSwimming = GetCharacterMovement()->IsSwimming();
 
 		if (bIsSwimming && IsSwimming)
 		{
-			// 수영 중: ControlRotation을 사용하여 3차원 방향 획득
+			// ?섏쁺 以? ControlRotation???ъ슜?섏뿬 3李⑥썝 諛⑺뼢 ?띾뱷
 			FRotator ControlRot = GetControlRotation();
 			FVector ForwardDir = FRotationMatrix(ControlRot).GetUnitAxis(EAxis::X);
 			FVector RightDir = FRotationMatrix(ControlRot).GetUnitAxis(EAxis::Y);
@@ -402,7 +388,7 @@ void AAbyssDiverCharacter::Move(const FInputActionValue& Value)
 		}
 		else
 		{
-			// 걷기 중: 바닥에 붙어 다녀야 하므로 Yaw 회전만 고려 (Z축 배제)
+			// 嫄룰린 以? 諛붾떏??遺숈뼱 ?ㅻ????섎?濡?Yaw ?뚯쟾留?怨좊젮 (Z異?諛곗젣)
 			FRotator YawRot(0, GetControlRotation().Yaw, 0);
 			FVector ForwardDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
 			FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
@@ -428,14 +414,14 @@ void AAbyssDiverCharacter::StartAscend()
 {
 	if (GetCharacterMovement()->IsSwimming())
 	{
-		// 수영 중 Space: 수직 상승
+		// ?섏쁺 以?Space: ?섏쭅 ?곸듅
 		AddMovementInput(FVector::UpVector, 1.0f);
 		//UE_LOG(LogTemp, Warning, TEXT("Swiming Ascend now"))
 		
 	}
 	else
 	{
-		// 걷기 중 Space: 점프
+		// 嫄룰린 以?Space: ?먰봽
 		Jump();
 	}
 }
@@ -449,12 +435,12 @@ void AAbyssDiverCharacter::StartDescend()
 {
 	if (GetCharacterMovement()->IsSwimming())
 	{
-		// 수영 중 Ctrl: 수직 하강
+		// ?섏쁺 以?Ctrl: ?섏쭅 ?섍컯
 		AddMovementInput(FVector::UpVector, -1.0f);
 	}
 	else
 	{
-		// 걷기 중 Ctrl: 웅크리기 (추후 구현)
+		// 嫄룰린 以?Ctrl: ?낇겕由ш린 (異뷀썑 援ы쁽)
 		Crouch();
 	}
 }
@@ -493,14 +479,14 @@ void AAbyssDiverCharacter::UseCurrentItem()
 		return;
 	}
 
-	// 클라는 서버에게 사용 요청만 보냄
+	// ?대씪???쒕쾭?먭쾶 ?ъ슜 ?붿껌留?蹂대깂
 	if (!HasAuthority())
 	{
 		Server_UseCurrentItem();
 		return;
 	}
 
-	// 서버만 실제 아이템 사용
+	// ?쒕쾭留??ㅼ젣 ?꾩씠???ъ슜
 	Inventory[CurrentSlotIndex]->UseItem();
 }
 
@@ -529,8 +515,8 @@ void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
 	/*
 	if (CurrentSlotIndex == NewIndex) return;
 
-	// 기존 아이템 숨기기 등의 로직이 필요하다면 여기에 작성
-	// 예: Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
+	// 湲곗〈 ?꾩씠???④린湲??깆쓽 濡쒖쭅???꾩슂?섎떎硫??ш린???묒꽦
+	// ?? Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
 	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr) 
 	{
 		Inventory[CurrentSlotIndex]->SetActorHiddenInGame(true);
@@ -538,7 +524,7 @@ void AAbyssDiverCharacter::SwitchToSlot(int32 NewIndex)
 	CurrentSlotIndex = NewIndex;
 	UE_LOG(LogTemp, Log, TEXT("Slot Change: %d"), CurrentSlotIndex + 1);
 
-	// 새 아이템 보이기
+	// ???꾩씠??蹂댁씠湲?
 	if (Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr) {
 		Inventory[CurrentSlotIndex]->SetActorHiddenInGame(false);
 	}
@@ -570,7 +556,7 @@ void AAbyssDiverCharacter::Server_SwitchToSlot_Implementation(int32 NewIndex)
 	CurrentSlotIndex = NewIndex;
 	ApplyCurrentSlotVisual();
 
-	// 리슨 서버 호스트 UI 갱신 보정
+	// 由ъ뒯 ?쒕쾭 ?몄뒪??UI 媛깆떊 蹂댁젙
 	if (IsLocallyControlled())
 	{
 		OnInventoryUpdated();
@@ -616,7 +602,7 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 
 		Item->SetActorEnableCollision(false);
 
-		// 현재 슬롯 아이템은 다시 카메라에 부착
+		// ?꾩옱 ?щ’ ?꾩씠?쒖? ?ㅼ떆 移대찓?쇱뿉 遺李?
 		if (bShouldBeVisible && FirstPersonCameraComponent)
 		{
 			Item->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
@@ -626,7 +612,7 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 			);
 		}
 
-		// 장착 해제되는 손전등은 강제로 끄기
+		// ?μ갑 ?댁젣?섎뒗 ?먯쟾?깆? 媛뺤젣濡??꾧린
 		if (!bShouldBeVisible)
 		{
 			if (AAbyssFlashLight* FlashLight = Cast<AAbyssFlashLight>(Item))
@@ -688,7 +674,7 @@ void AAbyssDiverCharacter::EquipSlot5()
 
 
 
-// E키를 눌렀을 때 실행되는 함수
+// E?ㅻ? ?뚮??????ㅽ뻾?섎뒗 ?⑥닔
 void AAbyssDiverCharacter::TryInteract()
 {
 	if (bInputLockedByUI) return;
@@ -696,32 +682,32 @@ void AAbyssDiverCharacter::TryInteract()
 
 	if (!FirstPersonCameraComponent) return;
 
-	// 1. 레이캐스트 시작점(카메라 위치)과 끝점(카메라가 바라보는 방향 * 거리) 계산
+	// 1. ?덉씠罹먯뒪???쒖옉??移대찓???꾩튂)怨??앹젏(移대찓?쇨? 諛붾씪蹂대뒗 諛⑺뼢 * 嫄곕━) 怨꾩궛
 	FVector Start = FirstPersonCameraComponent->GetComponentLocation();
 	FVector End = Start + (FirstPersonCameraComponent->GetForwardVector() * InteractDistance);
 
 	FHitResult HitResult;
 	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(this); // 내 캐릭터는 검사에서 제외
+	CollisionParams.AddIgnoredActor(this); // ??罹먮┃?곕뒗 寃?ъ뿉???쒖쇅
 
-	// 2. 눈에 보이는 물체(ECC_Visibility: 기본으로 StaticMesh Block, Ignore부분 설정 가능)를 기준으로 레이저 쏘기
+	// 2. ?덉뿉 蹂댁씠??臾쇱껜(ECC_Visibility: 湲곕낯?쇰줈 StaticMesh Block, Ignore遺遺??ㅼ젙 媛??瑜?湲곗??쇰줈 ?덉씠? ?섍린
 	bool bHit = GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, CollisionParams);
 
-	// (디버그용)
+	// (?붾쾭洹몄슜)
 	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2.0f);
 
-	// 3. 라인트레이스에 걸렸을 때
+	// 3. ?쇱씤?몃젅?댁뒪??嫄몃졇????
 	if (bHit && HitResult.GetActor())
 	{
 		AActor* HitActor = HitResult.GetActor();
 
-		// 4. 그 물체가 상호작용 인터페이스를 상속받았는지 확인
+		// 4. 洹?臾쇱껜媛 ?곹샇?묒슜 ?명꽣?섏씠?ㅻ? ?곸냽諛쏆븯?붿? ?뺤씤
 		if (HitActor->Implements<UAbyssInteractionInterface>())
 		{
-			// 5. 인터페이스의 Interact 함수 실행 
+			// 5. ?명꽣?섏씠?ㅼ쓽 Interact ?⑥닔 ?ㅽ뻾 
 			//IAbyssInteractionInterface::Execute_Interact(HitActor, this);
 
-			// 서버 함수로 실행
+			// ?쒕쾭 ?⑥닔濡??ㅽ뻾
 			Server_TryInteract(HitActor);
 		}
 	}
@@ -775,7 +761,7 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 
 	if (!ItemToAdd) return false;
 
-	// 인벤토리 배열(5칸)을 순회하면서 빈칸(nullptr) 찾기
+	// ?몃깽?좊━ 諛곗뿴(5移????쒗쉶?섎㈃??鍮덉뭏(nullptr) 李얘린
 	if (AAbyssCorpseItem* CorpseItem = Cast<AAbyssCorpseItem>(ItemToAdd))
 	{
 		if (!HasEnoughEmptyInventorySlots(CorpseItem->SlotCost))
@@ -822,33 +808,33 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 
 	}
 
-	// �κ��丮 �迭(5ĭ)�� ��ȸ�ϸ鼭 ��ĭ(nullptr) ã��
+	// 인벤토리 배열(5칸)을 순회하면서 빈칸(nullptr) 찾기
 	for (int32 i = 0; i < Inventory.Num(); ++i)
 	{
 		if (Inventory[i] == nullptr)
 		{
 
-			// 빈칸 발견! 아이템 넣기
+			// 鍮덉뭏 諛쒓껄! ?꾩씠???ｊ린
 			Inventory[i] = ItemToAdd;
 
 			/*
-			// 충돌 끄기
+			// 異⑸룎 ?꾧린
 			ItemToAdd->SetActorEnableCollision(false);
 
-			// 물리 시뮬레이션 끄기 
+			// 臾쇰━ ?쒕??덉씠???꾧린 
 			UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(ItemToAdd->GetRootComponent());
 			if (RootPrim)
 			{
 				RootPrim->SetSimulatePhysics(false);
-				// 루트 매쉬 충돌 끄기
+				// 猷⑦듃 留ㅼ돩 異⑸룎 ?꾧린
 				RootPrim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				RootPrim->SetCollisionProfileName(TEXT("NoCollision"));
 			}
 
-			// 아이템을 카메라에 부착
+			// ?꾩씠?쒖쓣 移대찓?쇱뿉 遺李?
 			ItemToAdd->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);	
 
-			// 액터 전체를 게임에서 숨기기
+			// ?≫꽣 ?꾩껜瑜?寃뚯엫?먯꽌 ?④린湲?
 			if (CurrentSlotIndex == i) {
 				ItemToAdd->SetActorHiddenInGame(false);
 			}
@@ -857,10 +843,10 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 				ItemToAdd->SetActorHiddenInGame(true);
 			}
 
-			// 소유권 설정
+			// ?뚯쑀沅??ㅼ젙
 			//ItemToAdd->SetOwner(this);
 
-			// UI 업데이트 알림
+			// UI ?낅뜲?댄듃 ?뚮┝
 			if (IsLocallyControlled())
 			{
 				OnInventoryUpdated();
@@ -878,11 +864,11 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 
 			UE_LOG(LogTemp, Warning, TEXT("[Inventory] Picked item %s into slot %d"), *ItemToAdd->GetName(), i);
 
-			return true; // 성공적으로 주움
+			return true; // ?깃났?곸쑝濡?二쇱?
 		}
 	}
 
-	// 빈칸이 하나도 없음
+	// 鍮덉뭏???섎굹???놁쓬
 	return false;
 }
 
@@ -903,32 +889,32 @@ void AAbyssDiverCharacter::CheckForInteractables()
 	{
 		AActor* HitActor = HitResult.GetActor();
 
-		// 맞은 물체가 인터페이스를 가지고 있다면?
+		// 留욎? 臾쇱껜媛 ?명꽣?섏씠?ㅻ? 媛吏怨??덈떎硫?
 		if (HitActor->Implements<UAbyssInteractionInterface>())
 		{
-			// 만약 이전에 쳐다보던 물체와 '다른' 물체라면?
+			// 留뚯빟 ?댁쟾??爾먮떎蹂대뜕 臾쇱껜? '?ㅻⅨ' 臾쇱껜?쇰㈃?
 			if (HitActor != FocusedActor)
 			{
-				// 기존 물체에게는 시선을 뗐다고 알려줌
+				// 湲곗〈 臾쇱껜?먭쾶???쒖꽑???먮떎怨??뚮젮以?
 				if (FocusedActor)
 				{
 					IAbyssInteractionInterface::Execute_OnLostFocus(FocusedActor);
 				}
 
-				// 새 물체에게는 시선이 닿았다고 알려줌
+				// ??臾쇱껜?먭쾶???쒖꽑???우븯?ㅺ퀬 ?뚮젮以?
 				FocusedActor = HitActor;
 				IAbyssInteractionInterface::Execute_OnFocus(FocusedActor);
 			}
-			return; // 성공했으니 여기서 함수 종료
+			return; // ?깃났?덉쑝???ш린???⑥닔 醫낅즺
 		}
 	}
 
-	// 허공을 보거나 상호작용 불가능한 벽을 보았을 때
+	// ?덇났??蹂닿굅???곹샇?묒슜 遺덇??ν븳 踰쎌쓣 蹂댁븯????
 	if (FocusedActor)
 	{
-		// 기존에 보던 물체의 UI를 꺼줌
+		// 湲곗〈??蹂대뜕 臾쇱껜??UI瑜?爰쇱쨲
 		IAbyssInteractionInterface::Execute_OnLostFocus(FocusedActor);
-		FocusedActor = nullptr; // 기억 지우기
+		FocusedActor = nullptr; // 湲곗뼲 吏?곌린
 	}
 }
 
@@ -981,7 +967,7 @@ void AAbyssDiverCharacter::Server_DropItem_Implementation()
 
 	AAbyssItemBase* ItemToDrop = Inventory[CurrentSlotIndex];
 
-	// ��ü�� ���� �����Ͱ� �� ���� ���� ����
+	// 시체면 같은 포인터가 들어간 슬롯 전부 비우기
 	if (AAbyssCorpseItem* CorpseItem = Cast<AAbyssCorpseItem>(ItemToDrop))
 	{
 		for (int32 i = 0; i < Inventory.Num(); ++i)
@@ -1024,7 +1010,7 @@ void AAbyssDiverCharacter::Server_DropItem_Implementation()
 
 		FRotator DropRotation = FirstPersonCameraComponent->GetComponentRotation();
 
-		// ��ü�� ȸ�� �ʱ�ȭ
+		// 시체는 회전 초기화
 		if (Cast<AAbyssCorpseItem>(ItemToDrop))
 		{
 			DropRotation = FRotator::ZeroRotator;
@@ -1062,44 +1048,49 @@ void AAbyssDiverCharacter::Server_DropItem_Implementation()
 	UE_LOG(LogTemp, Log, TEXT("Drop Item: %s"), *ItemToDrop->ItemName);
 }
 
-// 인터페이스 필수 구현: 심장(컴포넌트) 반환
+// ?명꽣?섏씠???꾩닔 援ы쁽: ?ъ옣(而댄룷?뚰듃) 諛섑솚
 UAbilitySystemComponent* AAbyssDiverCharacter::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
 }
 
-// [서버 측 초기화] 캐릭터가 컨트롤러에 빙의(Possess)될 때
+// [?쒕쾭 痢?珥덇린?? 罹먮┃?곌? 而⑦듃濡ㅻ윭??鍮숈쓽(Possess)????
 void AAbyssDiverCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
 	if (AbilitySystemComponent)
 	{
-		// GAS 초기화의 핵심 함수: (소유자 액터, 물리적 아바타 액터)
+		// GAS 珥덇린?붿쓽 ?듭떖 ?⑥닔: (?뚯쑀???≫꽣, 臾쇰━???꾨컮? ?≫꽣)
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 
 	SetupEnhancedInput();
 }
 
-// 산소 값이 변할 때마다 엔진이 알아서 호출해 주는 함수
+// ?곗냼 媛믪씠 蹂???뚮쭏???붿쭊???뚯븘???몄텧??二쇰뒗 ?⑥닔
 void AAbyssDiverCharacter::OnOxygenChangedCallback(const FOnAttributeChangeData& Data)
 {
-	// 블루프린트(UI) 쪽으로 "산소 변했다!" 하고 현재값과 최대값을 방송(Broadcast)합니다.
+	// 釉붾（?꾨┛??UI) 履쎌쑝濡?"?곗냼 蹂?덈떎!" ?섍퀬 ?꾩옱媛믨낵 理쒕?媛믪쓣 諛⑹넚(Broadcast)?⑸땲??
 	OnOxygenChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxOxygen());
 }
 
-// 체력 값이 변할 때마다 엔진이 알아서 호출해 주는 함수
+// 泥대젰 媛믪씠 蹂€???뚮쭏???붿쭊???뚯븘???몄텧??二쇰뒗 ?⑥닔
 void AAbyssDiverCharacter::OnHealthChangedCallback(const FOnAttributeChangeData& Data)
 {
 	// 블루프린트(UI) 쪽으로 "체력 변했다!" 하고 현재값과 최대값을 방송(Broadcast)합니다.
 	OnHealthChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxHealth());
+
+	if (Data.NewValue <= 0.0f && !bIsDead)
+	{
+		Die();
+	}
 }
 
-// 배터리 값이 변할 때마다 엔진이 알아서 호출해 주는 함수
+// 諛고꽣由?媛믪씠 蹂€???뚮쭏???붿쭊???뚯븘???몄텧??二쇰뒗 ?⑥닔
 void AAbyssDiverCharacter::OnBatteryChangedCallback(const FOnAttributeChangeData& Data)
 {
-	// 블루프린트(UI) 쪽으로 "체력 변했다!" 하고 현재값과 최대값을 방송(Broadcast)합니다.
+	// 釉붾（?꾨┛??UI) 履쎌쑝濡?"泥대젰 蹂?덈떎!" ?섍퀬 ?꾩옱媛믨낵 理쒕?媛믪쓣 諛⑹넚(Broadcast)?⑸땲??
 	OnBatteryChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxBattery());
 }
 
@@ -1143,7 +1134,7 @@ void AAbyssDiverCharacter::SetupEnhancedInput()
 	Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	UE_LOG(LogTemp, Warning, TEXT("[Input] MappingContext Added"));
 
-	// 로비에서 넘어올 때 UI 입력 모드가 남아있을 수 있으므로 복원
+	// 濡쒕퉬?먯꽌 ?섏뼱????UI ?낅젰 紐⑤뱶媛 ?⑥븘?덉쓣 ???덉쑝誘濡?蹂듭썝
 	FInputModeGameOnly InputMode;
 	PlayerController->SetInputMode(InputMode);
 	PlayerController->bShowMouseCursor = false;
@@ -1161,10 +1152,10 @@ bool AAbyssDiverCharacter::HasEmptyInventorySlot() const
 	{
 		if (Inventory[i] == nullptr)
 		{
-			return true; // 빈칸 있음!
+			return true; // 鍮덉뭏 ?덉쓬!
 		}
 	}
-	return false; // 꽉 참
+	return false; // 苑?李?
 }
 
 void AAbyssDiverCharacter::Server_AcceptMissionById_Implementation(FName MissionId)
@@ -1182,19 +1173,19 @@ void AAbyssDiverCharacter::SetInsideSubmarine(bool bInside)
 
 	if (bInside)
 	{
-		// 1. 수영 능력 강제 차단 (물 속 물리 볼륨을 무시하게 됨)
+		// 1. ?섏쁺 ?λ젰 媛뺤젣 李⑤떒 (臾???臾쇰━ 蹂쇰ⅷ??臾댁떆?섍쾶 ??
 		MoveComp->NavAgentProps.bCanSwim = false;
 
-		// 2. 강제로 걷기/낙하 모드로 변경 (수중에서도 중력이 적용되어 바닥으로 떨어짐)
+		// 2. 媛뺤젣濡?嫄룰린/?숉븯 紐⑤뱶濡?蹂寃?(?섏쨷?먯꽌??以묐젰???곸슜?섏뼱 諛붾떏?쇰줈 ?⑥뼱吏?
 		MoveComp->SetMovementMode(MOVE_Falling);
 		IsSwimming = false;
 	}
 	else
 	{
-		// 1. 잠수함 밖으로 나가면 수영 능력 복구
+		// 1. ?좎닔??諛뽰쑝濡??섍?硫??섏쁺 ?λ젰 蹂듦뎄
 		MoveComp->NavAgentProps.bCanSwim = true;
 
-		// 2. 만약 현재 맵의 물 볼륨 안에 있다면 즉시 수영 모드로 전환
+		// 2. 留뚯빟 ?꾩옱 留듭쓽 臾?蹂쇰ⅷ ?덉뿉 ?덈떎硫?利됱떆 ?섏쁺 紐⑤뱶濡??꾪솚
 		if (MoveComp->IsInWater())
 		{
 			MoveComp->SetMovementMode(MOVE_Swimming);
@@ -1345,4 +1336,53 @@ void AAbyssDiverCharacter::ApplyCorpseCarryPenalty()
 
 void AAbyssDiverCharacter::RemoveCorpseCarryPenalty()
 {
+}
+
+void AAbyssDiverCharacter::Die()
+{
+	if (HasAuthority())
+	{
+		Server_Die_Implementation();
+	}
+	else
+	{
+		Server_Die();
+	}
+}
+
+void AAbyssDiverCharacter::Server_Die_Implementation()
+{
+	if (bIsDead) return;
+	bIsDead = true;
+
+	// Spawn Corpse Item
+	if (AAbyssCorpseItem* Corpse = GetWorld()->SpawnActor<AAbyssCorpseItem>(AAbyssCorpseItem::StaticClass(), GetActorLocation(), GetActorRotation()))
+	{
+		Corpse->SetDeadPlayerState(GetPlayerState());
+		Corpse->InitCorpse(GetMesh()->GetSkeletalMeshAsset(), GetMesh()->GetMaterials());
+	}
+
+	// Inform GameMode
+	if (AAbyssGameMode* GM = Cast<AAbyssGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GM->OnPlayerDied(GetController());
+	}
+
+	// Unpossess and set to spectator
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		PC->ChangeState(NAME_Spectating);
+		PC->ClientGotoState(NAME_Spectating);
+	}
+
+	Multicast_Die();
+}
+
+void AAbyssDiverCharacter::Multicast_Die_Implementation()
+{
+	// Hide character mesh and disable collision
+	GetMesh()->SetVisibility(false, true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }

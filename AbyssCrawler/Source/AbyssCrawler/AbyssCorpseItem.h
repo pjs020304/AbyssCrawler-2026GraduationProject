@@ -25,7 +25,12 @@ public:
 
 	void SetDeadPlayerState(APlayerState* InPlayerState);
 
+	void InitCorpse(USkeletalMesh* DiverMesh, TArray<UMaterialInterface*> Materials);
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class USkeletalMeshComponent* CorpseMesh;
 
 protected:
 	UPROPERTY(Replicated)

@@ -222,6 +222,17 @@ public:
   UPROPERTY()
   bool bIsWorkingLocked = false;
 
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+  bool bIsDead = false;
+
+  void Die();
+
+  UFUNCTION(Server, Reliable)
+  void Server_Die();
+
+  UFUNCTION(NetMulticast, Reliable)
+  void Multicast_Die();
+
   void SetInputLockedByUI(bool bLocked);
 
 	bool HasEnoughEmptyInventorySlots(int32 NeededSlots) const;
