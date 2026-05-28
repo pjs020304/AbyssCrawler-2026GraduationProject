@@ -8,21 +8,21 @@ AAbyssFlashLight::AAbyssFlashLight()
     bReplicates = true;
     SetReplicateMovement(true);
 
-    // 1. ½ºÆ÷Æ® ¶óÀÌÆ® »ı¼º
+    // 1. ìŠ¤í¬íŠ¸ ë¼ì´íŠ¸ ìƒì„±
     SpotLightComp = CreateDefaultSubobject<USpotLightComponent>(TEXT("SpotLightComp"));
     SpotLightComp->SetupAttachment(RootComponent);
 
 
     //ItemMesh->SetupAttachment(SpotLightComp);
-    // 2. ¶óÀÌÆ® ¼³Á¤ (ÀÌÀü¿¡ Çß´ø ¼³Á¤ ±×´ë·Î)
-    SpotLightComp->Intensity = 5000.0f;
-    SpotLightComp->AttenuationRadius = 2000.0f;
+    // 2. ë¼ì´íŠ¸ ì„¤ì • (ì´ì „ì— í–ˆë˜ ì„¤ì • ê·¸ëŒ€ë¡œ)
+    SpotLightComp->Intensity = 15000.0f;
+    SpotLightComp->AttenuationRadius = 8000.0f;
     SpotLightComp->OuterConeAngle = 25.0f;
     SpotLightComp->InnerConeAngle = 10.0f;
     SpotLightComp->LightColor = FColor(200, 230, 255);
     SpotLightComp->CastShadows = true;
 
-    // ±âº»Àº ²¨µÒ
+    // ê¸°ë³¸ì€ êº¼ë‘ 
     SpotLightComp->SetVisibility(false);
     bIsLightOn = false;
 
@@ -35,12 +35,12 @@ void AAbyssFlashLight::BeginPlay()
     ApplyLightState();
 }
 
-// [»ç¿ëÇÏ±â] Å¬¸¯ÇÏ¸é ºÒÀÌ ÄÑÁ³´Ù ²¨Á³´Ù ÇÔ
+// [ì‚¬ìš©í•˜ê¸°] í´ë¦­í•˜ë©´ ë¶ˆì´ ì¼œì¡Œë‹¤ êº¼ì¡Œë‹¤ í•¨
 void AAbyssFlashLight::UseItem()
 {
-    Super::UseItem(); // ºÎ¸ğ ·Î±× Ãâ·Â
+    Super::UseItem(); // ë¶€ëª¨ ë¡œê·¸ ì¶œë ¥
 
-    // ¼ÕÀüµîÀ» ½ÇÁ¦ »ç¿ëÇÒ ¼ö ÀÖ´Â »óÅÂ°¡ ¾Æ´Ï¸é ¹«½Ã
+    // ì†ì „ë“±ì„ ì‹¤ì œ ì‚¬ìš©í•  ìˆ˜ ìˆëŠ” ìƒíƒœê°€ ì•„ë‹ˆë©´ ë¬´ì‹œ
     if (!CanUseFlashLight())
     {
         UE_LOG(LogTemp, Warning, TEXT("[FlashLight] Cannot use flashlight now."));
@@ -65,7 +65,7 @@ void AAbyssFlashLight::UseItem()
 
     UE_LOG(LogTemp, Warning, TEXT("[FlashLight] UseItem called, LightOn=%s"), bIsLightOn ? TEXT("true") : TEXT("false"));
     
-    // µş±ï ¼Ò¸® Ãß°¡ °¡´É
+    // ë”¸ê¹ ì†Œë¦¬ ì¶”ê°€ ê°€ëŠ¥
 }
 
 void AAbyssFlashLight::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -119,13 +119,13 @@ void AAbyssFlashLight::ForceTurnOff()
 
 void AAbyssFlashLight::NotifyUnequipped()
 {
-    // ½½·Ô ÀüÈ¯ µîÀ¸·Î ¼Õ¿¡¼­ ³»·Á°¡¸é ²¨µÎ´Â ±â´É
+    // ìŠ¬ë¡¯ ì „í™˜ ë“±ìœ¼ë¡œ ì†ì—ì„œ ë‚´ë ¤ê°€ë©´ êº¼ë‘ëŠ” ê¸°ëŠ¥
     ForceTurnOff();
 }
 
 void AAbyssFlashLight::Server_SetLightEnabled_Implementation(bool bNewEnabled)
 {
-    // ¼­¹ö¿¡¼­ ÃÖÁ¾ °ËÁõ
+    // ì„œë²„ì—ì„œ ìµœì¢… ê²€ì¦
     if (!bPickedUp)
     {
         ForceTurnOff();

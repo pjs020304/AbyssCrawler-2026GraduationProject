@@ -23,6 +23,8 @@ class USpringArmComponent;
 class UAbyssCharacterMovementComponent;
 class UAbilitySystemComponent;
 class UAbyssAttributeSet;
+class UNiagaraComponent;
+class APostProcessVolume;
 class UMainHUDWidget;
 class UMissionSelectUIWidget;
 class AAbyssMissionSender;
@@ -54,6 +56,20 @@ public:
   // --- Components ---
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
   UCameraComponent *FirstPersonCameraComponent;
+
+  // 심해 수중 부유물(Marine Snow)을 위한 GPU 연산 파티클 컴포넌트
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Environment")
+  UNiagaraComponent* MarineSnowComponent;
+
+  // 심해 포스트 프로세스 볼륨 캐싱
+  UPROPERTY(Transient)
+  APostProcessVolume* DeepSeaPPVolume;
+
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Environment|PostProcess")
+  float PPBlendSpeed = 2.0f; // 보간 속도
+
+  float CurrentPPWeight = 0.0f;
+  float TargetPPWeight = 0.0f;
 
   // 몸체 메쉬 (그림자 및 멀티플레이 타인 시점용)
   // (참고: ACharacter의 기본 GetMesh()를 사용하되, 1인칭용 팔 메쉬를 따로 둘

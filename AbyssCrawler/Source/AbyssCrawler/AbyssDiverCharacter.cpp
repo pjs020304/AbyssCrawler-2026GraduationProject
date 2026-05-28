@@ -18,8 +18,13 @@
 #include "Mission/Contents/AbyssMissionSender.h"
 #include "Blueprint/UserWidget.h"
 #include "Mission/Contents/AbyssMissionWorkObject.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "EngineUtils.h"
+#include "Engine/PostProcessVolume.h"
+#include "GameFramework/PhysicsVolume.h"
 
-// 以묒슂: 而ㅼ뒪? 臾대툕癒쇳듃 而댄룷?뚰듃瑜??ъ슜?섎젮硫?FObjectInitializer瑜?諛쏅뒗 ?앹꽦?먮? ?⑥빞 ??
+// 중요: 커스텀 무브먼트 컴포넌트 사용을 위한 생성자 선언
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UAbyssCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
@@ -34,6 +39,10 @@ AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectIniti
 	FirstPersonCameraComponent->SetRelativeRotation(FRotator(0.0f, 0.f, -90.f));
 
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
+
+	MarineSnowComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("MarineSnowComponent"));
+	MarineSnowComponent->SetupAttachment(FirstPersonCameraComponent);
+	MarineSnowComponent->SetOnlyOwnerSee(true); // 멀티플레이어 환경 최적화
 
 	GetMesh()->SetOwnerNoSee(false); 
 	GetMesh()->bCastHiddenShadow = false;
@@ -54,6 +63,34 @@ void AAbyssDiverCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	for (TActorIterator<APostProcessVolume> It(GetWorld()); It; ++It)
+	{
+		// 파이썬 스크립트로 생성한 볼륨이거나 언바운드 볼륨 캐싱
+		if (It->GetActorNameOrLabel().Contains(TEXT("DeepSea")) || It->bUnbound)
+		{
+			DeepSeaPPVolume = *It;
+			//UE_LOG(LogTemp, Warning, TEXT("Get Deep Sea PP Volume: %s"), *DeepSeaPPVolume->GetDebugName());
+			break;
+		}
+	}
+	
+	APhysicsVolume* CurrentVolume = GetCharacterMovement() ? GetCharacterMovement()->GetPhysicsVolume() : nullptr;
+	bool bInWater = CurrentVolume && CurrentVolume->bWaterVolume;
+
+	if (bInWater)
+	{
+		CurrentPPWeight = 1.0f;
+	}
+	else
+	{
+		CurrentPPWeight = 0.0f;
+	}
+	
+	if (DeepSeaPPVolume)
+	{
+		DeepSeaPPVolume->BlendWeight = CurrentPPWeight;
+	}
+
 	if (AbilitySystemComponent && AttributeSet)
 	{
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetOxygenAttribute()).AddUObject(this, &AAbyssDiverCharacter::OnOxygenChangedCallback);
@@ -65,12 +102,11 @@ void AAbyssDiverCharacter::BeginPlay()
 			FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
 			Context.AddInstigator(this, this);
 
-			// ?ъ옣吏? ?댄럺?몃? ?⑹퀜???곸슜??以鍮?Spec) ?꾨즺
 			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(OxygenDrainEffectClass, 1.0f, Context);
 
 			if (SpecHandle.IsValid())
 			{
-				// ?쒕뵒????紐몄뿉 ?곗냼 媛먯냼 ?댄럺??遺李?
+
 				AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			}
 		}
@@ -89,14 +125,11 @@ void AAbyssDiverCharacter::BeginPlay()
 
 	if (HasAuthority())
 	{
-		// 1. ?몃깽?좊━ 珥덇린??(鍮??щ’ 5媛??앹꽦)
 		Inventory.Init(nullptr, 5);
 		CurrentSlotIndex = 0;
 
-		// 2. 湲곕낯 ?꾩씠???먯쟾?? ?앹꽦 諛?吏湲?
 		if (DefaultItemClass)
 		{
-			// ?붾뱶???꾩씠???≫꽣 ?앹꽦
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = this;
 			AAbyssItemBase* NewItem = GetWorld()->SpawnActor<AAbyssItemBase>(
@@ -122,10 +155,7 @@ void AAbyssDiverCharacter::BeginPlay()
 					RootPrim->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				}
 
-				// ?꾩씠?쒖쓣 移대찓?쇱뿉 遺숈씠湲?(1?몄묶 ?쒖젏)
 				NewItem->AttachToComponent(FirstPersonCameraComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-				// ?좊땲硫붿씠??臾쇨굔???ㅺ퀬 ?덈뒗?? 洹몃깷 嫄룸뒗 紐⑥뀡 + 臾쇨굔???ㅺ퀬?덈뒗 紐⑥뀡(?遺遺??쒖넀 ?꾩씠??
-				// ?꾩씠?? 怨듦꺽, 諛⑺빐(?꾪뙆), ?ㅼ튂(諛⑺빐), ?대룞?띾룄(?쒗듃?? ?먯쑝濡??ㅺ퀬 ?ъ슜 ?섎뒗嫄? 利앷?
 
 				NewItem->SetActorEnableCollision(false);
 				*/
@@ -151,9 +181,52 @@ void AAbyssDiverCharacter::BeginPlay()
 void AAbyssDiverCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	// ?ш린???섏쨷???곗냼 ?뚮え ?깆쓽 濡쒖쭅 異붽?
+	
+	// Post Process Blending 로직
+	APhysicsVolume* CurrentVolume = GetCharacterMovement() ? GetCharacterMovement()->GetPhysicsVolume() : nullptr;
+	bool bInWater = CurrentVolume && CurrentVolume->bWaterVolume;
+
+	if (DeepSeaPPVolume)
+	{
+		TargetPPWeight = bInWater ? 1.0f : 0.0f;
+		CurrentPPWeight = FMath::FInterpTo(CurrentPPWeight, TargetPPWeight, DeltaTime, PPBlendSpeed);
+		DeepSeaPPVolume->BlendWeight = CurrentPPWeight;
+	}
+
+	// Marine Snow 동적 파라미터 제어
+	if (MarineSnowComponent)
+	{
+		if (bInWater && !MarineSnowComponent->IsActive())
+		{
+			MarineSnowComponent->Activate();
+		}
+		else if (!bInWater && MarineSnowComponent->IsActive())
+		{
+			MarineSnowComponent->Deactivate();
+		}
+
+		float Speed = GetVelocity().Size();
+		// 최대 이동 속도를 600.0f 정도로 가정하여 비율 계산
+		float SpeedRatio = FMath::Clamp(Speed / 600.0f, 0.0f, 1.0f);
+		
+		// 멈춰 있을 때 1.0, 빠르게 이동할 때 5.0 배속/스폰율
+		float SpawnRateMult = FMath::Lerp(1.0f, 5.0f, SpeedRatio);
+		// 난기류 강도를 1.0에서 3.0으로 증가시켜 격렬한 흩날림 표현
+		float TurbulenceMult = FMath::Lerp(1.0f, 3.0f, SpeedRatio);
+		
+		// 블루프린트(Niagara) 측에서 노출한 파라미터와 연동
+		MarineSnowComponent->SetVariableFloat(FName(TEXT("User.SpeedMultiplier")), SpawnRateMult);
+		MarineSnowComponent->SetVariableFloat(FName(TEXT("User.Turbulence")), TurbulenceMult);
+	}
 
 	CheckForInteractables();
+
+	// Multiplayer: Sync camera rotation for simulated proxies to replicate look direction and flashlight direction
+	if (!IsLocallyControlled() && FirstPersonCameraComponent)
+	{
+		FRotator ReplicatedAimRot = GetBaseAimRotation();
+		FirstPersonCameraComponent->SetWorldRotation(ReplicatedAimRot);
+	}
 }
 
 void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -162,7 +235,6 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 	if (AbilitySystemComponent)
 	{
-		// ?대씪?댁뼵?몄뿉?쒕룄 ?묎컳??珥덇린?뷀빐 二쇱뼱??UI ?곕룞 諛??덉륫(Prediction)???뺤긽 ?묐룞?⑸땲??
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 
@@ -212,7 +284,6 @@ void AAbyssDiverCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 void AAbyssDiverCharacter::StartDash()
 {
-	// 而ㅼ뒪? 臾대툕癒쇳듃 而댄룷?뚰듃 媛?몄삤湲?
 	if (UAbyssCharacterMovementComponent* MyCMC = Cast<UAbyssCharacterMovementComponent>(GetCharacterMovement()))
 	{
 		MyCMC->SetSprinting(true);
@@ -267,7 +338,6 @@ void AAbyssDiverCharacter::Client_OpenMissionSelectUI_Implementation(const TArra
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
-	// ?대? ?대젮 ?덉쑝硫??덈줈 留뚮뱾吏 留먭퀬 ?댁슜留?媛깆떊
 	if (MissionSelectUIRef && MissionSelectUIRef->IsInViewport())
 	{
 		return;
@@ -388,7 +458,6 @@ void AAbyssDiverCharacter::Move(const FInputActionValue& Value)
 		}
 		else
 		{
-			// 嫄룰린 以? 諛붾떏??遺숈뼱 ?ㅻ????섎?濡?Yaw ?뚯쟾留?怨좊젮 (Z異?諛곗젣)
 			FRotator YawRot(0, GetControlRotation().Yaw, 0);
 			FVector ForwardDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
 			FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
@@ -414,7 +483,6 @@ void AAbyssDiverCharacter::StartAscend()
 {
 	if (GetCharacterMovement()->IsSwimming())
 	{
-		// ?섏쁺 以?Space: ?섏쭅 ?곸듅
 		AddMovementInput(FVector::UpVector, 1.0f);
 		//UE_LOG(LogTemp, Warning, TEXT("Swiming Ascend now"))
 		
