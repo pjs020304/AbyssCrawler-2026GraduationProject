@@ -9,10 +9,12 @@
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "AbyssFlashLight.h"
 #include "AbyssCorpseItem.h"
 #include "AbyssGameMode.h"
+#include "AbyssPlayerState.h"
 #include "MainHUDWidget.h"
 #include "Mission/UI/MissionSelectUIWidget.h"
 #include "Mission/Contents/AbyssMissionSender.h"
@@ -174,7 +176,18 @@ void AAbyssDiverCharacter::BeginPlay()
 		}
 	}
 		
-	//OnInventoryUpdated();
+	if (IsLocallyControlled())
+	{
+		if (FadeWidgetClass)
+		{
+			FadeWidget = CreateWidget<UUserWidget>(GetWorld(), FadeWidgetClass);
+
+			if (FadeWidget)
+			{
+				FadeWidget->AddToViewport(10000);
+			}
+		}
+	}
 
 }
 
@@ -271,6 +284,9 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 		// 踰꾨━湲?
 		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::DropItem);
+
+		// Chat
+		EnhancedInputComponent->BindAction(ChatAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::OpenChatInput);
 	}
 }
 
@@ -1405,6 +1421,71 @@ void AAbyssDiverCharacter::ApplyCorpseCarryPenalty()
 void AAbyssDiverCharacter::RemoveCorpseCarryPenalty()
 {
 }
+
+void AAbyssDiverCharacter::OpenChatInput()
+{
+	if (!IsLocallyControlled()) return;
+	if (!MainHUDRef) return;
+
+	MainHUDRef->BP_OpenChat();
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	TSharedPtr<SWidget> ChatInputWidget = MainHUDRef->GetChatInputTextObject();
+	if (!ChatInputWidget.IsValid()) return;
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(ChatInputWidget);
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
+	PC->SetInputMode(InputMode);
+	PC->bShowMouseCursor = true;
+
+	SetInputLockedByUI(true);
+}
+
+void AAbyssDiverCharacter::SendChatMessage(const FString& Message)
+{
+	const FString TrimmedMessage = Message.TrimStartAndEnd();
+	if (TrimmedMessage.IsEmpty()) return;
+
+	Server_SendChatMessage(TrimmedMessage);
+}
+
+void AAbyssDiverCharacter::Client_ReceiveChatMessage_Implementation(const FString& Message)
+{
+	if (MainHUDRef)
+	{
+		MainHUDRef->AddChatMessage(Message);
+	}
+}
+
+void AAbyssDiverCharacter::Server_SendChatMessage_Implementation(const FString& Message)
+{
+	FString SenderName = TEXT("Player");
+
+	if (AAbyssPlayerState* PS = GetPlayerState<AAbyssPlayerState>())
+	{
+		SenderName = PS->Nickname.ToString();
+	}
+
+	const FString FinalMessage =
+		FString::Printf(TEXT("%s : %s"), *SenderName, *Message);
+
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (APlayerController* PC = It->Get())
+		{
+			if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(PC->GetPawn()))
+			{
+				Diver->Client_ReceiveChatMessage(FinalMessage);
+			}
+		}
+	}
+}
+
+
 
 void AAbyssDiverCharacter::Die()
 {

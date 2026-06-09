@@ -19,7 +19,7 @@ public:
 	void Server_HandleReadyButton();
 
 	UFUNCTION(BlueprintCallable, Server, Reliable)
-	void Server_HandleChangeUsername(const FText& InNIckname);
+	void Server_HandleChangeUsername(const FText& InNickname);
 
 	// UI »£√‚
 	UFUNCTION(BlueprintCallable)

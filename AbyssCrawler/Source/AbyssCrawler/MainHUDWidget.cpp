@@ -4,6 +4,8 @@
 #include "MainHUDWidget.h"
 #include "Mission/UI/MissionUIWidget.h"
 #include "AbyssGameState.h"
+#include "Chat/UI/Chatting.h"
+#include "Blueprint/WidgetTree.h"
 
 void UMainHUDWidget::RefreshMissionUI()
 {
@@ -31,4 +33,29 @@ void UMainHUDWidget::UpdateMoneyDisplay(int32 NewMoney)
 {
     // 블루프린트 이벤트를 호출하여 텍스트를 갱신합니다.
     OnUpdateMoneyText(NewMoney);
+}
+
+UChatting* UMainHUDWidget::GetChattingUI() const
+{
+    if (!WidgetTree) return nullptr;
+
+    return Cast<UChatting>(WidgetTree->FindWidget(TEXT("ChattingUI")));
+}
+
+void UMainHUDWidget::AddChatMessage(const FString& Message)
+{
+    if (UChatting* Chat = GetChattingUI())
+    {
+        Chat->AddChatMessage(Message);
+    }
+}
+
+TSharedPtr<SWidget> UMainHUDWidget::GetChatInputTextObject()
+{
+    if (UChatting* Chat = GetChattingUI())
+    {
+        return Chat->GetChatInputTextObject();
+    }
+
+    return nullptr;
 }

@@ -255,6 +255,27 @@ public:
 	void ApplyCorpseCarryPenalty();
 	void RemoveCorpseCarryPenalty();
 
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UUserWidget> FadeWidgetClass;
+
+    UPROPERTY()
+    UUserWidget* FadeWidget = nullptr;
+
+    // Chatting
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+    UInputAction* ChatAction;
+
+    void OpenChatInput();
+
+    void SendChatMessage(const FString& Message);
+
+    UFUNCTION(Server, Reliable)
+    void Server_SendChatMessage(const FString& Message);
+
+    UFUNCTION(Client, Reliable)
+    void Client_ReceiveChatMessage(const FString& Message);
+
+
 private:
   UPROPERTY()
   AAbyssMissionWorkObject *CurrentWorkObject = nullptr;

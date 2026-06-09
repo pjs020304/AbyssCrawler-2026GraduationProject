@@ -5,6 +5,7 @@
 #include "LobbyPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "LobbyGameMode.h"
+#include "TitleGameInstance.h"
 #include <MovieSceneSequencePlayer.h>
 
 void ALobbyPlayerController::Server_HandleReadyButton_Implementation()
@@ -22,15 +23,22 @@ void ALobbyPlayerController::Server_HandleReadyButton_Implementation()
 
 }
 
-void ALobbyPlayerController::Server_HandleChangeUsername_Implementation(const FText& InNIckname)
+void ALobbyPlayerController::Server_HandleChangeUsername_Implementation(const FText& InNickname)
 {
 	if (HasAuthority() == false)
 		return;
 
 	ALobbyPlayerState* LobbyPlayerState = Cast<ALobbyPlayerState>(GetPawn()->GetPlayerState());
 	if (LobbyPlayerState)
-		LobbyPlayerState->Nickname = InNIckname;
+	{
+		LobbyPlayerState->Nickname = InNickname;
 
+		if (UTitleGameInstance* GI = GetGameInstance<UTitleGameInstance>())
+		{
+			const FString PlayerKey = PlayerState ? PlayerState->GetPlayerName() : GetName();
+			GI->SavePlayerNickname(PlayerKey, InNickname);
+		}
+	}
 }
 
 void ALobbyPlayerController::HandleReadyButton()

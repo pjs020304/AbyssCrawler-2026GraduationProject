@@ -20,6 +20,12 @@ public:
 
 	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
 
+	UPROPERTY()
+	TMap<FString, FText> PlayerNicknames;
+
+	void SavePlayerNickname(const FString& PlayerKey, const FText& Nickname);
+	FText GetSavedNickname(const FString& PlayerKey) const;
+
 protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
