@@ -6,6 +6,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Mission/Contents/AbyssMissionLight.h"
+#include "TitleGameInstance.h"
 #include "EngineUtils.h"
 
 AAbyssGameMode::AAbyssGameMode()
@@ -22,9 +23,21 @@ void AAbyssGameMode::PostLogin(APlayerController* NewPlayer)
 {
     Super::PostLogin(NewPlayer);
 
+    if (!NewPlayer) return;
+
     // GAS 초기화: PlayerState에 있는 ASC를 갱신
     if (AAbyssPlayerState* PS = NewPlayer->GetPlayerState<AAbyssPlayerState>())
     {
+        // NickName
+        if (UTitleGameInstance* GI = GetGameInstance<UTitleGameInstance>())
+        {
+            const FString PlayerKey = NewPlayer->PlayerState
+                ? NewPlayer->PlayerState->GetPlayerName()
+                : NewPlayer->GetName();
+
+            PS->Nickname = GI->GetSavedNickname(PlayerKey);
+        }
+
         // AbilitySystemComponent 초기화 로직 (InitAbilityActorInfo 등)
         // 보통 캐릭터의 PossessedBy에서 호출하지만, 여기서 확실히 처리할 수도 있음
     }

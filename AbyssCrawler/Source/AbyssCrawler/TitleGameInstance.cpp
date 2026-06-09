@@ -87,3 +87,18 @@ void UTitleGameInstance::OnNetworkFailure(
 	Popup->AddToViewport(100);
 	*/
 }
+
+void UTitleGameInstance::SavePlayerNickname(const FString& PlayerKey, const FText& Nickname)
+{
+	PlayerNicknames.Add(PlayerKey, Nickname);
+}
+
+FText UTitleGameInstance::GetSavedNickname(const FString& PlayerKey) const
+{
+	if (const FText* FoundName = PlayerNicknames.Find(PlayerKey))
+	{
+		return *FoundName;
+	}
+
+	return FText::FromString(TEXT("Player"));
+}

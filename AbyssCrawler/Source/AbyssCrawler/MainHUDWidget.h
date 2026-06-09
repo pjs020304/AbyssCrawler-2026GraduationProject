@@ -7,6 +7,7 @@
 #include "MainHUDWidget.generated.h"
 
 class UMissionUIWidget;
+class UChatting;
 
 /**
  * 
@@ -44,6 +45,24 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void BP_ShowMissionComplete(const FText& MissionName);
 
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void BP_OpenChat();
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void BP_CloseChat();
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void BP_ToggleMission();
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void BP_CloseMission();
+
+	UFUNCTION(BlueprintCallable)
+	UChatting* GetChattingUI() const;
+
+	void AddChatMessage(const FString& Message);
+	TSharedPtr<SWidget> GetChatInputTextObject();
+
 protected:
 	UPROPERTY(meta = (BindWidget))
 	UMissionUIWidget* MissionUI;
@@ -59,4 +78,6 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void OnUpdateMoneyText(int32 Money);
 	
+	UPROPERTY(meta = (BindWidgetOptional))
+	UChatting* ChattingUI;
 };
