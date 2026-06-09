@@ -31,6 +31,11 @@ void AUnderwaterScooterItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 
 void AUnderwaterScooterItem::UseItem()
 {
+	if (OwnerCharacter && !OwnerCharacter->IsSwimming)
+	{
+		return;
+	}
+
 	Super::UseItem();
 
 	if (HasAuthority())
@@ -111,6 +116,12 @@ void AUnderwaterScooterItem::Tick(float DeltaTime)
 
 	if (HasAuthority() && bIsActive && OwnerCharacter)
 	{
+		if (!OwnerCharacter->IsSwimming)
+		{
+			EndUseItem();
+			return;
+		}
+
 		if (OwnerCharacter->FirstPersonCameraComponent)
 		{
 			FVector ForwardDir = OwnerCharacter->FirstPersonCameraComponent->GetForwardVector();

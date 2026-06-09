@@ -23,17 +23,25 @@ class USpringArmComponent;
 class UAbyssCharacterMovementComponent;
 class UAbilitySystemComponent;
 class UAbyssAttributeSet;
-class UNiagaraComponent;
+class UParticleSystemComponent;
 class APostProcessVolume;
-class UMainHUDWidget;
+class AAbyssItemBase;
 class UMissionSelectUIWidget;
 class AAbyssMissionSender;
 struct FAbyssMissionData;
 class AAbyssMissionWorkObject;
+class UMainHUDWidget;
+
+UENUM(BlueprintType)
+enum class EAbyssWorkType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	MissionWork UMETA(DisplayName = "Mission Work"),
+	ItemInstall UMETA(DisplayName = "Item Install")
+};
 
 UCLASS()
-class ABYSSCRAWLER_API AAbyssDiverCharacter : public ACharacter,
-                                              public IAbilitySystemInterface {
+class ABYSSCRAWLER_API AAbyssDiverCharacter : public ACharacter, public IAbilitySystemInterface {
   GENERATED_BODY()
 
 public:
@@ -59,7 +67,7 @@ public:
 
   // 심해 수중 부유물(Marine Snow)을 위한 GPU 연산 파티클 컴포넌트
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Environment")
-  UNiagaraComponent* MarineSnowComponent;
+  UParticleSystemComponent* MarineSnowParticleComponent;
 
   // 심해 포스트 프로세스 볼륨 캐싱
   UPROPERTY(Transient)
@@ -240,6 +248,15 @@ public:
 
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
   bool bIsDead = false;
+
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+  bool bIsHoldingItem = false;
+
+  UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "State")
+  EAbyssWorkType CurrentWorkType = EAbyssWorkType::None;
+
+  UFUNCTION(BlueprintCallable, Category = "State")
+  void SetWorkType(EAbyssWorkType NewWorkType);
 
   void Die();
 

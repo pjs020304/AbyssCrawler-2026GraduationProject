@@ -18,8 +18,7 @@
 #include "Mission/Contents/AbyssMissionSender.h"
 #include "Blueprint/UserWidget.h"
 #include "Mission/Contents/AbyssMissionWorkObject.h"
-#include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "EngineUtils.h"
 #include "Engine/PostProcessVolume.h"
 #include "GameFramework/PhysicsVolume.h"
@@ -40,9 +39,9 @@ AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectIniti
 
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
-	MarineSnowComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("MarineSnowComponent"));
-	MarineSnowComponent->SetupAttachment(FirstPersonCameraComponent);
-	MarineSnowComponent->SetOnlyOwnerSee(true); // 멀티플레이어 환경 최적화
+	MarineSnowParticleComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("MarineSnowParticleComponent"));
+	MarineSnowParticleComponent->SetupAttachment(FirstPersonCameraComponent);
+	MarineSnowParticleComponent->SetOnlyOwnerSee(false); // 다른 플레이어에게도 보이도록 설정
 
 	GetMesh()->SetOwnerNoSee(false); 
 	GetMesh()->bCastHiddenShadow = false;
@@ -193,16 +192,22 @@ void AAbyssDiverCharacter::Tick(float DeltaTime)
 		DeepSeaPPVolume->BlendWeight = CurrentPPWeight;
 	}
 
-	// Marine Snow 동적 파라미터 제어
-	if (MarineSnowComponent)
+	// Update holding item state
+	if (HasAuthority() || IsLocallyControlled())
 	{
-		if (bInWater && !MarineSnowComponent->IsActive())
+		bIsHoldingItem = Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr;
+	}
+
+	// Marine Snow 동적 파라미터 제어
+	if (MarineSnowParticleComponent)
+	{
+		if (bInWater && !MarineSnowParticleComponent->IsActive())
 		{
-			MarineSnowComponent->Activate();
+			MarineSnowParticleComponent->Activate();
 		}
-		else if (!bInWater && MarineSnowComponent->IsActive())
+		else if (!bInWater && MarineSnowParticleComponent->IsActive())
 		{
-			MarineSnowComponent->Deactivate();
+			MarineSnowParticleComponent->Deactivate();
 		}
 
 		float Speed = GetVelocity().Size();
@@ -214,9 +219,9 @@ void AAbyssDiverCharacter::Tick(float DeltaTime)
 		// 난기류 강도를 1.0에서 3.0으로 증가시켜 격렬한 흩날림 표현
 		float TurbulenceMult = FMath::Lerp(1.0f, 3.0f, SpeedRatio);
 		
-		// 블루프린트(Niagara) 측에서 노출한 파라미터와 연동
-		MarineSnowComponent->SetVariableFloat(FName(TEXT("User.SpeedMultiplier")), SpawnRateMult);
-		MarineSnowComponent->SetVariableFloat(FName(TEXT("User.Turbulence")), TurbulenceMult);
+		// 파티클 시스템 인스턴스 파라미터 연동
+		MarineSnowParticleComponent->SetFloatParameter(FName(TEXT("SpeedMultiplier")), SpawnRateMult);
+		MarineSnowParticleComponent->SetFloatParameter(FName(TEXT("Turbulence")), TurbulenceMult);
 	}
 
 	CheckForInteractables();
@@ -280,6 +285,7 @@ void AAbyssDiverCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 	DOREPLIFETIME(AAbyssDiverCharacter, Inventory);
 	DOREPLIFETIME(AAbyssDiverCharacter, CurrentSlotIndex);
+	DOREPLIFETIME(AAbyssDiverCharacter, CurrentWorkType);
 }
 
 void AAbyssDiverCharacter::StartDash()
@@ -1265,6 +1271,10 @@ void AAbyssDiverCharacter::SetInsideSubmarine(bool bInside)
 void AAbyssDiverCharacter::SetCurrentWorkObject(AAbyssMissionWorkObject* WorkObject)
 {
 	CurrentWorkObject = WorkObject;
+	if (HasAuthority())
+	{
+		SetWorkType(EAbyssWorkType::MissionWork);
+	}
 }
 
 void AAbyssDiverCharacter::ClearCurrentWorkObject(AAbyssMissionWorkObject* WorkObject)
@@ -1272,6 +1282,18 @@ void AAbyssDiverCharacter::ClearCurrentWorkObject(AAbyssMissionWorkObject* WorkO
 	if (CurrentWorkObject == WorkObject)
 	{
 		CurrentWorkObject = nullptr;
+		if (HasAuthority())
+		{
+			SetWorkType(EAbyssWorkType::None);
+		}
+	}
+}
+
+void AAbyssDiverCharacter::SetWorkType(EAbyssWorkType NewWorkType)
+{
+	if (HasAuthority())
+	{
+		CurrentWorkType = NewWorkType;
 	}
 }
 
