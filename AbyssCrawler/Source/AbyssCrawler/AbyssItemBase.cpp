@@ -3,6 +3,7 @@
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.h"
+#include "TimerManager.h"
 
 AAbyssItemBase::AAbyssItemBase()
 {
@@ -73,6 +74,81 @@ void AAbyssItemBase::UseItem()
 void AAbyssItemBase::EndUseItem()
 {
 	UE_LOG(LogTemp, Log, TEXT("Item Use Ended: %s"), *ItemName);
+}
+
+void AAbyssItemBase::NotifyUnequipped()
+{
+	// 기본 동작: 지속 소모 정지 (서브클래스에서 필요 시 super 호출 후 추가 처리)
+	StopPassiveDrain();
+}
+
+void AAbyssItemBase::StartPassiveDrain()
+{
+	if (!HasAuthority()) return;
+	if (DrainRatePerSecond <= 0.0f) return;
+
+	// 이미 실행 중이면 중복 시작 방지
+	if (GetWorldTimerManager().IsTimerActive(PassiveDrainTimer)) return;
+
+	GetWorldTimerManager().SetTimer(
+		PassiveDrainTimer,
+		this,
+		&AAbyssItemBase::OnPassiveDrainTick,
+		1.0f,  // 1초마다
+		true   // 반복
+	);
+
+	UE_LOG(LogTemp, Log, TEXT("[PassiveDrain] Started for %s (%.1f/sec)"), *ItemName, DrainRatePerSecond);
+}
+
+void AAbyssItemBase::StopPassiveDrain()
+{
+	if (!HasAuthority()) return;
+
+	if (GetWorldTimerManager().IsTimerActive(PassiveDrainTimer))
+	{
+		GetWorldTimerManager().ClearTimer(PassiveDrainTimer);
+		UE_LOG(LogTemp, Log, TEXT("[PassiveDrain] Stopped for %s"), *ItemName);
+	}
+}
+
+void AAbyssItemBase::OnPassiveDrainTick()
+{
+	if (!HasAuthority() || !OwnerCharacter || !BatteryConsumeEffectClass) return;
+
+	UAbilitySystemComponent* ASC = OwnerCharacter->GetAbilitySystemComponent();
+	if (!ASC) return;
+
+	// 배터리 잔량 확인
+	float CurrentBattery = ASC->GetNumericAttribute(UAbyssAttributeSet::GetBatteryAttribute());
+
+	// 잔량이 소모량보다 적으면 고갈 처리
+	if (CurrentBattery <= DrainRatePerSecond)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[PassiveDrain] Battery depleted for %s"), *ItemName);
+		StopPassiveDrain();
+		OnBatteryDepleted();
+		return;
+	}
+
+	// SetByCaller 태그로 DrainRatePerSecond 만큼 차감
+	FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+	Context.AddInstigator(this, OwnerCharacter);
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(BatteryConsumeEffectClass, 1.0f, Context);
+	if (SpecHandle.IsValid())
+	{
+		SpecHandle.Data->SetSetByCallerMagnitude(BatteryCostTag, -DrainRatePerSecond);
+		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+		UE_LOG(LogTemp, Log, TEXT("[PassiveDrain] %s drained %.1f battery"), *ItemName, DrainRatePerSecond);
+	}
+}
+
+void AAbyssItemBase::OnBatteryDepleted()
+{
+	// 기본 구현: 아무것도 하지 않음 (서브클래스에서 override하여 처리)
+	UE_LOG(LogTemp, Warning, TEXT("[PassiveDrain] OnBatteryDepleted (base) for %s"), *ItemName);
 }
 
 // [핵심] E키를 눌러 상호작용했을 때 실행되는 함수

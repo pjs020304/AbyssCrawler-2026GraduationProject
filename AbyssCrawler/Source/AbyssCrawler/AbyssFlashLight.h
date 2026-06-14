@@ -1,7 +1,9 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AbyssItemBase.h" // ºÎ¸ğ Çì´õ Æ÷ÇÔ
+#include "AbyssItemBase.h" // ë¶€ëª¨ í´ë˜ìŠ¤
 #include "AbyssFlashLight.generated.h"
 
 class USpotLightComponent;
@@ -19,11 +21,17 @@ protected:
     virtual void BeginPlay() override;
 
 public:
-    // [ÇÙ½É] ºÎ¸ğÀÇ UseItemÀ» ³» ÀÔ¸À´ë·Î º¯°æ (Override)
+    // [ì˜¤ë²„ë¼ì´ë“œ] ë¶€ëª¨ì˜ UseItemì„ ì¬ì •ì˜ (Toggle)
     virtual void UseItem() override;
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-    // ¼ÕÀüµî ÄÄÆ÷³ÍÆ®
+    // ë°°í„°ë¦¬ ê³ ê°ˆ ì‹œ ê°•ì œ êº¼ì§
+    virtual void OnBatteryDepleted() override;
+
+    // ìŠ¬ë¡¯ í•´ì œ ì‹œ êº¼ì§ (ë¶€ëª¨ NotifyUnequipped + ë¼ì´íŠ¸ ë„ê¸°)
+    virtual void NotifyUnequipped() override;
+
+    // ìŠ¤íŒŸ ë¼ì´íŠ¸
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     USpotLightComponent* SpotLightComp;
 
@@ -39,17 +47,12 @@ private:
     UFUNCTION(Server, Reliable)
     void Server_SetLightEnabled(bool bNewEnabled);
 
-    // ¼ÕÀüµî »óÅÂ¸¦ ½ÇÁ¦ ÄÄÆ÷³ÍÆ®¿¡ ¹İ¿µ
+    // ë¼ì´íŠ¸ ìƒíƒœë¥¼ ì»´í¬ë„ŒíŠ¸ì— ë°˜ì˜
     void ApplyLightState();
 
-    // ÀÌ ¼ÕÀüµîÀÌ Áö±İ »ç¿ë °¡´ÉÇÑ »óÅÂÀÎÁö °Ë»ç
+    // ì‹¤ì œ ì‚¬ìš© ê°€ëŠ¥í•œ ìƒíƒœì¸ì§€ ê²€ì‚¬
     bool CanUseFlashLight() const;
 
-    // ¼ÕÀüµîÀ» °­Á¦·Î ²û (µå·Ó/¼û±è ½Ã »ç¿ë)
+    // ê°•ì œ êº¼ì§ (ë°°í„°ë¦¬/ìŠ¬ë¡¯ í•´ì œ ì‹œ)
     void ForceTurnOff();
-
-public:
-    // ÇÊ¿ä ½Ã Ä³¸¯ÅÍ ÂÊ¿¡¼­ È£Ãâ °¡´ÉÇÏµµ·Ï public
-    void NotifyUnequipped();
-
 };

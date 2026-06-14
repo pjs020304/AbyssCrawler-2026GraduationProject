@@ -24,6 +24,9 @@ public:
 	virtual void UseItem();
 	virtual void EndUseItem();
 
+	// 슬롯에서 해제될 때 캐릭터에서 호출 (예: 슬롯 전환, 드롭)
+	virtual void NotifyUnequipped();
+
 	UPROPERTY(EditDefaultsonly, BlueprintReadOnly, Category = "Item Info")
 	FString ItemName;
 
@@ -64,9 +67,13 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void ApplyPickedUpState();
 
-	// 이 아이템을 사용할 때 소모될 배터리 양
+	// 이 아이템을 사용할 때 소모될 배터리 양 (UseItem 호출 시 1회 차감)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
 	float BatteryCost;
+
+	// 초당 지속 소모량. 0이면 지속 소모 없음 (손전등: ~2, 수중추진기: ~5)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
+	float DrainRatePerSecond = 0.0f;
 
 	// 배터리를 깎을 공용 이펙트 클래스 (GE_ConsumeBattery)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
@@ -75,4 +82,22 @@ protected:
 	// SetByCaller로 값을 넘겨주기 위한 연결 고리 태그 (예: "Data.Cost.Battery")
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
 	FGameplayTag BatteryCostTag;
+
+	// --- 지속 소모 (Passive Drain) ---
+
+	// 지속 소모 타이머 핸들
+	FTimerHandle PassiveDrainTimer;
+
+	// 지속 소모 타이머 시작 (서버 전용, DrainRatePerSecond > 0일 때만 유효)
+	void StartPassiveDrain();
+
+	// 지속 소모 타이머 정지
+	void StopPassiveDrain();
+
+	// 타이머 콜백: 배터리 차감 + 고갈 검사
+	UFUNCTION()
+	void OnPassiveDrainTick();
+
+	// 배터리가 고갈되었을 때 서브클래스에서 override하여 처리 (예: 강제 꺼짐)
+	virtual void OnBatteryDepleted();
 };

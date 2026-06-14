@@ -1,3 +1,5 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
 #include "AbyssFlashLight.h"
 #include "AbyssDiverCharacter.h"
 #include "Components/SpotLightComponent.h"
@@ -8,13 +10,11 @@ AAbyssFlashLight::AAbyssFlashLight()
     bReplicates = true;
     SetReplicateMovement(true);
 
-    // 1. 스포트 라이트 생성
+    // 1. 스팟라이트 컴포넌트 생성
     SpotLightComp = CreateDefaultSubobject<USpotLightComponent>(TEXT("SpotLightComp"));
     SpotLightComp->SetupAttachment(RootComponent);
 
-
-    //ItemMesh->SetupAttachment(SpotLightComp);
-    // 2. 라이트 설정 (이전에 했던 설정 그대로)
+    // 2. 라이트 설정
     SpotLightComp->Intensity = 15000.0f;
     SpotLightComp->AttenuationRadius = 8000.0f;
     SpotLightComp->OuterConeAngle = 25.0f;
@@ -22,11 +22,11 @@ AAbyssFlashLight::AAbyssFlashLight()
     SpotLightComp->LightColor = FColor(200, 230, 255);
     SpotLightComp->CastShadows = true;
 
-    // 기본은 꺼둠
+    // 기본적으로 꺼둠
     SpotLightComp->SetVisibility(false);
     bIsLightOn = false;
 
-    ItemName = "High-Power Flashlight";
+    ItemName = TEXT("High-Power Flashlight");
 }
 
 void AAbyssFlashLight::BeginPlay()
@@ -35,37 +35,42 @@ void AAbyssFlashLight::BeginPlay()
     ApplyLightState();
 }
 
-// [사용하기] 클릭하면 불이 켜졌다 꺼졌다 함
+// [사용하기] 클릭하면 불이 켜졌다 꺼졌다
 void AAbyssFlashLight::UseItem()
 {
-    Super::UseItem(); // 부모 로그 출력
-
-    // 손전등을 실제 사용할 수 있는 상태가 아니면 무시
+    // 실제로 사용할 수 있는 상태가 아니면 무시
     if (!CanUseFlashLight())
     {
         UE_LOG(LogTemp, Warning, TEXT("[FlashLight] Cannot use flashlight now."));
         return;
     }
 
-    const bool bNewLightState = !bIsLightOn;
+    // 주의: 일회성 배터리 소모(Super::UseItem())를 호출하지 않음.
+    // 손전등은 지속 소모(PassiveDrain)만 사용.
 
-    //bIsLightOn = !bIsLightOn;
-    //SpotLightComp->SetVisibility(bIsLightOn);
+    const bool bNewLightState = !bIsLightOn;
 
     if (HasAuthority())
     {
         bIsLightOn = bNewLightState;
         ApplyLightState();
+
+        // 켜질 때 지속 소모 시작, 꺼질 때 정지
+        if (bIsLightOn)
+        {
+            StartPassiveDrain();
+        }
+        else
+        {
+            StopPassiveDrain();
+        }
     }
     else
     {
         Server_SetLightEnabled(bNewLightState);
     }
 
-
     UE_LOG(LogTemp, Warning, TEXT("[FlashLight] UseItem called, LightOn=%s"), bIsLightOn ? TEXT("true") : TEXT("false"));
-    
-    // 딸깍 소리 추가 가능
 }
 
 void AAbyssFlashLight::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -81,6 +86,15 @@ void AAbyssFlashLight::SetLightEnabled(bool bEnabled)
     {
         bIsLightOn = bEnabled;
         ApplyLightState();
+
+        if (bIsLightOn)
+        {
+            StartPassiveDrain();
+        }
+        else
+        {
+            StopPassiveDrain();
+        }
     }
     else
     {
@@ -113,13 +127,28 @@ bool AAbyssFlashLight::CanUseFlashLight() const
 
 void AAbyssFlashLight::ForceTurnOff()
 {
+    // 라이트 끄기
     bIsLightOn = false;
     ApplyLightState();
+
+    // 지속 소모도 정지
+    StopPassiveDrain();
 }
 
 void AAbyssFlashLight::NotifyUnequipped()
 {
-    // 슬롯 전환 등으로 손에서 내려가면 꺼두는 기능
+    // 슬롯에서 해제되면 강제로 꺼짐 + 지속 소모 정지
+    ForceTurnOff();
+
+    // 부모의 NotifyUnequipped도 호출 (StopPassiveDrain은 ForceTurnOff에서 이미 처리하지만 안전하게 호출)
+    Super::NotifyUnequipped();
+}
+
+void AAbyssFlashLight::OnBatteryDepleted()
+{
+    UE_LOG(LogTemp, Warning, TEXT("[FlashLight] Battery depleted! Force turning off."));
+
+    // 서버에서 강제 꺼짐 (bIsLightOn은 Replicated이므로 클라에도 자동 전파)
     ForceTurnOff();
 }
 
@@ -134,5 +163,14 @@ void AAbyssFlashLight::Server_SetLightEnabled_Implementation(bool bNewEnabled)
 
     bIsLightOn = bNewEnabled;
     ApplyLightState();
-}
 
+    // 켜질 때 지속 소모 시작, 꺼질 때 정지
+    if (bIsLightOn)
+    {
+        StartPassiveDrain();
+    }
+    else
+    {
+        StopPassiveDrain();
+    }
+}
