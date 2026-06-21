@@ -714,13 +714,10 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 			);
 		}
 
-		// ?μ갑 ?댁젣?섎뒗 ?먯쟾?깆? 媛뺤젣濡??꾧린
+		// 숨겨지는 아이템은 NotifyUnequipped 호출 (가상 함수 → 각 아이템이 알아서 처리)
 		if (!bShouldBeVisible)
 		{
-			if (AAbyssFlashLight* FlashLight = Cast<AAbyssFlashLight>(Item))
-			{
-				FlashLight->NotifyUnequipped();
-			}
+			Item->NotifyUnequipped();
 		}
 
 		Item->SetActorHiddenInGame(!bShouldBeVisible);

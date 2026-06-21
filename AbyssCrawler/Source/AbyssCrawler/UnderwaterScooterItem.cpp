@@ -1,3 +1,5 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
 #include "UnderwaterScooterItem.h"
 #include "AbyssDiverCharacter.h"
 #include "NiagaraComponent.h"
@@ -5,7 +7,6 @@
 #include "Camera/CameraComponent.h"
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "TimerManager.h"
 
 AUnderwaterScooterItem::AUnderwaterScooterItem()
 {
@@ -31,22 +32,25 @@ void AUnderwaterScooterItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 
 void AUnderwaterScooterItem::UseItem()
 {
+	// 수중에서만 작동
 	if (OwnerCharacter && !OwnerCharacter->IsSwimming)
 	{
 		return;
 	}
 
-	Super::UseItem();
+	// 주의: Super::UseItem()의 일회성 배터리 소모는 호출하지 않음.
+	// 수중 추진기는 지속 소모(PassiveDrain)만 사용.
 
 	if (HasAuthority())
 	{
 		bIsActive = true;
-		OnRep_IsActive(); // Update on listen server
-		
+		OnRep_IsActive(); // 리슨 서버에서 즉시 적용
+
 		SetActorTickEnabled(true);
-		
-		// Start battery drain timer
-		GetWorldTimerManager().SetTimer(BatteryDrainTimer, this, &AUnderwaterScooterItem::DrainBattery, 1.0f, true);
+
+		// 베이스 클래스의 지속 배터리 소모 시작
+		// DrainRatePerSecond는 BP_UnderwaterScooter 에디터에서 설정
+		StartPassiveDrain();
 	}
 }
 
@@ -57,10 +61,12 @@ void AUnderwaterScooterItem::EndUseItem()
 	if (HasAuthority())
 	{
 		bIsActive = false;
-		OnRep_IsActive(); // Update on listen server
+		OnRep_IsActive(); // 리슨 서버에서 즉시 적용
 
 		SetActorTickEnabled(false);
-		GetWorldTimerManager().ClearTimer(BatteryDrainTimer);
+
+		// 베이스 클래스의 지속 배터리 소모 정지
+		StopPassiveDrain();
 	}
 }
 
@@ -103,7 +109,6 @@ void AUnderwaterScooterItem::ApplyVisualEffects()
 			APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController());
 			if (PC)
 			{
-				// Stop the shake, false for gradual stop
 				PC->ClientStopCameraShake(ScooterShakeClass, false);
 			}
 		}
@@ -130,20 +135,22 @@ void AUnderwaterScooterItem::Tick(float DeltaTime)
 	}
 }
 
-void AUnderwaterScooterItem::DrainBattery()
+void AUnderwaterScooterItem::OnBatteryDepleted()
 {
-	if (!HasAuthority() || !OwnerCharacter || !BatteryConsumeEffectClass) return;
+	UE_LOG(LogTemp, Warning, TEXT("[Scooter] Battery depleted! Stopping scooter."));
 
-	UAbilitySystemComponent* ASC = OwnerCharacter->GetAbilitySystemComponent();
-	if (ASC)
+	// 배터리 고갈 시 추진기 자동 정지
+	EndUseItem();
+}
+
+void AUnderwaterScooterItem::NotifyUnequipped()
+{
+	// 슬롯에서 해제되면 추진기 정지 + 지속 소모 정지
+	if (bIsActive)
 	{
-		FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
-		Context.AddInstigator(OwnerCharacter, OwnerCharacter);
-		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(BatteryConsumeEffectClass, 1.0f, Context);
-
-		if (SpecHandle.IsValid())
-		{
-			ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		}
+		EndUseItem();
 	}
+
+	// 부모의 NotifyUnequipped 호출 (StopPassiveDrain 포함)
+	Super::NotifyUnequipped();
 }

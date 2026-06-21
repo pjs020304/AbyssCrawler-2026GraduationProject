@@ -1,3 +1,5 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -19,6 +21,12 @@ public:
 	virtual void EndUseItem() override;
 	virtual void Tick(float DeltaTime) override;
 
+	// 배터리 고갈 시 추진기 자동 정지
+	virtual void OnBatteryDepleted() override;
+
+	// 슬롯 해제 시 추진기 정지
+	virtual void NotifyUnequipped() override;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -37,12 +45,6 @@ protected:
 
 	UFUNCTION()
 	void OnRep_IsActive();
-
-	// For battery consumption
-	FTimerHandle BatteryDrainTimer;
-
-	UFUNCTION()
-	void DrainBattery();
 
 	void ApplyVisualEffects();
 };
