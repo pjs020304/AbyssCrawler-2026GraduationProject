@@ -57,6 +57,10 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void BP_CloseMission();
 
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void BP_OpenMission();
+
+
 	UFUNCTION(BlueprintCallable)
 	UChatting* GetChattingUI() const;
 

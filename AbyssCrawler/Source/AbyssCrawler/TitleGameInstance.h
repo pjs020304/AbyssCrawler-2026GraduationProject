@@ -7,9 +7,9 @@
 #include "Engine/EngineBaseTypes.h"
 #include "TitleGameInstance.generated.h"
 
-/**
- * 
- */
+class USoundMix;
+class USoundClass;
+
 UCLASS()
 class ABYSSCRAWLER_API UTitleGameInstance : public UGameInstance
 {
@@ -26,8 +26,20 @@ public:
 	void SavePlayerNickname(const FString& PlayerKey, const FText& Nickname);
 	FText GetSavedNickname(const FString& PlayerKey) const;
 
+	UFUNCTION(BlueprintCallable)
+	void ApplySavedGameConfig();
+
+	UFUNCTION(BlueprintCallable)
+	void SaveAndApplyVolume(float Volume);
+
 protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<class UUserWidget> WrongPopupClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<USoundMix> SettingSoundMix;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<USoundClass> MasterSoundClass;
 };
