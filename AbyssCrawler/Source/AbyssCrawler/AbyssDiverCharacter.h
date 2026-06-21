@@ -29,7 +29,7 @@ class AAbyssItemBase;
 class UMissionSelectUIWidget;
 class AAbyssMissionSender;
 struct FAbyssMissionData;
-class AAbyssMissionWorkObject;
+class AAbyssMissionWorkObject;  
 class UMainHUDWidget;
 
 UENUM(BlueprintType)
