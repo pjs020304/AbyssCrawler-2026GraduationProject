@@ -7,10 +7,16 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
+#include "Sound/SoundMix.h"
+#include "Sound/SoundClass.h"
+#include "Misc/ConfigCacheIni.h"
+#include "GameFramework/GameUserSettings.h"
 
 void UTitleGameInstance::Init()
 {
 	Super::Init();
+
+	ApplySavedGameConfig();
 
 	if (GEngine)
 	{
@@ -101,4 +107,67 @@ FText UTitleGameInstance::GetSavedNickname(const FString& PlayerKey) const
 	}
 
 	return FText::FromString(TEXT("Player"));
+}
+
+void UTitleGameInstance::ApplySavedGameConfig()
+{
+	float SavedVolume = 1.0f;
+
+	GConfig->GetFloat(
+		TEXT("/Script/AbyssCrawler.GameConfig"),
+		TEXT("MasterVolume"),
+		SavedVolume,
+		GGameUserSettingsIni
+	);
+
+	SavedVolume = FMath::Clamp(SavedVolume, 0.0f, 1.0f);
+
+	if (SettingSoundMix && MasterSoundClass)
+	{
+		UGameplayStatics::PushSoundMixModifier(this, SettingSoundMix);
+
+		UGameplayStatics::SetSoundMixClassOverride(
+			this,
+			SettingSoundMix,
+			MasterSoundClass,
+			SavedVolume,
+			1.0f,
+			0.0f,
+			true
+		);
+	}
+
+	if (UGameUserSettings* Settings = UGameUserSettings::GetGameUserSettings())
+	{
+		Settings->ApplySettings(false);
+	}
+}
+
+void UTitleGameInstance::SaveAndApplyVolume(float Volume)
+{
+	Volume = FMath::Clamp(Volume, 0.0f, 1.0f);
+
+	GConfig->SetFloat(
+		TEXT("/Script/AbyssCrawler.GameConfig"),
+		TEXT("MasterVolume"),
+		Volume,
+		GGameUserSettingsIni
+	);
+
+	GConfig->Flush(false, GGameUserSettingsIni);
+
+	if (SettingSoundMix && MasterSoundClass)
+	{
+		UGameplayStatics::PushSoundMixModifier(this, SettingSoundMix);
+
+		UGameplayStatics::SetSoundMixClassOverride(
+			this,
+			SettingSoundMix,
+			MasterSoundClass,
+			Volume,
+			1.0f,
+			0.0f,
+			true
+		);
+	}
 }

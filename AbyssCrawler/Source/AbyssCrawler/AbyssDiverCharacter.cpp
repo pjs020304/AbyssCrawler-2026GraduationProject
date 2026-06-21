@@ -292,6 +292,8 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 		// Chat
 		EnhancedInputComponent->BindAction(ChatAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::OpenChatInput);
+
+		EnhancedInputComponent->BindAction(MissionUIAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::ToggleMissionPanel);
 	}
 }
 
@@ -395,6 +397,16 @@ void AAbyssDiverCharacter::Server_ReleaseMissionSender_Implementation(AAbyssMiss
 void AAbyssDiverCharacter::ClearMissionSelectUIRef()
 {
 	MissionSelectUIRef = nullptr;
+}
+
+void AAbyssDiverCharacter::ToggleMissionPanel()
+{
+	if (!IsLocallyControlled()) return;
+	if (!MainHUDRef) return;
+	if (bInputLockedByUI) return;
+	if (bIsWorkingLocked) return;
+
+	MainHUDRef->BP_ToggleMission();
 }
 
 void AAbyssDiverCharacter::Client_SetWorkInputBlocked_Implementation(bool bBlocked)

@@ -9,13 +9,19 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/GameState.h"
-
+#include "GameConfigPopupWidget.h"
+#include "GameFramework/PlayerController.h"
 
 
 bool ULobbyWidget::Initialize()
 {
     if (Super::Initialize() == false)
         return false;
+
+    if (Btn_GameConfig)
+    {
+        Btn_GameConfig->OnClicked.AddDynamic(this, &ULobbyWidget::OnGameConfigClicked);
+    }
 
     SetInfo();
 
@@ -28,7 +34,7 @@ void ULobbyWidget::SetInfo()
     LobbyUsers.Empty();
 
     // Create Child Widget
-    for (int32 i = 0; i < 10; i++)
+    for (int32 i = 0; i < 4; i++)
     {
         if (LobbyUserWidgetClass == nullptr)
             continue;
@@ -118,4 +124,30 @@ ALobbyPlayerState* ULobbyWidget::GetLobbyPlayerStateAtIndex(int32 InIndex)
         return LobbyPlayerStates[InIndex];
 
     return nullptr;
+}
+
+void ULobbyWidget::OnGameConfigClicked()
+{
+    APlayerController* PC = GetOwningPlayer();
+    if (!PC)
+    {
+        return;
+    }
+
+    if (!GameConfigPopup && GameConfigPopupClass)
+    {
+        GameConfigPopup = CreateWidget<UGameConfigPopupWidget>(PC, GameConfigPopupClass);
+    }
+
+    if (GameConfigPopup && !GameConfigPopup->IsInViewport())
+    {
+        GameConfigPopup->AddToViewport(10000);
+
+        FInputModeGameAndUI InputMode;
+        InputMode.SetWidgetToFocus(GameConfigPopup->TakeWidget());
+        InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
+        PC->SetInputMode(InputMode);
+        PC->bShowMouseCursor = true;
+    }
 }

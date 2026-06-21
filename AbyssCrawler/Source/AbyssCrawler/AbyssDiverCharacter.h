@@ -132,6 +132,9 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction *DropAction; // 버리기키 Q
 
+  UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+  UInputAction* MissionUIAction; // 미션창
+
   UPROPERTY(EditAnywhere, Category = "Interaction")
   float InteractDistance = 250.0f;
 
@@ -227,6 +230,8 @@ public:
   UMissionSelectUIWidget *MissionSelectUIRef = nullptr;
 
   void ClearMissionSelectUIRef();
+
+  void ToggleMissionPanel();
 
   UFUNCTION(Client, Reliable)
   void Client_SetWorkInputBlocked(bool bBlocked);

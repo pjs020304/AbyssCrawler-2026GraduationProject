@@ -10,6 +10,7 @@ class UVerticalBox;
 class UButton;
 class ULobbyUserWidget;
 class ALobbyPlayerState;
+class UGameConfigPopupWidget;
 
 /**
  * 
@@ -42,8 +43,8 @@ protected:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Close;
 
-	//UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	//TObjectPtr<UButton> Btn_GameConfig;
+	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+	TObjectPtr<UButton> Btn_GameConfig;
 
 
 protected:
@@ -52,4 +53,14 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite)
 	TArray<TObjectPtr<ULobbyUserWidget>> LobbyUsers;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UGameConfigPopupWidget> GameConfigPopupClass;
+
+	UPROPERTY()
+	TObjectPtr<UGameConfigPopupWidget> GameConfigPopup;
+
+private:
+	UFUNCTION()
+	void OnGameConfigClicked();
 };
