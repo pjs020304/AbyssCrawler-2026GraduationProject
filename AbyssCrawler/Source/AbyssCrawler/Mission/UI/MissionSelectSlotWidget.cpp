@@ -41,6 +41,15 @@ void UMissionSelectSlotWidget::SetMissionData(const FAbyssMissionData& InMission
 			)
 		);
 	}
+
+	if (TXT_Money)
+	{
+		TXT_Money->SetText(
+			FText::FromString(
+				FString::Printf(TEXT("Money: %d"), InMissionData.RewardMoney)
+			)
+		);
+	}
 }
 
 void UMissionSelectSlotWidget::HandleSelectClicked()

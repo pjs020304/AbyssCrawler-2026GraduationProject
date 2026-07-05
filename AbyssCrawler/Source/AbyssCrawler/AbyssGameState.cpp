@@ -121,21 +121,30 @@ void AAbyssGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
     DOREPLIFETIME(AAbyssGameState, ProgressPoint);
     DOREPLIFETIME(AAbyssGameState, TargetProgressPoint);
     DOREPLIFETIME(AAbyssGameState, CompletedMissionIds);
+    DOREPLIFETIME(AAbyssGameState, SharedMoney);
+    DOREPLIFETIME(AAbyssGameState, GamePhase);
+    DOREPLIFETIME(AAbyssGameState, RemainingGameTime);
 }
 
 bool AAbyssGameState::ConsumeSharedMoney(int32 Amount)
 {
-    if (HasAuthority())
+    if (!HasAuthority() || Amount <= 0)
     {
-        if (SharedMoney >= Amount)
-        {
-            SharedMoney -= Amount;
-            // 서버에서도 값이 바뀌었으니 즉시 방송 (OnRep은 클라이언트에서만 호출됨)
-            OnMoneyChanged.Broadcast(SharedMoney);
-            return true;
-        }
+        return false;
     }
-    return false;
+
+    if (SharedMoney < Amount)
+    {
+        return false;
+    }
+
+    SharedMoney -= Amount;
+
+    UE_LOG(LogTemp, Warning, TEXT("[Money] Consume %d / Total=%d"), Amount, SharedMoney);
+
+    OnRep_SharedMoney();
+
+    return true;
 }
 
 
@@ -144,14 +153,44 @@ void AAbyssGameState::AddSharedMoney(int32 Amount)
     if (HasAuthority() && Amount > 0)
     {
         SharedMoney += Amount;
-        OnMoneyChanged.Broadcast(SharedMoney);
+
+        UE_LOG(LogTemp, Warning, TEXT("[Money] Add %d / Total=%d"), Amount, SharedMoney);
+
+        // 서버는 OnRep를 받지 않으므로 직접 호출
+        OnRep_SharedMoney();
     }
+}
+
+void AAbyssGameState::SetGamePhase(EAbyssGamePhase NewPhase)
+{
+    if (!HasAuthority()) return;
+
+    GamePhase = NewPhase;
+    OnRep_GamePhase();
+}
+
+void AAbyssGameState::SetRemainingGameTime(float NewTime)
+{
+    if (!HasAuthority()) return;
+
+    RemainingGameTime = NewTime;
+    OnRep_RemainingGameTime();
 }
 
 void AAbyssGameState::OnRep_SharedMoney()
 {
     // 서버로부터 새로운 돈 데이터가 도착하면 UI에 방송합니다.
     OnMoneyChanged.Broadcast(SharedMoney);
+}
+
+void AAbyssGameState::OnRep_GamePhase()
+{
+    OnGamePhaseChanged.Broadcast(GamePhase);
+}
+
+void AAbyssGameState::OnRep_RemainingGameTime()
+{
+    OnRemainingGameTimeChanged.Broadcast(RemainingGameTime);
 }
 
 

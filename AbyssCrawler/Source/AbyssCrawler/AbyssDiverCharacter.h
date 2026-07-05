@@ -31,6 +31,8 @@ class AAbyssMissionSender;
 struct FAbyssMissionData;
 class AAbyssMissionWorkObject;  
 class UMainHUDWidget;
+class AAbyssUSBItem;
+class AAbyssDataConsole;
 
 UENUM(BlueprintType)
 enum class EAbyssWorkType : uint8
@@ -233,6 +235,26 @@ public:
 
   void ToggleMissionPanel();
 
+  // 미션 아이템 판정
+  bool IsHoldingUSBItem() const;
+
+  // 콘솔 미션 상호작용
+  void StopInteract();
+
+  // Console Data Recovery Mission
+  UPROPERTY(EditDefaultsOnly, Category = "Mission|Console")
+  TSubclassOf<AAbyssUSBItem> USBItemClass;
+
+  void GiveConsoleMissionUSB();
+
+  bool HasUSBItemInInventory() const;
+
+  UFUNCTION(Server, Reliable)
+  void Server_StartDataConsole(AAbyssDataConsole* Console);
+
+  UFUNCTION(Server, Reliable)
+  void Server_StopDataConsole(AAbyssDataConsole* Console);
+
   UFUNCTION(Client, Reliable)
   void Client_SetWorkInputBlocked(bool bBlocked);
 
@@ -303,6 +325,9 @@ private:
   AAbyssMissionWorkObject *CurrentWorkObject = nullptr;
 
   bool bInputLockedByUI = false;
+
+  UPROPERTY()
+  TObjectPtr<AAbyssDataConsole> CurrentDataConsole = nullptr;
 
 protected:
   // 이동 함수

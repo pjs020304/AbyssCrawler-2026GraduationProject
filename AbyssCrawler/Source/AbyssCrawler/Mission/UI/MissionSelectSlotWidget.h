@@ -37,6 +37,9 @@ protected:
 	UTextBlock* TXT_Reward;
 
 	UPROPERTY(meta = (BindWidget))
+	UTextBlock* TXT_Money;
+
+	UPROPERTY(meta = (BindWidget))
 	UButton* BTN_Select;
 
 	UFUNCTION()

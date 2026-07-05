@@ -24,6 +24,8 @@
 #include "EngineUtils.h"
 #include "Engine/PostProcessVolume.h"
 #include "GameFramework/PhysicsVolume.h"
+#include "Mission/Contents/AbyssUSBItem.h"
+#include "Mission/Contents/AbyssDataConsole.h"
 
 // 중요: 커스텀 무브먼트 컴포넌트 사용을 위한 생성자 선언
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
@@ -284,8 +286,11 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInputComponent->BindAction(Slot4Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot4);
 		EnhancedInputComponent->BindAction(Slot5Action, ETriggerEvent::Started, this, &AAbyssDiverCharacter::EquipSlot5);
 
-		// ?곹샇?묒슜 Interaction
+		// 상호작용 Interaction
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::TryInteract);
+		// 꾹 누르고 때는 상태
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &AAbyssDiverCharacter::StopInteract);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Canceled, this, &AAbyssDiverCharacter::StopInteract);
 
 		// 踰꾨━湲?
 		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::DropItem);
@@ -407,6 +412,16 @@ void AAbyssDiverCharacter::ToggleMissionPanel()
 	if (bIsWorkingLocked) return;
 
 	MainHUDRef->BP_ToggleMission();
+}
+
+bool AAbyssDiverCharacter::IsHoldingUSBItem() const
+{
+	if (!Inventory.IsValidIndex(CurrentSlotIndex))
+	{
+		return false;
+	}
+
+	return Cast<AAbyssUSBItem>(Inventory[CurrentSlotIndex]) != nullptr;
 }
 
 void AAbyssDiverCharacter::Client_SetWorkInputBlocked_Implementation(bool bBlocked)
@@ -800,13 +815,19 @@ void AAbyssDiverCharacter::TryInteract()
 	{
 		AActor* HitActor = HitResult.GetActor();
 
-		// 4. 洹?臾쇱껜媛 ?곹샇?묒슜 ?명꽣?섏씠?ㅻ? ?곸냽諛쏆븯?붿? ?뺤씤
+		// 데이터 콘솔 우선 처리
+		if (AAbyssDataConsole* DataConsole = Cast<AAbyssDataConsole>(HitActor))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Interact] DataConsole Hit"));
+
+			CurrentDataConsole = DataConsole;
+			Server_StartDataConsole(DataConsole);
+			return;
+		}
+
+		// 기존 상호작용
 		if (HitActor->Implements<UAbyssInteractionInterface>())
 		{
-			// 5. ?명꽣?섏씠?ㅼ쓽 Interact ?⑥닔 ?ㅽ뻾 
-			//IAbyssInteractionInterface::Execute_Interact(HitActor, this);
-
-			// ?쒕쾭 ?⑥닔濡??ㅽ뻾
 			Server_TryInteract(HitActor);
 		}
 	}
@@ -822,6 +843,131 @@ void AAbyssDiverCharacter::Server_TryInteract_Implementation(AActor* TargetActor
 	{
 		IAbyssInteractionInterface::Execute_Interact(TargetActor, this);
 	}
+}
+
+void AAbyssDiverCharacter::StopInteract()
+{
+	if (CurrentDataConsole)
+	{
+		Server_StopDataConsole(CurrentDataConsole);
+		CurrentDataConsole = nullptr;
+	}
+}
+
+void AAbyssDiverCharacter::Server_StartDataConsole_Implementation(AAbyssDataConsole* Console)
+{
+	if (!Console) return;
+	if (CurrentWorkObject) return;
+
+	// USB를 안 들고 있으면 서버에서도 차단
+	
+	if (!IsHoldingUSBItem())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DataConsole] Need USB item"));
+		return;
+	}
+	
+	CurrentDataConsole = Console;
+	Console->StartDownload(this);
+}
+
+void AAbyssDiverCharacter::Server_StopDataConsole_Implementation(AAbyssDataConsole* Console)
+{
+	if (!Console) return;
+
+	Console->StopDownload(this);
+
+	if (CurrentDataConsole == Console)
+	{
+		CurrentDataConsole = nullptr;
+	}
+}
+
+bool AAbyssDiverCharacter::HasUSBItemInInventory() const
+{
+	for (AAbyssItemBase* Item : Inventory)
+	{
+		if (Cast<AAbyssUSBItem>(Item))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void AAbyssDiverCharacter::GiveConsoleMissionUSB()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (HasUSBItemInInventory())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[USB] Already has USB"));
+		return;
+	}
+
+	if (!USBItemClass)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[USB] USBItemClass is NULL"));
+		return;
+	}
+
+	int32 EmptySlotIndex = INDEX_NONE;
+
+	for (int32 i = 0; i < Inventory.Num(); ++i)
+	{
+		if (Inventory[i] == nullptr)
+		{
+			EmptySlotIndex = i;
+			break;
+		}
+	}
+
+	if (EmptySlotIndex == INDEX_NONE)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[USB] No empty inventory slot"));
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
+
+	AAbyssUSBItem* USBItem = GetWorld()->SpawnActor<AAbyssUSBItem>(
+		USBItemClass,
+		GetActorLocation(),
+		GetActorRotation(),
+		SpawnParams
+	);
+
+	if (!USBItem)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[USB] Spawn failed"));
+		return;
+	}
+
+	Inventory[EmptySlotIndex] = USBItem;
+
+	// USB를 바로 선택 슬롯으로 변경
+	CurrentSlotIndex = EmptySlotIndex;
+
+	USBItem->SetAsPickedUp(this, FirstPersonCameraComponent, true);
+
+	ApplyCurrentSlotVisual();
+
+	if (IsLocallyControlled())
+	{
+		OnInventoryUpdated();
+	}
+	else
+	{
+		Client_OnInventoryUpdated();
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[USB] USB given to player. Slot=%d"), EmptySlotIndex);
 }
 
 void AAbyssDiverCharacter::OnRep_Inventory()
@@ -1259,9 +1405,25 @@ bool AAbyssDiverCharacter::HasEmptyInventorySlot() const
 
 void AAbyssDiverCharacter::Server_AcceptMissionById_Implementation(FName MissionId)
 {
+	static const FName ConsoleMissionId = TEXT("ConsoleDataRecovery");
+
+	if (MissionId == ConsoleMissionId)
+	{
+		if (!HasUSBItemInInventory() && !HasEmptyInventorySlot())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[Mission] ConsoleDataRecovery needs empty slot for USB"));
+			return;
+		}
+	}
+
 	if (AAbyssGameMode* GM = GetWorld()->GetAuthGameMode<AAbyssGameMode>())
 	{
 		GM->AcceptMissionById(MissionId);
+	}
+
+	if (MissionId == ConsoleMissionId)
+	{
+		GiveConsoleMissionUSB();
 	}
 }
 
