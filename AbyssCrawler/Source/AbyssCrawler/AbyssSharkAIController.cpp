@@ -5,6 +5,7 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "AbyssDiverCharacter.h" // 플레이어 클래스 확인용
 #include "DecoyActor.h"
+#include "TimerManager.h"
 
 AAbyssSharkAIController::AAbyssSharkAIController()
 {
@@ -51,6 +52,21 @@ void AAbyssSharkAIController::OnPossess(APawn* InPawn)
 	{
 		RunBehaviorTree(AIBehavior);
 	}
+
+	// 3. 둥지(스폰) 위치 기록 + 블랙보드에 전달 (영역 리쉬/복귀용)
+	if (InPawn)
+	{
+		HomeLocation = InPawn->GetActorLocation();
+		if (GetBlackboardComponent())
+		{
+			GetBlackboardComponent()->SetValueAsVector(HomeLocationKey, HomeLocation);
+		}
+	}
+
+	// 4. 주기적 영역 리쉬 검사 타이머 시작
+	GetWorldTimerManager().SetTimer(
+		LeashCheckTimerHandle, this, &AAbyssSharkAIController::CheckHomeLeash,
+		LeashCheckInterval, /*bLoop=*/true);
 }
 
 // 무언가를 보거나(True), 시야에서 놓쳤을 때(False) 엔진이 자동으로 호출해줍니다.
@@ -73,23 +89,71 @@ void AAbyssSharkAIController::OnTargetDetected(AActor* Actor, FAIStimulus Stimul
 		// 2. 시야에 들어왔는가? (Stimulus.WasSuccessfullySensed()가 true면 봄, false면 놓침)
 		if (Stimulus.WasSuccessfullySensed())
 		{
-			// 블랙보드에 "TargetActor"라는 이름으로 플레이어를 저장합니다.
-			GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), PlayerDiver);
+			// 플레이어를 타겟으로 저장 + 시야 확보
+			GetBlackboardComponent()->SetValueAsObject(TargetActorKey, PlayerDiver);
+			GetBlackboardComponent()->SetValueAsBool(HasLineOfSightKey, true);
 
-			// 블랙보드에 "HasLineOfSight"를 true로 바꿉니다.
-			GetBlackboardComponent()->SetValueAsBool(FName("HasLineOfSight"), true);
+			// 재발견 → 진행 중이던 흥미 상실(추적 포기) 타이머 취소
+			GetWorldTimerManager().ClearTimer(GiveUpTimerHandle);
 
 			UE_LOG(LogTemp, Warning, TEXT("Shark Find Player"));
 		}
 		else
 		{
-			// 시야에서 벗어남 (벽 뒤에 숨거나 멀어짐)
-			GetBlackboardComponent()->SetValueAsBool(FName("HasLineOfSight"), false);
+			// 1단계: 시야에서 벗어남 → 즉시 포기하지 않고 마지막 목격 위치를 기록하고
+			// 일정 시간(LoseInterestTime) 동안 수색하다가 타이머 만료 시 추적 포기.
+			GetBlackboardComponent()->SetValueAsBool(HasLineOfSightKey, false);
+			GetBlackboardComponent()->SetValueAsVector(LastKnownLocationKey, Stimulus.StimulusLocation);
 
-			// (선택) 여기서 TargetActor를 nullptr로 만들면 즉시 추적을 포기합니다.
-			// GetBlackboardComponent()->SetValueAsObject(FName("TargetActor"), nullptr);
+			GetWorldTimerManager().SetTimer(
+				GiveUpTimerHandle, this, &AAbyssSharkAIController::OnGiveUpChase,
+				LoseInterestTime, /*bLoop=*/false);
 
-			UE_LOG(LogTemp, Warning, TEXT("Shark not found player"));
+			UE_LOG(LogTemp, Warning, TEXT("Shark lost sight - investigating for %.1fs"), LoseInterestTime);
 		}
+	}
+}
+
+void AAbyssSharkAIController::OnGiveUpChase()
+{
+	// 흥미 상실 타이머 만료: 수색해도 다시 못 봤으므로 추적을 완전히 포기.
+	AbandonChase();
+	UE_LOG(LogTemp, Warning, TEXT("Shark gave up chase (lost interest)"));
+}
+
+void AAbyssSharkAIController::CheckHomeLeash()
+{
+	// 3단계: 둥지에서 너무 멀어지면 추적 포기 후 복귀.
+	APawn* MyPawn = GetPawn();
+	UBlackboardComponent* BB = GetBlackboardComponent();
+	if (!MyPawn || !BB)
+	{
+		return;
+	}
+
+	// 현재 추적 대상이 없으면 검사할 필요 없음.
+	if (!BB->GetValueAsObject(TargetActorKey))
+	{
+		return;
+	}
+
+	const float DistSq = FVector::DistSquared(MyPawn->GetActorLocation(), HomeLocation);
+	if (DistSq > FMath::Square(HomeLeashRadius))
+	{
+		AbandonChase();
+		UE_LOG(LogTemp, Warning, TEXT("Shark gave up chase (home leash exceeded)"));
+	}
+}
+
+void AAbyssSharkAIController::AbandonChase()
+{
+	GetWorldTimerManager().ClearTimer(GiveUpTimerHandle);
+
+	if (UBlackboardComponent* BB = GetBlackboardComponent())
+	{
+		BB->ClearValue(TargetActorKey);
+		BB->SetValueAsBool(HasLineOfSightKey, false);
+		// BT가 둥지로 복귀하도록 HomeLocation을 최신화.
+		BB->SetValueAsVector(HomeLocationKey, HomeLocation);
 	}
 }

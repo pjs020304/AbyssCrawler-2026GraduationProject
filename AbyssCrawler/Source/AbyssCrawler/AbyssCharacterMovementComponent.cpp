@@ -2,16 +2,16 @@
 
 UAbyssCharacterMovementComponent::UAbyssCharacterMovementComponent()
 {
-	// ÃÊ±âÈ­
+	// ï¿½Ê±ï¿½È­
 	bWantsToSprint = false;
 
-	// CMC ±âº» ¼¼ÆÃ (Âü°í¿ë)
+	// CMC ï¿½âº» ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	MaxWalkSpeed = WalkSpeed;
 	MaxSwimSpeed = SwimSpeed;
 
-	// ±âº» ¼ö¿µ ¼³Á¤
-	BrakingDecelerationSwimming = 500.f; // °ü¼º ´À³¦ (³·À»¼ö·Ï ¹Ì²ô·¯Áü)
-	Buoyancy = 1.0f; // Áß¼º ºÎ·Â
+	// ï¿½âº» ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	BrakingDecelerationSwimming = 500.f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ì²ï¿½ï¿½ï¿½ï¿½ï¿½)
+	Buoyancy = 1.0f; // ï¿½ß¼ï¿½ ï¿½Î·ï¿½
 }
 
 void UAbyssCharacterMovementComponent::SetSprinting(bool bActive)
@@ -23,16 +23,18 @@ float UAbyssCharacterMovementComponent::GetMaxSpeed() const
 {
 	float MaxSpeed = Super::GetMaxSpeed();
 
+	const float HauntMul = FMath::Max(0.f, HauntSpeedMultiplier);
+
 	switch (MovementMode)
 	{
 	case MOVE_Walking:
 	case MOVE_NavWalking:
-		// Áö»ó: Sprint ÁßÀÌ¸é RunSpeed, ¾Æ´Ï¸é WalkSpeed
-		return bWantsToSprint ? RunSpeed : WalkSpeed;
+		// ï¿½ï¿½ï¿½ï¿½: Sprint ï¿½ï¿½ï¿½Ì¸ï¿½ RunSpeed, ï¿½Æ´Ï¸ï¿½ WalkSpeed
+		return (bWantsToSprint ? RunSpeed : WalkSpeed) * HauntMul;
 
 	case MOVE_Swimming:
-		// ¼öÁß: Sprint ÁßÀÌ¸é SwimDashSpeed, ¾Æ´Ï¸é SwimSpeed
-		return bWantsToSprint ? SwimDashSpeed : SwimSpeed;
+		// ï¿½ï¿½ï¿½ï¿½: Sprint ï¿½ï¿½ï¿½Ì¸ï¿½ SwimDashSpeed, ï¿½Æ´Ï¸ï¿½ SwimSpeed
+		return (bWantsToSprint ? SwimDashSpeed : SwimSpeed) * HauntMul;
 
 	default:
 		return MaxSpeed;
@@ -49,48 +51,48 @@ void UAbyssCharacterMovementComponent::CalcVelocity(float DeltaTime, float Frict
     }
     MaxAcceleration = 512;
     // =========================================================
-    // 1. ¿£ÁøÀÇ °­Á¦ Á¦µ¿ Á¦°Å (¼ø¼ö °ü¼º ÁÖÇàÀ» À§ÇØ)
+    // 1. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
     // =========================================================
     float NoBraking = 0.0f;
     float NoFriction = 0.0f;
 
     // =========================================================
-    // 2. ÇöÀç ¼³Á¤µÈ ÃÖ´ë ¼Óµµ¸¦ ±âÁØÀ¸·Î ÇÊ¿äÇÑ 'ÀúÇ× °è¼ö' ¿ª»ê
+    // 2. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½ï¿½ï¿½ 'ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½' ï¿½ï¿½ï¿½ï¿½
     // =========================================================
-    float TargetMaxSpeed = GetMaxSpeed(); // °È±â ¸ðµå¸é 120, ´ë½Ã ÁßÀÌ¸é 180 µî
-    float CurrentMaxAccel = GetMaxAcceleration(); // ÄÄÆ÷³ÍÆ® ¼³Á¤°ª (±âº» 2048 µî)
+    float TargetMaxSpeed = GetMaxSpeed(); // ï¿½È±ï¿½ ï¿½ï¿½ï¿½ï¿½ 120, ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ 180 ï¿½ï¿½
+    float CurrentMaxAccel = GetMaxAcceleration(); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½âº» 2048 ï¿½ï¿½)
 
-    // [¹æ¾î ÄÚµå] 0À¸·Î ³ª´©±â ¹æÁö
+    // [ï¿½ï¿½ï¿½ ï¿½Úµï¿½] 0ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     float DragFactor = 0.0f;
     if (TargetMaxSpeed > KINDA_SMALL_NUMBER)
     {
-        // °ø½Ä: k = a / v^2
-        // ÀÌ ÀúÇ× °è¼ö¸¦ Àû¿ëÇÏ¸é, Ç®¾Ç¼¿À» ¹â¾Æµµ Á¤È®È÷ TargetMaxSpeed¿¡¼­ °¡¼ÓÀÌ 0ÀÌ µÊ
+        // ï¿½ï¿½ï¿½ï¿½: k = a / v^2
+        // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½, Ç®ï¿½Ç¼ï¿½ï¿½ï¿½ ï¿½ï¿½Æµï¿½ ï¿½ï¿½È®ï¿½ï¿½ TargetMaxSpeedï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 0ï¿½ï¿½ ï¿½ï¿½
         DragFactor = CurrentMaxAccel / (TargetMaxSpeed * TargetMaxSpeed);
     }
 
     // =========================================================
-    // 3. ¹°¸®Àû Ç×·Â(Drag) Àû¿ë
+    // 3. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½×·ï¿½(Drag) ï¿½ï¿½ï¿½ï¿½
     // =========================================================
     FVector CurrentVelocity = Velocity;
     float SpeedSq = CurrentVelocity.SizeSquared();
 
     if (SpeedSq > KINDA_SMALL_NUMBER)
     {
-        // °è»êµÈ DragFactor¸¦ »ç¿ëÇÏ¿© ÀúÇ×·Â »ý¼º
-        // ¼Óµµ°¡ TargetMaxSpeed¿¡ µµ´ÞÇÏ¸é, ÀÌ ÀúÇ×·ÂÀÌ Á¤È®È÷ ÃßÁø·Â(Accel)°ú °°¾ÆÁü
+        // ï¿½ï¿½ï¿½ï¿½ DragFactorï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½ï¿½ï¿½×·ï¿½ ï¿½ï¿½ï¿½ï¿½
+        // ï¿½Óµï¿½ï¿½ï¿½ TargetMaxSpeedï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½, ï¿½ï¿½ ï¿½ï¿½ï¿½×·ï¿½ï¿½ï¿½ ï¿½ï¿½È®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(Accel)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         FVector DragForce = -CurrentVelocity.GetSafeNormal() * (SpeedSq * DragFactor);
 
-        // ÀúÇ× Àû¿ë
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         Velocity += DragForce * DeltaTime;
     }
 
     // =========================================================
-    // 4. ÃßÁø·Â(Acceleration) Àû¿ë
+    // 4. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(Acceleration) ï¿½ï¿½ï¿½ï¿½
     // =========================================================
-    // º°µµÀÇ Multiplier ¾øÀÌ ¿£Áø ±âº» MaxAccelerationÀ» ½Å·ÚÇÏ°Å³ª,
-    // ÇÊ¿äÇÏ´Ù¸é ¿©±â¼­¸¸ »ìÂ¦ ÁõÆøÇÒ ¼ö ÀÖ½À´Ï´Ù. 
-    // (´Ü, ÁõÆøÇÑ´Ù¸é À§ DragFactor °è»ê½ÄÀÇ ºÐÀÚ¿¡µµ ÁõÆøµÈ °ªÀ» ½á¾ß Á¤È®ÇÕ´Ï´Ù)
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Multiplier ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½âº» MaxAccelerationï¿½ï¿½ ï¿½Å·ï¿½ï¿½Ï°Å³ï¿½,
+    // ï¿½Ê¿ï¿½ï¿½Ï´Ù¸ï¿½ ï¿½ï¿½ï¿½â¼­ï¿½ï¿½ ï¿½ï¿½Â¦ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö½ï¿½ï¿½Ï´ï¿½. 
+    // (ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´Ù¸ï¿½ ï¿½ï¿½ DragFactor ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½È®ï¿½Õ´Ï´ï¿½)
 
     if (Acceleration.SizeSquared() > KINDA_SMALL_NUMBER)
     {
@@ -98,7 +100,7 @@ void UAbyssCharacterMovementComponent::CalcVelocity(float DeltaTime, float Frict
     }
 
     // =========================================================
-    // 5. ¿£Áø À§ÀÓ
+    // 5. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     // =========================================================
     Super::CalcVelocity(DeltaTime, NoFriction, bFluid, NoBraking);
 }

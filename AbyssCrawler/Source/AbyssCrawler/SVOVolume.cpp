@@ -6,7 +6,7 @@
 
 ASVOVolume::ASVOVolume()
 {
-	// Tick ¿¬»ê ²ô±â
+	// Tick ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	PrimaryActorTick.bCanEverTick = false;
 
 	BoundsVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("BoundsVolume"));
@@ -18,11 +18,8 @@ void ASVOVolume::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// [New] ¸Ê¿¡ ÀÖ´Â ¸ðµç Ä³¸¯ÅÍ(»ó¾î, ÇÃ·¹ÀÌ¾î µî)¸¦ Ã£¾Æ¼­ ¹«½Ã ¸ñ·Ï¿¡ ³Ö½À´Ï´Ù.
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacter::StaticClass(), ActorsToIgnore);
-
-	// SVO º¼·ý ÀÚ±â ÀÚ½Åµµ ´ç¿¬È÷ ¹«½Ã ¸ñ·Ï¿¡ Ãß°¡
-	ActorsToIgnore.Add(this);
+	// [New] ï¿½Ê¿ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½, ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½)ï¿½ï¿½ Ã£ï¿½Æ¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ï¿ï¿½ ï¿½Ö½ï¿½ï¿½Ï´ï¿½.
+	RefreshIgnoredActors();
 
 	RootNode = MakeShared<FSVONode>(GetActorLocation(), BoundsVolume->GetUnscaledBoxExtent().X);
 	BuildOctree(RootNode, 0);
@@ -39,7 +36,7 @@ void ASVOVolume::BeginPlay()
 void ASVOVolume::BuildOctree(TSharedPtr<FSVONode> Node, int32 CurrentDepth)
 {
 	FCollisionQueryParams QueryParams;
-	// [ÇÙ½É ÇØ°á] ¹Ì¸® Ã£¾ÆµÐ ¸ðµç Ä³¸¯ÅÍ¿Í ÀÚ½ÅÀ» ½ºÄµ ·¹ÀÌ´õ¿¡¼­ Áö¿ö¹ö¸³´Ï´Ù!
+	// [ï¿½Ù½ï¿½ ï¿½Ø°ï¿½] ï¿½Ì¸ï¿½ Ã£ï¿½Æµï¿½ ï¿½ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½Ú½ï¿½ï¿½ï¿½ ï¿½ï¿½Äµ ï¿½ï¿½ï¿½Ì´ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½!
 	QueryParams.AddIgnoredActors(ActorsToIgnore);
 
 	FCollisionShape BoxShape = FCollisionShape::MakeBox(FVector(Node->Extent));
@@ -81,6 +78,72 @@ void ASVOVolume::BuildOctree(TSharedPtr<FSVONode> Node, int32 CurrentDepth)
 		TSharedPtr<FSVONode> ChildNode = MakeShared<FSVONode>(Node->Center + Offset, ChildExtent);
 		Node->Children.Add(ChildNode);
 		BuildOctree(ChildNode, CurrentDepth + 1);
+	}
+}
+
+void ASVOVolume::RefreshIgnoredActors()
+{
+	ActorsToIgnore.Reset();
+	// ï¿½ï¿½Äµ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Øµï¿½ ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼(Ä³ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â´ï¿½.
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacter::StaticClass(), ActorsToIgnore);
+	ActorsToIgnore.Add(this);
+}
+
+void ASVOVolume::RebuildRegion(const FBox& DirtyBounds)
+{
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Ö»ï¿½ï¿½ ï¿½ï¿½ï¿½å°¡ ï¿½ï¿½ï¿½Ù¸ï¿½(ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½) ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼.
+	if (!RootNode.IsValid())
+	{
+		RefreshIgnoredActors();
+		RootNode = MakeShared<FSVONode>(GetActorLocation(), BoundsVolume->GetUnscaledBoxExtent().X);
+		BuildOctree(RootNode, 0);
+		return;
+	}
+
+	if (!DirtyBounds.IsValid)
+	{
+		return;
+	}
+
+	// PCG ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼(Ä³ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
+	RefreshIgnoredActors();
+
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½(DirtyBounds)ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Äµï¿½Ñ´ï¿½.
+	RebuildNodeRecursive(RootNode, 0, DirtyBounds);
+
+	UE_LOG(LogTemp, Log, TEXT("[SVO] Partial rebuild done. Region=%s"), *DirtyBounds.ToString());
+}
+
+void ASVOVolume::RebuildRegionBox(FVector Center, FVector Extent)
+{
+	RebuildRegion(FBox(Center - Extent, Center + Extent));
+}
+
+void ASVOVolume::RebuildNodeRecursive(TSharedPtr<FSVONode> Node, int32 CurrentDepth, const FBox& DirtyBounds)
+{
+	if (!Node.IsValid()) return;
+
+	// ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ AABB
+	const FBox NodeBox(Node->Center - FVector(Node->Extent), Node->Center + FVector(Node->Extent));
+
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½×´ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½: ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ ï¿½Æ´ï¿½ ï¿½Îºï¿½ ï¿½ï¿½ï¿½)
+	if (!NodeBox.Intersect(DirtyBounds))
+	{
+		return;
+	}
+
+	if (Node->bIsLeaf)
+	{
+		// ï¿½ï¿½ ï¿½ï¿½ï¿½Ç¸ï¿½ ï¿½Ù½ï¿½ ï¿½ï¿½Äµ. (ï¿½ï¿½ï¿½Î¿ï¿½ ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ BuildOctreeï¿½ï¿½ ï¿½Ù½ï¿½ ï¿½É°ï¿½ï¿½Å³ï¿½ ï¿½ï¿½ï¿½Â´ï¿½)
+		Node->Children.Reset();
+		BuildOctree(Node, CurrentDepth);
+		return;
+	}
+
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½Ú½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	for (const TSharedPtr<FSVONode>& Child : Node->Children)
+	{
+		RebuildNodeRecursive(Child, CurrentDepth + 1, DirtyBounds);
 	}
 }
 
@@ -137,13 +200,13 @@ void ASVOVolume::ToggleSVODebug()
 #if ENABLE_DRAW_DEBUG
 	bIsDebugVisible = !bIsDebugVisible;
 
-	// ±âÁ¸¿¡ ±×·ÁÁ® ÀÖ´ø ¸ðµç µð¹ö±× ¶óÀÎ/¹Ú½º¸¦ È­¸é¿¡¼­ °­Á¦·Î ½Ï Áö¿ó´Ï´Ù.
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½×·ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½Ú½ï¿½ï¿½ï¿½ È­ï¿½é¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.
 	FlushPersistentDebugLines(GetWorld());
 
 	if (bIsDebugVisible)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SVO debug rendering: ON"));
-		DrawSVODebug(); // Áö½Ã°¡ ÀÖÀ» ¶§ ´Ü ÇÑ ¹ø¸¸ ±×¸³´Ï´Ù.
+		DrawSVODebug(); // ï¿½ï¿½ï¿½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½×¸ï¿½ï¿½Ï´ï¿½.
 	}
 	else
 	{
@@ -154,7 +217,7 @@ void ASVOVolume::ToggleSVODebug()
 
 void ASVOVolume::DrawNodeDebugRecursive(TSharedPtr<FSVONode> Node) const
 {
-	// µð¹ö±×¸¦ ±×¸± ¶§ Áö¼Ó ½Ã°£(LifeTime)À» -1 (¿µ±¸Àû) ¶Ç´Â ¾ÆÁÖ ±ä ½Ã°£À¸·Î ¼³Á¤ÇÕ´Ï´Ù.
+	// ï¿½ï¿½ï¿½ï¿½×¸ï¿½ ï¿½×¸ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½(LifeTime)ï¿½ï¿½ -1 (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½) ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½.
 	float DebugLifeTime = 99999.0f;
 
 	if (Node->bIsLeaf)

@@ -65,6 +65,17 @@ public:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
   UCameraComponent *FirstPersonCameraComponent;
 
+  // 피격 시 로컬 화면에 재생할 카메라 쉐이크 (BP에서 CS_HitReaction 지정)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera|Shake")
+  TSubclassOf<class UCameraShakeBase> HitCameraShake;
+
+  // 피해량 → 쉐이크 강도 매핑 (X: 피해량 범위, Y: 강도 범위)
+  UPROPERTY(EditDefaultsOnly, Category = "Camera|Shake")
+  FVector2D HitShakeDamageRange = FVector2D(1.f, 30.f);
+
+  UPROPERTY(EditDefaultsOnly, Category = "Camera|Shake")
+  FVector2D HitShakeScaleRange = FVector2D(0.5f, 1.5f);
+
   // 심해 수중 부유물(Marine Snow)을 위한 GPU 연산 파티클 컴포넌트
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Environment")
   UParticleSystemComponent* MarineSnowParticleComponent;
@@ -154,6 +165,10 @@ public:
   UPROPERTY(EditAnywhere, Category = "Inventory")
   TSubclassOf<AAbyssItemBase> DefaultItemClass;
 
+  // 아이템을 부착할 손 소켓 이름 (스켈레톤에 추가한 소켓)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
+  FName HandSocketName = TEXT("LeftHandSocket");
+
   // 현재 시선이 머물고 있는 상호작용 액터 기억하기
   UPROPERTY()
   AActor *FocusedActor;
@@ -240,6 +255,61 @@ public:
   void Client_SetMovementBlocked(bool bBlocked);
 
   void ConsumeItem(AAbyssItemBase *ItemToConsume);
+
+  // 피라냐 군체에 물렸을 때 해당 플레이어의 클라이언트에서 호출 (카메라 흔들림/화면 효과용)
+  UFUNCTION(Client, Unreliable)
+  void Client_OnSwarmBite(FVector SwarmCenter);
+
+  // 실제 연출은 블루프린트에서 구현 (카메라 셰이크, 포스트프로세스 등)
+  UFUNCTION(BlueprintImplementableEvent, Category = "Feedback")
+  void OnSwarmBiteFeedback(FVector SwarmCenter);
+
+  // --- [유령(원혼) 디버프 / 포획] ---
+
+  // 유령 근접 디버프 단계 (0=없음, 1=둔화, 2=시야왜곡, 3=암전). 서버 권위, 복제됨.
+  UPROPERTY(ReplicatedUsing = OnRep_GhostHauntStage, VisibleAnywhere,
+            BlueprintReadOnly, Category = "Ghost")
+  int32 GhostHauntStage = 0;
+
+  // 서버 전용 근접 누적 시간 (디렉터가 갱신). 복제 안 함.
+  float GhostHauntTime = 0.f;
+
+  // 포획되어 즉사 진행 중인지
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ghost")
+  bool bCaughtByGhost = false;
+
+  // 단계별 이동 둔화 배율 (인덱스 = 단계). 에디터에서 조정 가능.
+  UPROPERTY(EditDefaultsOnly, Category = "Ghost")
+  TArray<float> GhostStageSpeedMultipliers = {1.0f, 0.6f, 0.5f, 0.45f};
+
+  // 포획 후 암전 → 사망까지 지연(초)
+  UPROPERTY(EditDefaultsOnly, Category = "Ghost")
+  float GhostKillDelay = 1.5f;
+
+  FTimerHandle GhostKillTimerHandle;
+
+  UFUNCTION()
+  void OnRep_GhostHauntStage();
+
+  // 서버에서 디렉터가 호출: 디버프 단계 설정
+  void SetGhostHauntStage(int32 NewStage);
+
+  // 서버에서 디렉터가 호출: 유령에게 포획됨 → 암전 후 사망
+  void CaughtByGhost();
+
+  UFUNCTION(NetMulticast, Reliable)
+  void Multicast_CaughtByGhost();
+
+  // 현재 디버프 단계에 맞춰 이동 둔화 적용 (서버/클라 공통)
+  void ApplyGhostHauntMovement();
+
+  // 화면 연출 훅 (BP에서 구현: 1=둔화 표시, 2=시야 왜곡, 3=암전)
+  UFUNCTION(BlueprintImplementableEvent, Category = "Ghost")
+  void OnGhostHauntStageChanged(int32 NewStage);
+
+  // 포획 즉사 시 완전 암전 연출 (BP에서 구현)
+  UFUNCTION(BlueprintImplementableEvent, Category = "Ghost")
+  void OnGhostKillBlackout();
 
   // 잠수함 탑승/하차 시 외부(잠수함)에서 호출해 줄 함수
   void SetInsideSubmarine(bool bInside);

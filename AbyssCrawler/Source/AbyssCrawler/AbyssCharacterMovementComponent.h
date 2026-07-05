@@ -12,7 +12,7 @@ class ABYSSCRAWLER_API UAbyssCharacterMovementComponent : public UCharacterMovem
 public:
 	UAbyssCharacterMovementComponent();
 
-	// ±âÈ¹¼­ ÀÌµ¿ ¼Óµµ ¼³°è ¹İ¿µ
+	// ï¿½ï¿½È¹ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½İ¿ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abyss Movement")
 	float WalkSpeed = 150.f; // 1.5m/s -> 150cm/s
 
@@ -28,28 +28,32 @@ public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Abyss Movement")
 	bool bWantsToSprint;
 
-	// --- ¼öÁß ¹°¸® ¼³Á¤ ---
-	// ºÎ°¡ Áú·® °è¼ö (³ôÀ»¼ö·Ï ¹İÀÀÀÌ ±À¶ä)
+	// ìœ ë ¹ ë””ë²„í”„ ë“± ì™¸ë¶€ ë‘”í™” ë°°ìœ¨ (1 = ì •ìƒ). GetMaxSpeedì— ê³±í•´ì§„ë‹¤.
+	UPROPERTY(BlueprintReadWrite, Category = "Abyss Movement")
+	float HauntSpeedMultiplier = 1.f;
+
+	// --- ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ---
+	// ï¿½Î°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abyss Physics")
 	float AddedMassCoefficient = 0.5f;
 
-	// ¹°ÀÇ ¹Ğµµ°ª 
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Ğµï¿½ï¿½ï¿½ 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abyss Physics")
 	float WaterDensity = 0.05f;	
 
-	// [Æ©´× ÇÙ½É 2] ÀÔ·Â °¡¼Óµµ ÁõÆø (Thrust)
-	// ¹°¼Ó¿¡¼­ ¹ßÂ÷±âÇÏ´Â ÈûÀÔ´Ï´Ù. ÀúÇ×À» ¶Õ°í ³ª°¡´Â ÈûÀÇ Å©±âÀÔ´Ï´Ù.
+	// [Æ©ï¿½ï¿½ ï¿½Ù½ï¿½ 2] ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½ (Thrust)
+	// ï¿½ï¿½ï¿½Ó¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½Ô´Ï´ï¿½. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Õ°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å©ï¿½ï¿½ï¿½Ô´Ï´ï¿½.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abyss Physics")
 	float SwimmingAccelerationMultiplier = 2.5f;
 
-	// ¿ÜºÎ(Character)¿¡¼­ È£ÃâÇÒ ÇÔ¼ö
+	// ï¿½Üºï¿½(Character)ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
 	UFUNCTION(BlueprintCallable, Category = "Abyss Movement")
 	void SetSprinting(bool bActive);
 
 protected:
-	// ÇöÀç ÀÌµ¿ ¸ğµå¿¡ µû¶ó ÃÖ´ë ¼Óµµ¸¦ ¹İÈ¯ÇÏ´Â ÇÔ¼ö ¿À¹ö¶óÀÌµå
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½å¿¡ ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½È¯ï¿½Ï´ï¿½ ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½
 	virtual float GetMaxSpeed() const override;
 
-	// ¸Å ÇÁ·¹ÀÓ °¡¼Óµµ, ¸¶Âû, ºê·¹ÀÌÅ·À» Ã³¸®ÇÏ¿© Velocity¸¦ °áÁ¤ ÇÔ¼ö
+	// ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Óµï¿½, ï¿½ï¿½ï¿½ï¿½, ï¿½ê·¹ï¿½ï¿½Å·ï¿½ï¿½ Ã³ï¿½ï¿½ï¿½Ï¿ï¿½ Velocityï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
 	virtual void CalcVelocity(float DeltaTime, float Friction, bool bFluid, float BrakingDeceleration) override;
 };

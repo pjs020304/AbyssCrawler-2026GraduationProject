@@ -208,6 +208,16 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Swarm|Combat")
 	float LoseTargetRadius = 2200.f;
 
+	// Stage 1: after losing the target, investigate its last known location for
+	// this long before fully giving up and returning to patrol.
+	UPROPERTY(EditAnywhere, Category = "Swarm|Combat")
+	float LoseInterestTime = 8.f;
+
+	// Stage 3: if the swarm centroid strays this far from HomeLocation, abandon
+	// the chase and return home regardless of target distance.
+	UPROPERTY(EditAnywhere, Category = "Swarm|Combat")
+	float HomeLeashRadius = 4000.f;
+
 	UPROPERTY(EditAnywhere, Category = "Swarm|Combat")
 	float SeekWeight = 1.5f;
 
@@ -259,6 +269,11 @@ private:
 	int32 AvoidanceCursor = 0;
 
 	TWeakObjectPtr<AActor> CurrentTarget;
+
+	// Stage 1 (lose-interest) state.
+	FVector LastKnownLocation = FVector::ZeroVector;
+	bool bInvestigating = false;
+	float LoseInterestRemaining = 0.f;
 
 	// Reused each frame to avoid per-tick heap allocations.
 	TArray<FTransform> ScratchTransforms;

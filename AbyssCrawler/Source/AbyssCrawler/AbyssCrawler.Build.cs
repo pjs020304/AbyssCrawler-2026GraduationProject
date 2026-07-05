@@ -22,7 +22,9 @@ PublicDependencyModuleNames.AddRange(new string[] {
     	"GameplayTasks",    // GAS 필수 모듈 1
     	"GameplayAbilities",// GAS 필수 모듈 2
     	"GameplayTags",      // GAS 필수 모듈 3 (FGameplayTag 사용을 위해)
-		"Niagara"
+		"Niagara",
+		"MoviePlayer",       // 로딩 화면(블로킹 로드 중 Slate 렌더)용
+		"PCG"                // 절차적 생성(산호/암초/아이템 랜덤 배치)용
 });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

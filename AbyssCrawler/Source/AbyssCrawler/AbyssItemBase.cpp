@@ -211,7 +211,7 @@ void AAbyssItemBase::OnLostFocus_Implementation()
 	}
 }
 
-void AAbyssItemBase::SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USceneComponent* AttachParent, bool bVisibleInHand)
+void AAbyssItemBase::SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USceneComponent* AttachParent, bool bVisibleInHand, FName AttachSocketName)
 {
 	OwnerCharacter = NewOwnerCharacter;
 	bPickedUp = true;
@@ -229,7 +229,7 @@ void AAbyssItemBase::SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USce
 
 	if (AttachParent)
 	{
-		AttachToComponent(AttachParent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		AttachToComponent(AttachParent, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachSocketName);
 	}
 
 	SetActorHiddenInGame(!bVisibleInHand);

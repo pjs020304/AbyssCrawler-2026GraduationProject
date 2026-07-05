@@ -97,7 +97,13 @@ void APiranhaSwarmManager::BeginPlay()
 
 	if (CloudCollision)
 	{
+		// 작살 등 무기는 그대로 Block으로 맞아 군체에 피해를 입힌다.
 		CloudCollision->SetCollisionProfileName(TEXT("Pawn"));
+
+		// 단, 플레이어/AI 폰은 물리적으로 막지 않도록 Pawn 채널만 Ignore.
+		// → 플레이어가 군체 구름을 통과하고, AttackRadius 안에 들면 GAS 물기 피해를 받아
+		//   "벽에 부딪히는" 느낌 대신 "군체에 덮쳐지는" 느낌이 난다.
+		CloudCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	}
 
 	if (HasAuthority())
@@ -178,6 +184,16 @@ void APiranhaSwarmManager::Tick(float DeltaTime)
 	// --- Server-authoritative behaviour ---
 	if (HasAuthority() && !IsDispersing())
 	{
+		// Stage 1: count down the lose-interest (investigate) timer.
+		if (bInvestigating)
+		{
+			LoseInterestRemaining -= DeltaTime;
+			if (LoseInterestRemaining <= 0.f)
+			{
+				bInvestigating = false;
+			}
+		}
+
 		DetectionAccum += DeltaTime;
 		if (DetectionAccum >= DetectionInterval)
 		{
@@ -502,16 +518,34 @@ void APiranhaSwarmManager::SetSwarmState(EPiranhaSwarmState NewState)
 
 void APiranhaSwarmManager::UpdateDetection()
 {
+	// --- Stage 3: 영역(Home) 리쉬 ---
+	// 둥지에서 너무 멀어지면 타겟/수색을 모두 버리고 둥지로 복귀.
+	if (FVector::DistSquared(CachedCentroid, HomeLocation) > FMath::Square(HomeLeashRadius))
+	{
+		CurrentTarget = nullptr;
+		bInvestigating = false;
+		RepTargetLocation = HomeLocation;
+		SetSwarmState(EPiranhaSwarmState::Patrol);
+		return;
+	}
+
 	AActor* Target = CurrentTarget.Get();
 
-	// Drop an existing target that became invalid or strayed too far.
+	// 기존 타겟이 무효하거나 LoseTargetRadius 밖으로 벗어나면 → 흥미 상실(수색) 시작.
 	if (Target)
 	{
 		const float DistSq = FVector::DistSquared(CachedCentroid, Target->GetActorLocation());
 		if (!IsValid(Target) || DistSq > FMath::Square(LoseTargetRadius))
 		{
+			// Stage 1: 마지막 목격 위치를 기억하고 일정 시간 수색.
+			if (IsValid(Target))
+			{
+				LastKnownLocation = Target->GetActorLocation();
+			}
 			Target = nullptr;
 			CurrentTarget = nullptr;
+			bInvestigating = true;
+			LoseInterestRemaining = LoseInterestTime;
 		}
 	}
 
@@ -538,6 +572,7 @@ void APiranhaSwarmManager::UpdateDetection()
 		{
 			CurrentTarget = Nearest;
 			Target = Nearest;
+			bInvestigating = false; // 재포착 → 수색 종료
 		}
 	}
 
@@ -548,6 +583,12 @@ void APiranhaSwarmManager::UpdateDetection()
 		{
 			SetSwarmState(EPiranhaSwarmState::Chase);
 		}
+	}
+	else if (bInvestigating)
+	{
+		// Stage 1: 타겟을 놓쳤지만 아직 수색 중 → 마지막 목격 위치로 계속 이동.
+		RepTargetLocation = LastKnownLocation;
+		SetSwarmState(EPiranhaSwarmState::Chase);
 	}
 	else
 	{
@@ -563,8 +604,12 @@ void APiranhaSwarmManager::UpdateAttack(float DeltaTime)
 		return;
 	}
 
+	// 구름이 넓게 퍼져 있으면, 군집 중심이 멀어도 물고기들이 플레이어를 에워싼 상태일 수 있다.
+	// AttackRadius와 현재 구름 반경(CachedSpread) 중 큰 값을 기준으로 삼아,
+	// 플레이어가 구름 안에 들어오면 곧바로 물기 시작.
+	const float AttackDist = FMath::Max(AttackRadius, CachedSpread);
 	const float DistSq = FVector::DistSquared(CachedCentroid, Target->GetActorLocation());
-	if (DistSq <= FMath::Square(AttackRadius))
+	if (DistSq <= FMath::Square(AttackDist))
 	{
 		SetSwarmState(EPiranhaSwarmState::Attack);
 		AttackAccum += DeltaTime;
@@ -600,6 +645,13 @@ void APiranhaSwarmManager::PerformBite(AActor* Target)
 	if (Spec.IsValid())
 	{
 		AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+	}
+
+	// 물린 대상이 플레이어면, 그 플레이어의 클라이언트에서 카메라 흔들림/화면 효과를
+	// 재생하도록 알린다(연출은 BP에서 OnSwarmBiteFeedback 구현).
+	if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(Target))
+	{
+		Diver->Client_OnSwarmBite(CachedCentroid);
 	}
 }
 

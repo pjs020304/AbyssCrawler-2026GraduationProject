@@ -2,6 +2,7 @@
 #include "AbyssOctopusCharacter.h"
 #include "AbyssCharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/CameraShakeBase.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "EnhancedInputComponent.h"
@@ -36,7 +37,7 @@ AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectIniti
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetMesh(), TEXT("Head"));
 
-	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.0f, 0.f, 0.f));
+	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.0f, 0.f, 630.f));
 	FirstPersonCameraComponent->SetRelativeRotation(FRotator(0.0f, 0.f, -90.f));
 
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
@@ -63,6 +64,21 @@ AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectIniti
 void AAbyssDiverCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 카메라를 Head 소켓에 부착 보장 (BP에서 Parent Socket이 비어 있어도 머리 본을 따라가도록)
+	// SnapToTarget으로 상대 오프셋을 0으로 만들어 Head 본에 정확히 붙인다.
+	// (기존 BP 오프셋은 루트 기준이라, 그대로 두면 머리 본 위에 더해져 위치가 어긋남)
+	// 위치는 머리 본을 따라가고, 회전은 bUsePawnControlRotation에 의해 마우스로만 제어됨.
+	if (FirstPersonCameraComponent && GetMesh())
+	{
+		FirstPersonCameraComponent->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+			TEXT("Head"));
+
+		// 머리에서 미세 조정이 필요하면 여기서 오프셋을 명시적으로 설정
+		FirstPersonCameraComponent->SetRelativeLocation(FVector::ZeroVector);
+	}
 
 	for (TActorIterator<APostProcessVolume> It(GetWorld()); It; ++It)
 	{
@@ -163,7 +179,7 @@ void AAbyssDiverCharacter::BeginPlay()
 
 				CurrentSlotIndex = 0;
 
-				NewItem->SetAsPickedUp(this, FirstPersonCameraComponent, true);
+				NewItem->SetAsPickedUp(this, GetMesh(), true, HandSocketName);
 				ApplyCurrentSlotVisual();
 
 				if (IsLocallyControlled())
@@ -206,10 +222,9 @@ void AAbyssDiverCharacter::Tick(float DeltaTime)
 	}
 
 	// Update holding item state
-	if (HasAuthority() || IsLocallyControlled())
-	{
-		bIsHoldingItem = Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr;
-	}
+	// Inventory / CurrentSlotIndex 는 복제되므로 모든 머신(시뮬레이션 프록시 포함)에서 계산해야
+	// 다른 클라이언트가 볼 때도 들기 애니메이션이 올바르게 재생된다.
+	bIsHoldingItem = Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr;
 
 	// Marine Snow 동적 파라미터 제어
 	if (MarineSnowParticleComponent)
@@ -304,6 +319,7 @@ void AAbyssDiverCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME(AAbyssDiverCharacter, Inventory);
 	DOREPLIFETIME(AAbyssDiverCharacter, CurrentSlotIndex);
 	DOREPLIFETIME(AAbyssDiverCharacter, CurrentWorkType);
+	DOREPLIFETIME(AAbyssDiverCharacter, GhostHauntStage);
 }
 
 void AAbyssDiverCharacter::StartDash()
@@ -335,6 +351,90 @@ void AAbyssDiverCharacter::Client_HideWorkUI_Implementation()
 	if (MainHUDRef)
 	{
 		MainHUDRef->BP_HideWorkUI();
+	}
+}
+
+void AAbyssDiverCharacter::Client_OnSwarmBite_Implementation(FVector SwarmCenter)
+{
+	// 연출(카메라 셰이크/화면 효과)은 블루프린트의 OnSwarmBiteFeedback에서 구현.
+	OnSwarmBiteFeedback(SwarmCenter);
+}
+
+// --- [유령(원혼) 디버프 / 포획] ---
+
+void AAbyssDiverCharacter::SetGhostHauntStage(int32 NewStage)
+{
+	// 서버 권위. 포획되어 죽는 중이면 단계 변경 무시.
+	if (!HasAuthority() || bCaughtByGhost)
+	{
+		return;
+	}
+
+	NewStage = FMath::Clamp(NewStage, 0, 3);
+	if (GhostHauntStage == NewStage)
+	{
+		return;
+	}
+
+	GhostHauntStage = NewStage;
+
+	// 서버에서는 OnRep이 자동 호출되지 않으므로 직접 적용.
+	ApplyGhostHauntMovement();
+	OnGhostHauntStageChanged(GhostHauntStage);
+}
+
+void AAbyssDiverCharacter::OnRep_GhostHauntStage()
+{
+	ApplyGhostHauntMovement();
+	OnGhostHauntStageChanged(GhostHauntStage);
+}
+
+void AAbyssDiverCharacter::ApplyGhostHauntMovement()
+{
+	if (UAbyssCharacterMovementComponent* MyCMC =
+			Cast<UAbyssCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		const float Mul = GhostStageSpeedMultipliers.IsValidIndex(GhostHauntStage)
+							  ? GhostStageSpeedMultipliers[GhostHauntStage]
+							  : 1.f;
+		MyCMC->HauntSpeedMultiplier = Mul;
+	}
+}
+
+void AAbyssDiverCharacter::CaughtByGhost()
+{
+	if (!HasAuthority() || bCaughtByGhost || bIsDead)
+	{
+		return;
+	}
+
+	bCaughtByGhost = true;
+
+	// 모든 머신에 포획 상태/암전 연출 적용
+	Multicast_CaughtByGhost();
+
+	// 암전 후 사망 (기존 사망 파이프라인 재사용)
+	GetWorldTimerManager().SetTimer(
+		GhostKillTimerHandle, this, &AAbyssDiverCharacter::Die,
+		GhostKillDelay, /*bLoop=*/false);
+}
+
+void AAbyssDiverCharacter::Multicast_CaughtByGhost_Implementation()
+{
+	bCaughtByGhost = true;
+	bIsGrabbed = true;
+
+	// 이동/입력 정지
+	if (UAbyssCharacterMovementComponent* MyCMC =
+			Cast<UAbyssCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		MyCMC->DisableMovement();
+	}
+
+	// 소유 클라이언트에서 완전 암전 연출
+	if (IsLocallyControlled())
+	{
+		OnGhostKillBlackout();
 	}
 }
 
@@ -581,6 +681,19 @@ void AAbyssDiverCharacter::UseCurrentItem()
 		return;
 	}
 
+	// [카메라 쉐이크] 반응성을 위해 서버 왕복을 기다리지 않고 입력 시점에 로컬로 재생.
+	// (UseItem()은 서버 전용(HasAuthority)이라 거기 넣으면 클라 화면이 안 흔들린다)
+	if (IsLocallyControlled())
+	{
+		if (const TSubclassOf<UCameraShakeBase> UseShake = Inventory[CurrentSlotIndex]->UseCameraShake)
+		{
+			if (APlayerController* PC = Cast<APlayerController>(GetController()))
+			{
+				PC->ClientStartCameraShake(UseShake);
+			}
+		}
+	}
+
 	// ?대씪???쒕쾭?먭쾶 ?ъ슜 ?붿껌留?蹂대깂
 	if (!HasAuthority())
 	{
@@ -705,13 +818,26 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 		Item->SetActorEnableCollision(false);
 
 		// ?꾩옱 ?щ’ ?꾩씠?쒖? ?ㅼ떆 移대찓?쇱뿉 遺李?
-		if (bShouldBeVisible && FirstPersonCameraComponent)
+		if (bShouldBeVisible && GetMesh())
 		{
 			Item->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 			Item->AttachToComponent(
-				FirstPersonCameraComponent,
-				FAttachmentTransformRules::SnapToTargetNotIncludingScale
+				GetMesh(),
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+				HandSocketName
 			);
+
+			// [진단] 클라이언트에서 소켓 부착이 제대로 되는지 확인
+			const TCHAR* NetMode =
+				HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT");
+			UE_LOG(LogTemp, Warning,
+				TEXT("[EquipVisual:%s] Item=%s SocketExists=%d ItemLoc=%s MeshLoc=%s Hidden=%d"),
+				NetMode,
+				*Item->GetName(),
+				GetMesh()->DoesSocketExist(HandSocketName) ? 1 : 0,
+				*Item->GetActorLocation().ToString(),
+				*GetMesh()->GetComponentLocation().ToString(),
+				Item->IsHidden() ? 1 : 0);
 		}
 
 		// 숨겨지는 아이템은 NotifyUnequipped 호출 (가상 함수 → 각 아이템이 알아서 처리)
@@ -952,7 +1078,7 @@ bool AAbyssDiverCharacter::AddItemToInventory(AAbyssItemBase* ItemToAdd)
 			}
 			*/
 			const bool bVisibleInHand = (CurrentSlotIndex == i);
-			ItemToAdd->SetAsPickedUp(this, FirstPersonCameraComponent, bVisibleInHand);
+			ItemToAdd->SetAsPickedUp(this, GetMesh(), bVisibleInHand, HandSocketName);
 
 			ApplyCurrentSlotVisual();
 
@@ -1179,6 +1305,19 @@ void AAbyssDiverCharacter::OnHealthChangedCallback(const FOnAttributeChangeData&
 {
 	// 블루프린트(UI) 쪽으로 "체력 변했다!" 하고 현재값과 최대값을 방송(Broadcast)합니다.
 	OnHealthChanged.Broadcast(Data.NewValue, AttributeSet->GetMaxHealth());
+
+	// [카메라 쉐이크] 체력이 "감소"했고, 이 캐릭터가 "내 화면의 주인"일 때만 흔든다.
+	// (IsLocallyControlled 체크가 없으면 리슨서버 호스트가 남의 피격에도 흔들린다)
+	if (Data.NewValue < Data.OldValue && IsLocallyControlled() && HitCameraShake)
+	{
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			// 피해량에 비례한 강도 (기본: 1~30 피해 → 0.5~1.5 강도)
+			const float Scale = FMath::GetMappedRangeValueClamped(
+				HitShakeDamageRange, HitShakeScaleRange, Data.OldValue - Data.NewValue);
+			PC->ClientStartCameraShake(HitCameraShake, Scale);
+		}
+	}
 
 	if (Data.NewValue <= 0.0f && !bIsDead)
 	{

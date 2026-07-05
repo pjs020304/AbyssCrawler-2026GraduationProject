@@ -39,6 +39,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category =  "Item Info")
 	int32 ItemPrice;
 
+	// 이 아이템 사용 시 로컬 화면에 재생할 카메라 쉐이크 (각 아이템 BP에서 지정, 비우면 없음)
+	// 재생은 서버가 아닌 "입력 시점"(AAbyssDiverCharacter::UseCurrentItem)에서 로컬로 수행된다.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera|Shake")
+	TSubclassOf<class UCameraShakeBase> UseCameraShake;
+
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	// 3D 허공에 띄울 UI 컴포넌트
@@ -50,7 +55,7 @@ public:
 	virtual void OnLostFocus_Implementation() override;
 
 	// 아이템 상태 전환
-	void SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USceneComponent* AttachParent, bool bVisibleInHand);
+	void SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USceneComponent* AttachParent, bool bVisibleInHand, FName AttachSocketName = NAME_None);
 	void SetAsDropped(const FVector& DropLocation, const FRotator& DropRotation, const FVector& ThrowImpulse);
 
 protected:

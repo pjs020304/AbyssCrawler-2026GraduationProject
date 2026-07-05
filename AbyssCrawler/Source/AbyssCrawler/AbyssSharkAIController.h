@@ -2,10 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
-#include "Perception/AIPerceptionTypes.h" // °¨Áö µ¥ÀÌÅÍ Å¸ÀÔ
+#include "Engine/TimerHandle.h"
+#include "Perception/AIPerceptionTypes.h" // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½
 #include "AbyssSharkAIController.generated.h"
 
-// Àü¹æ ¼±¾ğ
+// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 class UBehaviorTree;
 class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
@@ -19,26 +20,65 @@ public:
 	AAbyssSharkAIController();
 
 protected:
-	// AI°¡ Ä³¸¯ÅÍ¿¡ ºùÀÇ(Possess)ÇÒ ¶§ ½ÇÇà (Behavior Tree ½ÃÀÛÁ¡)
+	// AIï¿½ï¿½ Ä³ï¿½ï¿½ï¿½Í¿ï¿½ ï¿½ï¿½ï¿½ï¿½(Possess)ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (Behavior Tree ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	virtual void OnPossess(APawn* InPawn) override;
 
-	// --- [AI ÇÙ½É ÄÄÆ÷³ÍÆ®] ---
+	// --- [AI ï¿½Ù½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®] ---
 
-	// ¿¡µğÅÍ¿¡¼­ ÇÒ´çÇÒ Çàµ¿ Æ®¸®(Behavior Tree)
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ ï¿½Ò´ï¿½ï¿½ï¿½ ï¿½àµ¿ Æ®ï¿½ï¿½(Behavior Tree)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI")
 	UBehaviorTree* AIBehavior;
 
-	// AIÀÇ ¿À°¨(Perception) ÄÄÆ÷³ÍÆ®
+	// AIï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(Perception) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	UAIPerceptionComponent* SharkPerceptionComp;
 
-	// ½Ã°¢(Sight) ¼³Á¤ Á¤º¸
+	// ï¿½Ã°ï¿½(Sight) ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	UAISenseConfig_Sight* SightConfig;
 
-	// --- [°¨Áö ÀÌº¥Æ® ÇÔ¼ö] ---
+	// --- [ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ® ï¿½Ô¼ï¿½] ---
 
-	// ½Ã¾ß¿¡ ¹«¾ğ°¡ µé¾î¿À°Å³ª ³ª°¬À» ¶§ ½ÇÇàµÉ ÇÔ¼ö
+	// ï¿½Ã¾ß¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Å³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
 	UFUNCTION()
 	void OnTargetDetected(AActor* Actor, FAIStimulus Stimulus);
+
+	// --- [ì¶”ì  í•´ì œ: 1ë‹¨ê³„ í¥ë¯¸ ìƒì‹¤ + 3ë‹¨ê³„ ì˜ì—­ ë¦¬ì‰¬] ---
+
+	// ì‹œì•¼ë¥¼ ë†“ì¹œ ë’¤ ë§ˆì§€ë§‰ ëª©ê²© ìœ„ì¹˜ë¥¼ ìˆ˜ìƒ‰í•˜ë‹¤ê°€ ì¶”ì ì„ í¬ê¸°í•˜ê¸°ê¹Œì§€ì˜ ì‹œê°„(ì´ˆ).
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Chase")
+	float LoseInterestTime = 8.0f;
+
+	// ë‘¥ì§€(ìŠ¤í° ìœ„ì¹˜)ì—ì„œ ì´ ê±°ë¦¬ ì´ìƒ ë²—ì–´ë‚˜ë©´ ì¶”ì ì„ í¬ê¸°í•˜ê³  ë³µê·€.
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Chase")
+	float HomeLeashRadius = 6000.0f;
+
+	// ì˜ì—­ ë¦¬ì‰¬ ê²€ì‚¬ ì£¼ê¸°(ì´ˆ).
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Chase")
+	float LeashCheckInterval = 0.5f;
+
+	// ë¸”ë™ë³´ë“œ í‚¤ ì´ë¦„ (Behavior Treeì˜ í‚¤ì™€ ë°˜ë“œì‹œ ì¼ì¹˜í•´ì•¼ í•¨).
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Chase")
+	FName TargetActorKey = TEXT("TargetActor");
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Chase")
+	FName HasLineOfSightKey = TEXT("HasLineOfSight");
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Chase")
+	FName LastKnownLocationKey = TEXT("LastKnownLocation");
+	UPROPERTY(EditDefaultsOnly, Category = "AI|Chase")
+	FName HomeLocationKey = TEXT("HomeLocation");
+
+	// ìŠ¤í°(ë‘¥ì§€) ìœ„ì¹˜. OnPossessì—ì„œ ê¸°ë¡.
+	FVector HomeLocation = FVector::ZeroVector;
+
+	FTimerHandle GiveUpTimerHandle;
+	FTimerHandle LeashCheckTimerHandle;
+
+	// í¥ë¯¸ ìƒì‹¤ íƒ€ì´ë¨¸ ë§Œë£Œ â†’ ì¶”ì  í¬ê¸°.
+	void OnGiveUpChase();
+
+	// ì£¼ê¸°ì ìœ¼ë¡œ ë‘¥ì§€ì™€ì˜ ê±°ë¦¬ë¥¼ ê²€ì‚¬(3ë‹¨ê³„ ì˜ì—­ ë¦¬ì‰¬).
+	void CheckHomeLeash();
+
+	// íƒ€ê²Ÿì„ ë¹„ìš°ê³  ì¶”ì ì„ ì¢…ë£Œ(íƒ€ì´ë¨¸ ì •ë¦¬ í¬í•¨). BTëŠ” ì´í›„ ìˆœì°°/ë³µê·€ë¡œ í´ë°±.
+	void AbandonChase();
 };

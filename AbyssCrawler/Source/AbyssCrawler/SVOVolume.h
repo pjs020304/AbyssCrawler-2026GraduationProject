@@ -5,16 +5,16 @@
 #include "Components/BoxComponent.h"
 #include "SVOVolume.generated.h"
 
-// ¿ÁÆ®¸®ÀÇ ±âº» ´ÜÀ§ (³ëµå)
+// ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½âº» ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½)
 struct FSVONode
 {
-	FVector Center;       // º¹¼¿ÀÇ Áß½É ÁÂÇ¥
-	float Extent;         // º¹¼¿ÀÇ Àý¹Ý Å©±â (Half-size)
-	bool bIsBlocked;      // Àå¾Ö¹°ÀÌ ÀÖ´Â°¡?
-	bool bIsLeaf;         // ´õ ÀÌ»ó ÂÉ°³ÁöÁö ¾Ê´Â ³¡´Ü(¸»´Ü) ³ëµåÀÎ°¡?
+	FVector Center;       // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ß½ï¿½ ï¿½ï¿½Ç¥
+	float Extent;         // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å©ï¿½ï¿½ (Half-size)
+	bool bIsBlocked;      // ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ ï¿½Ö´Â°ï¿½?
+	bool bIsLeaf;         // ï¿½ï¿½ ï¿½Ì»ï¿½ ï¿½É°ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê´ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½Î°ï¿½?
 
 
-	// ÀÚ½Ä ³ëµå 8°³ (ÀÚ½ÅÀÌ Leaf°¡ ¾Æ´Ò ¶§¸¸ »ý¼ºµÊ)
+	// ï¿½Ú½ï¿½ ï¿½ï¿½ï¿½ 8ï¿½ï¿½ (ï¿½Ú½ï¿½ï¿½ï¿½ Leafï¿½ï¿½ ï¿½Æ´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	TArray<TSharedPtr<FSVONode>> Children;
 
 	FSVONode(FVector InCenter, float InExtent)
@@ -33,38 +33,52 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// ¸Ê ½ºÄµ ¹üÀ§¸¦ ½Ã°¢ÀûÀ¸·Î º¸¿©ÁÙ ¹Ú½º
+	// ï¿½ï¿½ ï¿½ï¿½Äµ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ã°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ú½ï¿½
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SVO")
 	UBoxComponent* BoundsVolume;
 
-	// Æ®¸®°¡ ¸î ¹øÀÌ³ª ÂÉ°³ÁúÁö °áÁ¤ (°ªÀÌ Å¬¼ö·Ï Á¤¹ÐÇÏÁö¸¸ ¸Þ¸ð¸® Áõ°¡)
+	// Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Ì³ï¿½ ï¿½É°ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¸ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	UPROPERTY(EditAnywhere, Category = "SVO")
 	int32 MaxDepth = 5;
 
-	// ½ºÄµ ½Ã ¹«½ÃÇÒ Ä³¸¯ÅÍµé (»ó¾î, ÇÃ·¹ÀÌ¾î µî)
+	// ï¿½ï¿½Äµ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ä³ï¿½ï¿½ï¿½Íµï¿½ (ï¿½ï¿½ï¿½, ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½)
 	UPROPERTY()
 	TArray<AActor*> ActorsToIgnore;
 
 private:
-	// Æ®¸®ÀÇ ÃÖ»ó´Ü »Ñ¸® ³ëµå
+	// Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½Ö»ï¿½ï¿½ ï¿½Ñ¸ï¿½ ï¿½ï¿½ï¿½
 	TSharedPtr<FSVONode> RootNode;
 
-	// 1. Æ®¸®¸¦ Àç±ÍÀûÀ¸·Î »ý¼ºÇÏ´Â ÇÔ¼ö
+	// 1. Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½Ô¼ï¿½
 	void BuildOctree(TSharedPtr<FSVONode> Node, int32 CurrentDepth);
+
+	// [PCG ì—°ë™] ë³€ê²½ ì˜ì—­ê³¼ ê²¹ì¹˜ëŠ” ë…¸ë“œë§Œ ê³¨ë¼ ìž¬ìŠ¤ìº”í•˜ëŠ” ìž¬ê·€ í•¨ìˆ˜
+	void RebuildNodeRecursive(TSharedPtr<FSVONode> Node, int32 CurrentDepth, const FBox& DirtyBounds);
+
+	// ìŠ¤ìº” ì‹œ ë¬´ì‹œí•  ì•¡í„°(ìºë¦­í„° ë“±) ëª©ë¡ì„ ìµœì‹ í™”
+	void RefreshIgnoredActors();
 
 	void DrawNodeDebugRecursive(TSharedPtr<FSVONode> Node) const;
 
 public:
-	// 2. ¿ÜºÎ(Pathfinder)¿¡¼­ Æ¯Á¤ ÁÂÇ¥°¡ ¸·ÇôÀÖ´ÂÁö $O(\log N)$ ¼Óµµ·Î ¹°¾îº¼ ÇÔ¼ö
+	// 2. ï¿½Üºï¿½(Pathfinder)ï¿½ï¿½ï¿½ï¿½ Æ¯ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ $O(\log N)$ ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½îº¼ ï¿½Ô¼ï¿½
 	bool IsWalkable(const FVector& Location) const;
 
-	// 3. ¹°¸® ¿£Áø ´ë½Å SVO µ¥ÀÌÅÍ¸¦ È°¿ëÇÑ ÃÊ°í¼Ó 3D ±¤¼± ÃßÀû (½ºÆ®¸µ Ç®¸µ¿ë)
+	// 3. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ SVO ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ È°ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½ï¿½ï¿½ 3D ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½Æ®ï¿½ï¿½ Ç®ï¿½ï¿½ï¿½ï¿½)
 	bool SVORaycast(const FVector& Start, const FVector& End) const;
 
 	void DrawSVODebug() const;
 
+	// [PCG ì—°ë™] ì§€ì˜¤ë©”íŠ¸ë¦¬ê°€ ë°”ë€ ì˜ì—­(DirtyBounds)ë§Œ ë¶€ë¶„ ìž¬ë¹Œë“œí•œë‹¤.
+	// PCG ìƒì„±ì´ ëª¨ë‘ ëë‚œ ë’¤ ë§¤ë‹ˆì €ê°€ í˜¸ì¶œí•œë‹¤. ìµœì´ˆ ë¹Œë“œ ì „ì´ë©´ ì „ì²´ ë¹Œë“œë¡œ í´ë°±.
+	void RebuildRegion(const FBox& DirtyBounds);
+
+	// ë¸”ë£¨í”„ë¦°íŠ¸/ë””ë²„ê·¸ìš©: ì¤‘ì‹¬ + ë°˜ê²½(Extent)ìœ¼ë¡œ ë¶€ë¶„ ìž¬ë¹Œë“œ
+	UFUNCTION(BlueprintCallable, Category = "SVO")
+	void RebuildRegionBox(FVector Center, FVector Extent);
+
 public:
-	// ºí·çÇÁ¸°Æ®¿¡¼­ Å° ÀÔ·ÂÀ¸·Î È£ÃâÇÒ ¼ö ÀÖ°Ô ³ëÃâ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ Å° ï¿½Ô·ï¿½ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö°ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UFUNCTION(BlueprintCallable, Category = "SVO Debug")
 	void ToggleSVODebug();
 
