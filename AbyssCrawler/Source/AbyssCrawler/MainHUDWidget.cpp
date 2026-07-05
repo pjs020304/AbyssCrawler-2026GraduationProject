@@ -23,9 +23,11 @@ void UMainHUDWidget::NativeConstruct()
     if (AAbyssGameState* GS = GetWorld()->GetGameState<AAbyssGameState>())
     {
         GS->OnMoneyChanged.AddDynamic(this, &UMainHUDWidget::UpdateMoneyDisplay);
-
         // 초기값 표시
         UpdateMoneyDisplay(GS->GetSharedMoney());
+
+        GS->OnRemainingGameTimeChanged.AddDynamic(this, &UMainHUDWidget::UpdateRemainingTimeDisplay);
+        UpdateRemainingTimeDisplay(GS->GetRemainingGameTime());
     }
 }
 
@@ -33,6 +35,17 @@ void UMainHUDWidget::UpdateMoneyDisplay(int32 NewMoney)
 {
     // 블루프린트 이벤트를 호출하여 텍스트를 갱신합니다.
     OnUpdateMoneyText(NewMoney);
+}
+
+void UMainHUDWidget::UpdateRemainingTimeDisplay(float NewTime)
+{
+    const int32 TotalSeconds = FMath::Max(0, FMath::CeilToInt(NewTime));
+    const int32 Minutes = TotalSeconds / 60;
+    const int32 Seconds = TotalSeconds % 60;
+
+    const FString TimeString = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
+
+    OnUpdateRemainingTimeText(FText::FromString(TimeString));
 }
 
 UChatting* UMainHUDWidget::GetChattingUI() const

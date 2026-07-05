@@ -84,4 +84,10 @@ protected:
 	
 	UPROPERTY(meta = (BindWidgetOptional))
 	UChatting* ChattingUI;
+
+	UFUNCTION()
+	void UpdateRemainingTimeDisplay(float NewTime);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void OnUpdateRemainingTimeText(const FText& TimeText);
 };

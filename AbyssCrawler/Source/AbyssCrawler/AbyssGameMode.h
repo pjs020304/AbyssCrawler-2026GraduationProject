@@ -12,6 +12,8 @@ class ABYSSCRAWLER_API AAbyssGameMode : public AGameMode
 public:
 	AAbyssGameMode();
 
+	virtual void BeginPlay() override;
+
 	// 플레이어 접속 시 호출 (GAS 초기화 타이밍)
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
@@ -33,7 +35,32 @@ public:
 
 	void AcceptMissionById(FName MissionId);
 
+	void SetMissionAreaMarkerVisible(FName MissionId, bool bVisible);
+
+	UFUNCTION(BlueprintCallable)
+	void StartMainGameFlow();
+
+	UFUNCTION(BlueprintCallable)
+	void CheckGameClearCondition();
+
+	UFUNCTION(BlueprintCallable)
+	void CheckGameOverCondition();
+
+	UFUNCTION(BlueprintCallable)
+	void FinishGameClear();
+
+	UFUNCTION(BlueprintCallable)
+	void FinishGameOver();
+
+	UFUNCTION(BlueprintCallable)
+	void OnPlayerEscaped(AController* PlayerController);
+
+
 protected:
-	// 시작 시 미션 타이머 가동 등
-	//virtual void BeginPlay() override;
+	UPROPERTY(EditDefaultsOnly, Category = "Game Flow")
+	float GameLimitTime = 1200.0f; // 20분
+
+	FTimerHandle GameTimerHandle;
+
+	void UpdateGameTimer();
 };

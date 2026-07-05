@@ -8,6 +8,7 @@
 #include "Mission/Contents/AbyssMissionLight.h"
 #include "TitleGameInstance.h"
 #include "EngineUtils.h"
+#include "Mission/Contents/AbyssMissionArea.h"
 
 AAbyssGameMode::AAbyssGameMode()
 {
@@ -17,6 +18,13 @@ AAbyssGameMode::AAbyssGameMode()
     PlayerControllerClass = AAbyssPlayerController::StaticClass();
 
     bDelayedStart = false;
+}
+
+void AAbyssGameMode::BeginPlay()
+{
+    Super::BeginPlay();
+
+    StartMainGameFlow();
 }
 
 void AAbyssGameMode::PostLogin(APlayerController* NewPlayer)
@@ -68,6 +76,7 @@ void AAbyssGameMode::OnPlayerDied(AController* DeadPlayer)
     if (!bAnyAlive)
     {
         // GameOver Logic
+        FinishGameOver();
     }
 }
 
@@ -97,6 +106,7 @@ void AAbyssGameMode::OnMissionItemCollected(int32 MissionIndex)
 
 void AAbyssGameMode::AddMissionProgress(int32 MissionIndex, int32 Amount)
 {
+
     if (AAbyssGameState* GS = GetGameState<AAbyssGameState>())
     {
         if (!GS->Missions.IsValidIndex(MissionIndex)) return;
@@ -113,6 +123,15 @@ void AAbyssGameMode::AddMissionProgress(int32 MissionIndex, int32 Amount)
         // 완료된 경우 실행
         if (!bWasCompleted && Mission.bCompleted)
         {
+            SetMissionAreaMarkerVisible(Mission.MissionId, false);
+
+            GS->AddSharedMoney(Mission.RewardMoney);
+
+            UE_LOG(LogTemp, Warning, TEXT("[MissionReward] %s Money +%d"),
+                *Mission.MissionId.ToString(),
+                Mission.RewardMoney
+            );
+
             UE_LOG(LogTemp, Warning, TEXT("[Mission] Completed: %s"), *Mission.MissionTitle.ToString());
 
             for (TActorIterator<AAbyssMissionLight> It(GetWorld()); It; ++It)
@@ -164,6 +183,15 @@ void AAbyssGameMode::AddMissionProgressById(FName MissionId, int32 Amount)
 
         if (!bWasCompleted && Mission.bCompleted)
         {
+            SetMissionAreaMarkerVisible(Mission.MissionId, false);
+
+            GS->AddSharedMoney(Mission.RewardMoney);
+
+            UE_LOG(LogTemp, Warning, TEXT("[MissionReward] %s Money +%d"),
+                *Mission.MissionId.ToString(),
+                Mission.RewardMoney
+            );
+
             for (TActorIterator<AAbyssMissionLight> It(GetWorld()); It; ++It)
             {
                 AAbyssMissionLight* LightController = *It;
@@ -196,5 +224,180 @@ void AAbyssGameMode::AcceptMissionById(FName MissionId)
     if (AAbyssGameState* GS = GetGameState<AAbyssGameState>())
     {
         GS->AddMissionById(MissionId);
+
+        // 미션을 받으면 해당 MissionId를 가진 Area 마커 켜기
+        SetMissionAreaMarkerVisible(MissionId, true);
+
+        UE_LOG(LogTemp, Warning, TEXT("[MissionArea] Try Show Marker: %s"),
+            *MissionId.ToString()
+        );
+    }
+}
+
+void AAbyssGameMode::SetMissionAreaMarkerVisible(FName MissionId, bool bVisible)
+{
+    bool bFoundArea = false;
+
+    for (TActorIterator<AAbyssMissionArea> It(GetWorld()); It; ++It)
+    {
+        AAbyssMissionArea* Area = *It;
+        if (!Area)
+        {
+            continue;
+        }
+
+        UE_LOG(LogTemp, Warning, TEXT("[MissionArea] Check Area MissionId=%s / Target=%s"),
+            *Area->GetMissionId().ToString(),
+            *MissionId.ToString()
+        );
+
+        if (Area->GetMissionId() == MissionId)
+        {
+            bFoundArea = true;
+
+            Area->SetMissionMarkerVisible(bVisible);
+
+            UE_LOG(LogTemp, Warning, TEXT("[MissionArea] Marker %s: %s"),
+                bVisible ? TEXT("ON") : TEXT("OFF"),
+                *MissionId.ToString());
+        }
+    }
+
+    if (!bFoundArea)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[MissionArea] No Area Found For MissionId: %s"),
+            *MissionId.ToString()
+        );
+    }
+}
+
+void AAbyssGameMode::StartMainGameFlow()
+{
+    AAbyssGameState* GS = GetGameState<AAbyssGameState>();
+    if (!GS) return;
+
+    GS->SetGamePhase(EAbyssGamePhase::Playing);
+    GS->SetRemainingGameTime(GameLimitTime);
+
+    GetWorldTimerManager().SetTimer(
+        GameTimerHandle,
+        this,
+        &AAbyssGameMode::UpdateGameTimer,
+        1.0f,
+        true
+    );
+
+    UE_LOG(LogTemp, Warning, TEXT("[GameFlow] Game Started"));
+}
+
+void AAbyssGameMode::CheckGameClearCondition()
+{
+    AAbyssGameState* GS = GetGameState<AAbyssGameState>();
+    if (!GS) return;
+
+    if (GS->GetGamePhase() != EAbyssGamePhase::Playing)
+    {
+        return;
+    }
+
+    if (GS->ProgressPoint >= GS->TargetProgressPoint)
+    {
+        // 잠수함 귀환
+    }
+}
+
+void AAbyssGameMode::CheckGameOverCondition()
+{
+}
+
+void AAbyssGameMode::FinishGameClear()
+{
+    AAbyssGameState* GS = GetGameState<AAbyssGameState>();
+    if (!GS) return;
+
+    if (GS->GetGamePhase() != EAbyssGamePhase::Playing)
+    {
+        return;
+    }
+
+    GS->SetGamePhase(EAbyssGamePhase::Cleared);
+    GetWorldTimerManager().ClearTimer(GameTimerHandle);
+
+    UE_LOG(LogTemp, Warning, TEXT("[GameFlow] Game Clear"));
+
+    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+    {
+        if (APlayerController* PC = It->Get())
+        {
+            if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(PC->GetPawn()))
+            {
+                //Diver->Client_ShowGameClearUI();
+            }
+        }
+    }
+}
+
+void AAbyssGameMode::FinishGameOver()
+{
+    AAbyssGameState* GS = GetGameState<AAbyssGameState>();
+    if (!GS) return;
+
+    if (GS->GetGamePhase() != EAbyssGamePhase::Playing)
+    {
+        return;
+    }
+
+    GS->SetGamePhase(EAbyssGamePhase::GameOver);
+    GetWorldTimerManager().ClearTimer(GameTimerHandle);
+
+    UE_LOG(LogTemp, Warning, TEXT("[GameFlow] Game Over"));
+
+    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+    {
+        if (APlayerController* PC = It->Get())
+        {
+            if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(PC->GetPawn()))
+            {
+                //Diver->Client_ShowGameOverUI();
+            }
+        }
+    }
+}
+
+void AAbyssGameMode::OnPlayerEscaped(AController* PlayerController)
+{
+    AAbyssGameState* GS = GetGameState<AAbyssGameState>();
+    if (!GS) return;
+
+    if (GS->GetGamePhase() != EAbyssGamePhase::Playing)
+    {
+        return;
+    }
+
+    if (GS->ProgressPoint < GS->TargetProgressPoint)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[GameFlow] Cannot escape yet. Progress not enough."));
+        return;
+    }
+
+    FinishGameClear();
+}
+
+void AAbyssGameMode::UpdateGameTimer()
+{
+    AAbyssGameState* GS = GetGameState<AAbyssGameState>();
+    if (!GS) return;
+
+    if (GS->GetGamePhase() != EAbyssGamePhase::Playing)
+    {
+        return;
+    }
+
+    const float NewTime = GS->GetRemainingGameTime() - 1.0f;
+    GS->SetRemainingGameTime(NewTime);
+
+    if (NewTime <= 0.0f)
+    {
+        FinishGameOver();
     }
 }
