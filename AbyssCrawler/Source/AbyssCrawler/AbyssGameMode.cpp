@@ -332,9 +332,19 @@ void AAbyssGameMode::FinishGameClear()
             if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(PC->GetPawn()))
             {
                 //Diver->Client_ShowGameClearUI();
+                Diver->Client_PlayFadeOut();
             }
         }
     }
+
+    FTimerHandle EndingTravelTimer;
+    GetWorldTimerManager().SetTimer(
+        EndingTravelTimer,
+        this,
+        &AAbyssGameMode::TravelToEndingMap,
+        2.0f,
+        false
+    );
 }
 
 void AAbyssGameMode::FinishGameOver()
@@ -358,7 +368,7 @@ void AAbyssGameMode::FinishGameOver()
         {
             if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(PC->GetPawn()))
             {
-                //Diver->Client_ShowGameOverUI();
+                Diver->Client_ShowGameOverUI();
             }
         }
     }
@@ -381,6 +391,26 @@ void AAbyssGameMode::OnPlayerEscaped(AController* PlayerController)
     }
 
     FinishGameClear();
+}
+
+void AAbyssGameMode::TravelToEndingMap()
+{
+    if (!HasAuthority())
+    {
+        return;
+    }
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    const FString EndingMapPath = TEXT("/Game/AbyssCrawler/Maps/MainGame/L_Ending_Submarine");
+
+    UE_LOG(LogTemp, Warning, TEXT("[GameFlow] ServerTravel To EndingMap: %s"), *EndingMapPath);
+
+    World->ServerTravel(EndingMapPath);
 }
 
 void AAbyssGameMode::UpdateGameTimer()

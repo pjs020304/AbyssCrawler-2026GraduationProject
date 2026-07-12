@@ -24,7 +24,9 @@ PublicDependencyModuleNames.AddRange(new string[] {
     	"GameplayTags",      // GAS 필수 모듈 3 (FGameplayTag 사용을 위해)
 		"Niagara",
 		"MoviePlayer",       // 로딩 화면(블로킹 로드 중 Slate 렌더)용
-		"PCG"                // 절차적 생성(산호/암초/아이템 랜덤 배치)용
+		"PCG",                // 절차적 생성(산호/암초/아이템 랜덤 배치)용
+		"LevelSequence",
+        "MovieScene"
 });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

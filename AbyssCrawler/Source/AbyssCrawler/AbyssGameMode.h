@@ -55,6 +55,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void OnPlayerEscaped(AController* PlayerController);
 
+	void TravelToEndingMap();
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Game Flow")

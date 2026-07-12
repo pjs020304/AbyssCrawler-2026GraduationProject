@@ -6,6 +6,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/GameStateBase.h"
 #include "Net/UnrealNetwork.h"
+#include "AbyssGameMode.h"
+#include "AbyssGameState.h"
 
 AAbyssSubmarine::AAbyssSubmarine()
 {
@@ -137,6 +139,28 @@ bool AAbyssSubmarine::AreAllPlayersBoarded()
 	return OverlappingDivers.Num() >= TotalPlayers;
 }
 
+void AAbyssSubmarine::TryClearGameByBoarding()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (!AreAllPlayersBoarded())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Submarine] Not all players boarded"));
+		return;
+	}
+
+	AAbyssGameMode* GM = GetWorld()->GetAuthGameMode<AAbyssGameMode>();
+	if (!GM)
+	{
+		return;
+	}
+
+	GM->OnPlayerEscaped(nullptr);
+}
+
 // 새로운 함수들 구현부 추가
 void AAbyssSubmarine::OnInteriorOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -148,6 +172,12 @@ void AAbyssSubmarine::OnInteriorOverlapBegin(UPrimitiveComponent* OverlappedComp
 		if (InteractionText && InteractionText->IsVisible())
 		{
 			UpdateInteractionText();
+		}
+
+		// 서버 클리어 판정
+		if (HasAuthority())
+		{
+			TryClearGameByBoarding();
 		}
 	}
 }

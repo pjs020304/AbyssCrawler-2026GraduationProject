@@ -2,6 +2,10 @@
 #include "AbyssDiverCharacter.h"
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "Blueprint/UserWidget.h"
+#include "LevelSequenceActor.h"
+#include "LevelSequencePlayer.h"
+#include "Camera/CameraActor.h"
 
 AAbyssPlayerController::AAbyssPlayerController()
 {
@@ -64,4 +68,81 @@ void AAbyssPlayerController::CycleSpectatePlayer()
 	
 	// Switch camera smoothly
 	SetViewTargetWithBlend(AlivePlayers[NextIndex], 0.5f);
+}
+
+void AAbyssPlayerController::Client_StartEndingSequence_Implementation(
+	TSubclassOf<UUserWidget> ClearWidgetClass
+)
+{
+	PendingEndingWidgetClass = ClearWidgetClass;
+
+	bShowMouseCursor = false;
+
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
+
+	ALevelSequenceActor* FoundSequenceActor = nullptr;
+
+	for (TActorIterator<ALevelSequenceActor> It(GetWorld()); It; ++It)
+	{
+		FoundSequenceActor = *It;
+		break;
+	}
+
+	if (!FoundSequenceActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Ending] Client LevelSequenceActor not found"));
+		ShowEndingClearUI();
+		return;
+	}
+
+	ULevelSequencePlayer* SequencePlayer = FoundSequenceActor->GetSequencePlayer();
+	if (!SequencePlayer)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Ending] Client SequencePlayer not found"));
+		ShowEndingClearUI();
+		return;
+	}
+
+	SequencePlayer->OnFinished.RemoveDynamic(this, &AAbyssPlayerController::HandleEndingSequenceFinished);
+	SequencePlayer->OnFinished.AddDynamic(this, &AAbyssPlayerController::HandleEndingSequenceFinished);
+
+	UE_LOG(LogTemp, Warning, TEXT("[Ending] Client Play Sequence"));
+
+	SequencePlayer->Play();
+}
+
+void AAbyssPlayerController::HandleEndingSequenceFinished()
+{
+	ShowEndingClearUI();
+}
+
+void AAbyssPlayerController::ShowEndingClearUI()
+{
+	if (EndingWidgetRef)
+	{
+		EndingWidgetRef->RemoveFromParent();
+		EndingWidgetRef = nullptr;
+	}
+
+	if (PendingEndingWidgetClass)
+	{
+		EndingWidgetRef = CreateWidget<UUserWidget>(this, PendingEndingWidgetClass);
+		if (EndingWidgetRef)
+		{
+			EndingWidgetRef->AddToViewport(999);
+		}
+	}
+
+	bShowMouseCursor = true;
+
+	FInputModeUIOnly InputMode;
+
+	if (EndingWidgetRef)
+	{
+		InputMode.SetWidgetToFocus(EndingWidgetRef->TakeWidget());
+	}
+
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
 }

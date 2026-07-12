@@ -25,6 +25,7 @@
 #include "EngineUtils.h"
 #include "Engine/PostProcessVolume.h"
 #include "GameFramework/PhysicsVolume.h"
+#include "Kismet/GameplayStatics.h"
 #include "Mission/Contents/AbyssUSBItem.h"
 #include "Mission/Contents/AbyssDataConsole.h"
 
@@ -580,6 +581,16 @@ void AAbyssDiverCharacter::ConsumeItem(AAbyssItemBase* ItemToConsume)
 			}
 			break;
 		}
+	}
+}
+
+void AAbyssDiverCharacter::Client_PlayFadeOut_Implementation()
+{
+	SetInputLockedByUI(true);
+
+	if (MainHUDRef)
+	{
+		MainHUDRef->BP_PlayFadeOut();
 	}
 }
 
@@ -1784,6 +1795,51 @@ void AAbyssDiverCharacter::SendChatMessage(const FString& Message)
 
 	Server_SendChatMessage(TrimmedMessage);
 }
+
+void AAbyssDiverCharacter::Client_ShowGameOverUI_Implementation()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC)
+	{
+		return;
+	}
+
+	if (GameOverWidgetRef)
+	{
+		GameOverWidgetRef->RemoveFromParent();
+		GameOverWidgetRef = nullptr;
+	}
+
+	if (GameOverWidgetClass)
+	{
+		GameOverWidgetRef = CreateWidget<UUserWidget>(PC, GameOverWidgetClass);
+		if (GameOverWidgetRef)
+		{
+			GameOverWidgetRef->AddToViewport(999);
+		}
+	}
+
+	PC->SetPause(false);
+	PC->bShowMouseCursor = true;
+
+	FInputModeUIOnly InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	PC->SetInputMode(InputMode);
+
+	DisableInput(PC);
+}
+
+void AAbyssDiverCharacter::Client_ShowGameClearUI_Implementation()
+{
+	SetInputLockedByUI(true);
+
+	if (MainHUDRef)
+	{
+		MainHUDRef->BP_ShowGameClear();
+	}
+}
+
+
 
 void AAbyssDiverCharacter::Client_ReceiveChatMessage_Implementation(const FString& Message)
 {

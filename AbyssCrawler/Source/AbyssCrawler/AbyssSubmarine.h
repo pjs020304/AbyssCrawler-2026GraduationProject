@@ -69,6 +69,9 @@ protected:
 	// 모든 플레이어가 탔는지 검사하는 함수
 	bool AreAllPlayersBoarded();
 
+	// 클리어 판정
+	void TryClearGameByBoarding();
+
 	// 실제 하강 로직 (서버 실행)
 	void StartDescent();
 

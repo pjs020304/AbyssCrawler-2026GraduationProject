@@ -389,6 +389,19 @@ public:
     UFUNCTION(Client, Reliable)
     void Client_ReceiveChatMessage(const FString& Message);
 
+    // Clear & Over UI
+    UFUNCTION(Client, Reliable)
+    void Client_ShowGameClearUI();
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+    TSubclassOf<UUserWidget> GameOverWidgetClass;
+
+    UPROPERTY()
+    TObjectPtr<UUserWidget> GameOverWidgetRef;
+
+    // Fade out
+    UFUNCTION(Client, Reliable)
+    void Client_PlayFadeOut();
 
 private:
   UPROPERTY()
@@ -518,4 +531,7 @@ public:
 
   UFUNCTION()
   void ApplyGrabDamage();
+
+  UFUNCTION(Client, Reliable)
+  void Client_ShowGameOverUI();
 };

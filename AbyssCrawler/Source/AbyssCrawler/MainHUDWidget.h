@@ -60,6 +60,14 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void BP_OpenMission();
 
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void BP_ShowGameClear();
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void BP_ShowGameOver();
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void BP_PlayFadeOut();
 
 	UFUNCTION(BlueprintCallable)
 	UChatting* GetChattingUI() const;
