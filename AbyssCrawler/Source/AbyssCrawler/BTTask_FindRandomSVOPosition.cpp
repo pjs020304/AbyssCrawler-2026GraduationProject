@@ -10,10 +10,10 @@
 UBTTask_FindRandomSVOPosition::UBTTask_FindRandomSVOPosition()
 {
 	NodeName = TEXT("SVO Patrol & Move");
-	// ¸Å ÇÁ·¹ÀÓ »ó¾î¸¦ ¿òÁ÷¿©¾ß ÇÏ¹Ç·Î Tick È°¼ºÈ­
+	// ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½î¸¦ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ï¹Ç·ï¿½ Tick È°ï¿½ï¿½È­
 	bNotifyTick = true;
 
-	// ÀÌ ÅÂ½ºÅ©¸¦ AI(»ó¾î)¸¶´Ù °³º°ÀûÀ¸·Î »ý¼ºÇÏµµ·Ï °­Á¦
+	// ï¿½ï¿½ ï¿½Â½ï¿½Å©ï¿½ï¿½ AI(ï¿½ï¿½ï¿½)ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	bCreateNodeInstance = true;
 }
 
@@ -25,10 +25,10 @@ EBTNodeResult::Type UBTTask_FindRandomSVOPosition::ExecuteTask(UBehaviorTreeComp
 	if (!Shark || !SVOData) return EBTNodeResult::Failed;
 
 	FVector Origin = Shark->GetActorLocation();
-	FVector RandomPoint;
+	FVector RandomPoint = FVector::ZeroVector;
 	bool bFound = false;
 
-	// 1. ·£´ýÇÑ ¹æÇâÀ¸·Î 10¹ø °Ë»çÇÏ¿© SVO °¥ ¼ö ÀÖ´Â ºó °ø°£(Walkable) Ã£±â
+	// 1. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 10ï¿½ï¿½ ï¿½Ë»ï¿½ï¿½Ï¿ï¿½ SVO ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(Walkable) Ã£ï¿½ï¿½
 	for (int i = 0; i < 10; ++i)
 	{
 		FVector RandomDir = FMath::VRand();
@@ -42,14 +42,14 @@ EBTNodeResult::Type UBTTask_FindRandomSVOPosition::ExecuteTask(UBehaviorTreeComp
 		}
 	}
 
-	// Ã£Áö ¸øÇß´Ù¸é Àá½Ã ´ë±âÇÏµµ·Ï ½ÇÆÐ Ã³¸®
+	// Ã£ï¿½ï¿½ ï¿½ï¿½ï¿½ß´Ù¸ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
 	if (!bFound) return EBTNodeResult::Failed;
 
-	// Ã£Àº ÁÂÇ¥¸¦ ºí·¢º¸µå¿¡ ÀúÀå (µð¹ö±ë ¿ëµµ)
+	// Ã£ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å¿¡ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ëµµ)
 	OwnerComp.GetBlackboardComponent()->SetValueAsVector(RandomLocation.SelectedKeyName, RandomPoint);
 
 	// ------------------------------------------------------------------
-	// 2. Ã£Àº ¸ñÀûÁö·Î A* ¸ÖÆ¼½º·¹µå ±æÃ£±â ½ÃÀÛ
+	// 2. Ã£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ A* ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã£ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	// ------------------------------------------------------------------
 	FVector StartLoc = Shark->GetActorLocation();
 	FVector TargetLoc = RandomPoint;
@@ -57,7 +57,7 @@ EBTNodeResult::Type UBTTask_FindRandomSVOPosition::ExecuteTask(UBehaviorTreeComp
 	bool bStartWalkable = SVOData->IsWalkable(StartLoc);
 	if (!bStartWalkable)
 	{
-		StartLoc.Z += 300.0f; // »ó¾î°¡ ¹Ù´Ú¿¡ ÀÖ´Ù¸é º¸Á¤
+		StartLoc.Z += 300.0f; // ï¿½ï¿½î°¡ ï¿½Ù´Ú¿ï¿½ ï¿½Ö´Ù¸ï¿½ ï¿½ï¿½ï¿½ï¿½
 	}
 
 	float VoxelSize = 250.0f;
@@ -100,7 +100,7 @@ void UBTTask_FindRandomSVOPosition::TickTask(UBehaviorTreeComponent& OwnerComp, 
 		return;
 	}
 
-	// --- [¸ÖÆ¼½º·¹µå °á°ú ¼ö½Å ÆÄÆ®] ---
+	// --- [ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®] ---
 	if (CurrentPath.Num() == 0 && PathfinderTask != nullptr)
 	{
 		if (PathfinderTask->IsDone())
@@ -123,11 +123,11 @@ void UBTTask_FindRandomSVOPosition::TickTask(UBehaviorTreeComponent& OwnerComp, 
 		}
 		else
 		{
-			return; // ¿¬»ê Áß ´ë±â
+			return; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½
 		}
 	}
 
-	// --- [½ÇÁ¦ Á¤Âû ÀÌµ¿(Steering) ÆÄÆ®] ---
+	// --- [ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½(Steering) ï¿½ï¿½Æ®] ---
 	if (CurrentPath.Num() > 0 && CurrentPath.IsValidIndex(CurrentWaypointIndex))
 	{
 		FVector TargetLocation = CurrentPath[CurrentWaypointIndex];
@@ -141,7 +141,7 @@ void UBTTask_FindRandomSVOPosition::TickTask(UBehaviorTreeComponent& OwnerComp, 
 		FRotator SmoothedRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, TurnSpeed);
 		Shark->SetActorRotation(SmoothedRotation);
 
-		Shark->AddMovementInput(Shark->GetActorForwardVector(), 1.0f); // ÇÊ¿ä ½Ã Á¤Âû ¼Óµµ·Î 0.5f ¼³Á¤ °¡´É
+		Shark->AddMovementInput(Shark->GetActorForwardVector(), 1.0f); // ï¿½Ê¿ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ï¿½ï¿½ 0.5f ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 		float DistanceToWaypoint = FVector::Dist(CurrentLocation, TargetLocation);
 		if (DistanceToWaypoint < AcceptanceRadius)
@@ -150,7 +150,7 @@ void UBTTask_FindRandomSVOPosition::TickTask(UBehaviorTreeComponent& OwnerComp, 
 
 			if (CurrentWaypointIndex >= CurrentPath.Num())
 			{
-				// ÃÖÁ¾ ¸ñÀûÁö µµ´Þ ½Ã ¼º°ø Ã³¸®
+				// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 			}
 		}

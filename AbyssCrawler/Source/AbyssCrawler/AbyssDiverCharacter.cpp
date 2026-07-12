@@ -325,6 +325,7 @@ void AAbyssDiverCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME(AAbyssDiverCharacter, CurrentSlotIndex);
 	DOREPLIFETIME(AAbyssDiverCharacter, CurrentWorkType);
 	DOREPLIFETIME(AAbyssDiverCharacter, GhostHauntStage);
+	DOREPLIFETIME(AAbyssDiverCharacter, bIsDead);
 }
 
 void AAbyssDiverCharacter::StartDash()
@@ -1819,6 +1820,33 @@ void AAbyssDiverCharacter::Server_SendChatMessage_Implementation(const FString& 
 
 
 
+void AAbyssDiverCharacter::DropAllInventoryItems()
+{
+	if (!HasAuthority()) return;
+
+	for (int32 i = 0; i < Inventory.Num(); ++i)
+	{
+		AAbyssItemBase* Item = Inventory[i];
+		if (!Item) continue;
+
+		// 같은 포인터가 여러 슬롯을 차지하는 경우(시체 2슬롯) 전부 비우기
+		for (int32 j = i; j < Inventory.Num(); ++j)
+		{
+			if (Inventory[j] == Item) { Inventory[j] = nullptr; }
+		}
+
+		if (Cast<AAbyssCorpseItem>(Item))
+		{
+			RemoveCorpseCarryPenalty();
+		}
+
+		// 겹침 방지를 위해 주변에 흩뿌리기
+		const FVector DropLocation = GetActorLocation()
+			+ FVector(FMath::FRandRange(-80.f, 80.f), FMath::FRandRange(-80.f, 80.f), 30.f);
+		Item->SetAsDropped(DropLocation, FRotator(0.f, FMath::FRandRange(0.f, 360.f), 0.f), FVector::ZeroVector);
+	}
+}
+
 void AAbyssDiverCharacter::Die()
 {
 	if (HasAuthority())
@@ -1836,9 +1864,13 @@ void AAbyssDiverCharacter::Server_Die_Implementation()
 	if (bIsDead) return;
 	bIsDead = true;
 
+	// 들고 있던 아이템을 그 자리에 드롭 (소실 방지 — 시체 스폰 전에 수행)
+	DropAllInventoryItems();
+
 	// Spawn Corpse Item
 	if (AAbyssCorpseItem* Corpse = GetWorld()->SpawnActor<AAbyssCorpseItem>(AAbyssCorpseItem::StaticClass(), GetActorLocation(), GetActorRotation()))
 	{
+		Corpse->SetActorScale3D(FVector(0.2, 0.2, 0.2));
 		Corpse->SetDeadPlayerState(GetPlayerState());
 		Corpse->InitCorpse(GetMesh()->GetSkeletalMeshAsset(), GetMesh()->GetMaterials());
 	}
@@ -1856,14 +1888,31 @@ void AAbyssDiverCharacter::Server_Die_Implementation()
 		PC->ClientGotoState(NAME_Spectating);
 	}
 
+	// 서버(리슨 호스트)는 OnRep이 오지 않으므로 직접 상태 적용. 클라는 OnRep_IsDead로 적용.
+	ApplyDeadVisuals();
+
+	// 사망 "순간" 연출 (상태 동기화는 bIsDead 리플리케이션이 책임짐)
 	Multicast_Die();
+}
+
+// 사망 상태 적용 (멱등). 후발 조인자도 bIsDead 리플리케이션 → OnRep 경로로 이 함수를 탄다.
+void AAbyssDiverCharacter::ApplyDeadVisuals()
+{
+	GetMesh()->SetVisibility(false, true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AAbyssDiverCharacter::OnRep_IsDead()
+{
+	if (bIsDead)
+	{
+		ApplyDeadVisuals();
+	}
 }
 
 void AAbyssDiverCharacter::Multicast_Die_Implementation()
 {
-	// Hide character mesh and disable collision
-	GetMesh()->SetVisibility(false, true);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// 사망 순간 1회성 연출 전용 (사운드/파티클은 스프린트 4에서 추가 예정).
+	// 메시 숨김/콜리전 등 "상태"는 ApplyDeadVisuals(OnRep_IsDead)가 담당하므로 여기 넣지 말 것.
 }

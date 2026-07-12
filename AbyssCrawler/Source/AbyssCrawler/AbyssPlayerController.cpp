@@ -11,12 +11,10 @@ void AAbyssPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
-	// Bind Left Mouse Click to cycle spectator targets
-	InputComponent->BindAction("UseItemAction", IE_Pressed, this, &AAbyssPlayerController::CycleSpectatePlayer);
-	// We bind to the action name used for Left Click in the project (usually PrimaryAction or UseItemAction).
-	// In AbyssDiverCharacter, the left click is mapped to "UseItemAction" or similar in Enhanced Input, 
-	// but Enhanced Input is bound in Character. APlayerController uses legacy or enhanced. 
-	// To be safe and simple for spectator, we can also bind standard LeftMouseButton key:
+	// 관전 대상 순환: 좌클릭.
+	// 캐릭터 입력은 Enhanced Input이지만, 관전 상태에서는 폰이 없어(캐릭터 IMC 미적용)
+	// 컨트롤러 레벨의 키 바인딩이 단순하고 확실하다.
+	// (기존의 "UseItemAction" BindAction은 레거시 액션 매핑에 존재하지 않아 제거)
 	InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &AAbyssPlayerController::CycleSpectatePlayer);
 }
 

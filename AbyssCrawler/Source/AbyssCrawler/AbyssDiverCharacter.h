@@ -343,8 +343,12 @@ public:
   UPROPERTY()
   bool bIsWorkingLocked = false;
 
-  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+  // 사망 상태. 리플리케이트되어 클라 관전 필터/후발 조인자 사망 표시가 정상 작동한다.
+  UPROPERTY(ReplicatedUsing = OnRep_IsDead, VisibleAnywhere, BlueprintReadOnly, Category = "State")
   bool bIsDead = false;
+
+  UFUNCTION()
+  void OnRep_IsDead();
 
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
   bool bIsHoldingItem = false;
@@ -360,14 +364,22 @@ public:
   UFUNCTION(Server, Reliable)
   void Server_Die();
 
+  // 사망 "순간" 연출 전용 (사운드/파티클 등). 상태 적용은 OnRep_IsDead/ApplyDeadVisuals가 담당.
   UFUNCTION(NetMulticast, Reliable)
   void Multicast_Die();
+
+  // 사망 상태의 비주얼/콜리전 적용 (멱등). 서버는 직접, 클라는 OnRep_IsDead에서 호출.
+  void ApplyDeadVisuals();
 
   void SetInputLockedByUI(bool bLocked);
 
 	bool HasEnoughEmptyInventorySlots(int32 NeededSlots) const;
 	void ApplyCorpseCarryPenalty();
 	void RemoveCorpseCarryPenalty();
+
+	// [서버] 들고 있는 모든 아이템을 현재 위치에 드롭.
+	// 부활 장치가 죽은 캐릭터 껍데기를 제거하기 전에 호출 (아이템 소실 방지)
+	void DropAllInventoryItems();
 
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<UUserWidget> FadeWidgetClass;

@@ -8,6 +8,22 @@
 
 class ASVOVolume;
 class UPCGComponent;
+class AAbyssItemBase;
+
+// PCG 아이템 배치용 가중치 스폰 테이블 엔트리
+USTRUCT()
+struct FAbyssPCGItemEntry
+{
+	GENERATED_BODY()
+
+	// 스폰할 아이템 클래스 (리플리케이트되는 AAbyssItemBase 계열)
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AAbyssItemBase> ItemClass;
+
+	// 선택 가중치 (높을수록 자주 스폰)
+	UPROPERTY(EditAnywhere)
+	float Weight = 1.0f;
+};
 
 /**
  * 심해 환경 PCG(산호/암초/아이템 등)를 조율하는 매니저.
@@ -49,6 +65,24 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Abyss PCG")
 	float DirtyBoundsPadding = 200.0f;
 
+	// ── 아이템 배치 (서버 전용 스폰) ─────────────────────────────
+	// 아이템 후보 위치를 뽑는 PCG 액터. 장식 PCGActors와 반드시 분리할 것.
+	// 서버에서만 Generate되고, 그래프는 포인트를 Output 노드에 직결해야 한다 (스포너 노드 금지).
+	UPROPERTY(EditAnywhere, Category = "Abyss PCG|Items")
+	TArray<TObjectPtr<AActor>> ItemPCGActors;
+
+	// 가중치 스폰 테이블 (예: 산소통 3.0 / 배터리 2.0 / 희귀광물 0.5)
+	UPROPERTY(EditAnywhere, Category = "Abyss PCG|Items")
+	TArray<FAbyssPCGItemEntry> ItemSpawnTable;
+
+	// PCG가 뽑은 후보 포인트 중 실제로 스폰할 최대 개수 (아이템 PCG 컴포넌트당)
+	UPROPERTY(EditAnywhere, Category = "Abyss PCG|Items")
+	int32 MaxItemSpawnCount = 20;
+
+	// 스폰 위치 Z 보정(cm). 바닥 파묻힘 방지
+	UPROPERTY(EditAnywhere, Category = "Abyss PCG|Items")
+	float ItemSpawnZOffset = 30.0f;
+
 	// 서버가 정해서 리플리케이트하는 시드. OnRep에서 클라 생성이 시작된다.
 	UPROPERTY(ReplicatedUsing = OnRep_Seed)
 	int32 ReplicatedSeed = 0;
@@ -63,8 +97,21 @@ private:
 	// 개별 PCG 컴포넌트 생성 완료 콜백 (모두 끝나면 SVO 재빌드)
 	void HandlePCGGenerated(UPCGComponent* InComponent);
 
-	// PCGActors(또는 레벨 전체)에서 UPCGComponent들을 수집
+	// PCGActors(또는 레벨 전체)에서 UPCGComponent들을 수집 (ItemPCGActors는 제외)
 	TArray<UPCGComponent*> CollectPCGComponents() const;
+
+	// ── 아이템 배치 경로 (서버 전용) ──
+	// 아이템 PCG 생성 트리거
+	void StartItemGeneration();
+
+	// 개별 아이템 PCG 완료 콜백: Output 포인트를 읽어 리플리케이트 아이템 스폰
+	void HandleItemPCGGenerated(UPCGComponent* InComponent);
+
+	// ItemPCGActors에서 UPCGComponent들을 수집
+	TArray<UPCGComponent*> CollectItemPCGComponents() const;
+
+	// 스폰 테이블에서 가중치 합 비례로 아이템 클래스 선택
+	TSubclassOf<AAbyssItemBase> PickWeightedItemClass(FRandomStream& Rng) const;
 
 	// 아직 생성이 끝나지 않은 PCG 컴포넌트 수
 	int32 PendingComponents = 0;

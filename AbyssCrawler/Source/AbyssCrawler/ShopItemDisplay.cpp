@@ -1,9 +1,12 @@
 #include "ShopItemDisplay.h"
+#include "AbyssShopTypes.h"
 #include "Components/WidgetComponent.h"
 #include "AbyssGameState.h"
-#include "AbyssDiverCharacter.h" 
+#include "AbyssDiverCharacter.h"
 #include "AbyssItemBase.h"
+#include "Engine/DataTable.h"
 #include "Net/UnrealNetwork.h"
+#include "TimerManager.h"
 
 AShopItemDisplay::AShopItemDisplay()
 {
@@ -23,9 +26,12 @@ AShopItemDisplay::AShopItemDisplay()
 void AShopItemDisplay::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	// ¼±ÅÃµÈ ¾ÆÀÌÅÛ Á¤º¸¿Í °¡°İÀ» ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡ º¹Á¦
+	// ì§„ì—´ ìƒíƒœ ì „ì²´ë¥¼ ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ì— ë™ê¸°í™”
 	DOREPLIFETIME(AShopItemDisplay, SelectedItemClass);
 	DOREPLIFETIME(AShopItemDisplay, SelectedItemPrice);
+	DOREPLIFETIME(AShopItemDisplay, SelectedItemName);
+	DOREPLIFETIME(AShopItemDisplay, bIsRestocking);
+	DOREPLIFETIME(AShopItemDisplay, bSoldOut);
 }
 
 void AShopItemDisplay::BeginPlay()
@@ -34,81 +40,183 @@ void AShopItemDisplay::BeginPlay()
 
 	if (HasAuthority())
 	{
-		if (ItemPool.Num() > 0)
-		{
-			int32 RandomIndex = FMath::RandRange(0, ItemPool.Num() - 1);
-			SelectedItemClass = ItemPool[RandomIndex];
-
-			// ¼±ÅÃµÈ ¾ÆÀÌÅÛÀÇ ±âº» Á¤º¸¸¦ °¡Á®¿Í °¡°İ ¼³Á¤
-			if (SelectedItemClass)
-			{
-				if (AAbyssItemBase* DefaultItem = SelectedItemClass.GetDefaultObject())
-				{
-					SelectedItemPrice = DefaultItem->ItemPrice;
-				}
-			}
-
-			// ¼­¹ö¿¡¼­µµ ºñÁÖ¾óÀ» °»½ÅÇÕ´Ï´Ù.
-			UpdateVisuals();
-		}
+		SelectRandomItem();
 	}
 }
 
-void AShopItemDisplay::OnRep_SelectedItemClass()
+// [ì„œë²„] í…Œì´ë¸”(ìš°ì„ ) ë˜ëŠ” ë ˆê±°ì‹œ ItemPoolì—ì„œ ê°€ì¤‘ì¹˜ ëœë¤ìœ¼ë¡œ ìƒí’ˆ ì„ íƒ
+void AShopItemDisplay::SelectRandomItem()
 {
-	// ¼­¹ö·ÎºÎÅÍ SelectedItemClass¸¦ Àü´Ş¹ŞÀ¸¸é ºñÁÖ¾ó °»½Å
+	// í›„ë³´ ëª©ë¡ êµ¬ì„±: (í´ë˜ìŠ¤, ê°€ì¤‘ì¹˜, ê°€ê²© ì¬ì •ì˜)
+	struct FCandidate
+	{
+		TSubclassOf<AAbyssItemBase> ItemClass;
+		float Weight = 1.0f;
+		int32 PriceOverride = 0;
+	};
+	TArray<FCandidate> Candidates;
+
+	if (ShopItemTable)
+	{
+		ShopItemTable->ForeachRow<FAbyssShopItemRow>(TEXT("ShopItemDisplay"),
+			[&Candidates](const FName& RowName, const FAbyssShopItemRow& Row)
+			{
+				if (Row.ItemClass && Row.Weight > 0.0f)
+				{
+					Candidates.Add({ Row.ItemClass, Row.Weight, Row.PriceOverride });
+				}
+			});
+	}
+	else
+	{
+		for (const TSubclassOf<AAbyssItemBase>& PoolClass : ItemPool)
+		{
+			if (PoolClass)
+			{
+				Candidates.Add({ PoolClass, 1.0f, 0 });
+			}
+		}
+	}
+
+	if (Candidates.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Shop] %s: ìƒí’ˆ í›„ë³´ê°€ ì—†ìŠµë‹ˆë‹¤ (í…Œì´ë¸”/í’€ ë¹„ì–´ìˆìŒ)"), *GetName());
+		return;
+	}
+
+	// ê°€ì¤‘ì¹˜ í•© ë¹„ë¡€ ì„ íƒ
+	float TotalWeight = 0.0f;
+	for (const FCandidate& C : Candidates) { TotalWeight += C.Weight; }
+
+	float Roll = FMath::FRandRange(0.0f, TotalWeight);
+	const FCandidate* Picked = &Candidates.Last();
+	for (const FCandidate& C : Candidates)
+	{
+		Roll -= C.Weight;
+		if (Roll <= 0.0f) { Picked = &C; break; }
+	}
+
+	SelectedItemClass = Picked->ItemClass;
+
+	if (const AAbyssItemBase* DefaultItem = SelectedItemClass.GetDefaultObject())
+	{
+		SelectedItemPrice = (Picked->PriceOverride > 0) ? Picked->PriceOverride : DefaultItem->ItemPrice;
+		SelectedItemName = DefaultItem->ItemName;
+	}
+
+	UpdateVisuals();
+}
+
+void AShopItemDisplay::OnRep_ShopState()
+{
+	// ì„œë²„ë¡œë¶€í„° ì§„ì—´ ìƒíƒœë¥¼ ì „ë‹¬ë°›ìœ¼ë©´ ë¹„ì£¼ì–¼ ê°±ì‹  (í´ë¼ì´ì–¸íŠ¸)
 	UpdateVisuals();
 }
 
 void AShopItemDisplay::UpdateVisuals()
 {
-	if (SelectedItemClass)
-	{
-		// ÇØ´ç ¾ÆÀÌÅÛÀÇ ¿øÇüÀ» °¡Á®¿Í¼­ Á¤º¸ ÃßÃâ
-		AAbyssItemBase* DefaultItem = SelectedItemClass.GetDefaultObject();
-		if (DefaultItem && DefaultItem->ItemMesh)
-		{
-			// Áø¿­´ë ¸Ş½Ã¸¦ ¾ÆÀÌÅÛÀÇ ¸Ş½Ã·Î º¯°æ
-			MeshComp->SetStaticMesh(DefaultItem->ItemMesh->GetStaticMesh());
+	const bool bAvailable = !bIsRestocking && !bSoldOut && SelectedItemClass != nullptr;
 
-			// °¡°İ À§Á¬ °»½Å (ºí·çÇÁ¸°Æ® À§Á¬ ³» ÇÔ¼ö¸¦ È£ÃâÇÏ°Å³ª ÅØ½ºÆ® ¼¼ÆÃ ÇÊ¿ä)
-			SelectedItemPrice = DefaultItem->ItemPrice;
-			SelectedItemName = DefaultItem->ItemName;
-			 // À§Á¬ ³» ÅØ½ºÆ®¸¦ °»½ÅÇÏ´Â ·ÎÁ÷Àº ºí·çÇÁ¸°Æ®¿¡¼­ ±¸ÇöÇØ¾ß ÇÕ´Ï´Ù.
-			 // ¿¹: PriceWidget->GetUserWidgetObject()->SetPriceText(SelectedItemPrice);
+	if (bAvailable)
+	{
+		if (const AAbyssItemBase* DefaultItem = SelectedItemClass.GetDefaultObject())
+		{
+			if (DefaultItem->ItemMesh)
+			{
+				MeshComp->SetStaticMesh(DefaultItem->ItemMesh->GetStaticMesh());
+			}
 		}
 	}
+	MeshComp->SetVisibility(bAvailable);
+
+	// ê°€ê²©í‘œ í…ìŠ¤íŠ¸/ì¬ì…ê³  ì—°ì¶œ ë“±ì€ ë¸”ë£¨í”„ë¦°íŠ¸ì—ì„œ ì²˜ë¦¬
+	OnDisplayUpdated();
 }
 
 void AShopItemDisplay::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("Interact called on ShopItemDisplay"));
+	// ì¬ì…ê³  ì¤‘ì´ê±°ë‚˜ ë§¤ì§„ì´ë©´ êµ¬ë§¤ ë¶ˆê°€
+	if (bIsRestocking || bSoldOut || !SelectedItemClass) return;
 
 	AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(InstigatorActor);
 	AAbyssGameState* GS = GetWorld()->GetGameState<AAbyssGameState>();
+	if (!Diver || !GS) return;
 
-	if (Diver && GS && SelectedItemClass)
+	if (!Diver->HasEmptyInventorySlot())
 	{
-		if (!Diver->HasEmptyInventorySlot()) return;
-
-		if (GS->ConsumeSharedMoney(SelectedItemPrice))
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			AAbyssItemBase* NewItem = GetWorld()->SpawnActor<AAbyssItemBase>(SelectedItemClass, GetActorLocation(), GetActorRotation(), SpawnParams);
-
-			UE_LOG(LogTemp, Warning, TEXT("Spawned new item: %s"), *NewItem->GetName());
-
-
-			if (NewItem)
-			{
-				Diver->AddItemToInventory(NewItem);
-				Destroy(); // ±¸¸Å ¼º°ø ½Ã Áø¿­´ë Á¦°Å
-			}
-		}
+		UE_LOG(LogTemp, Warning, TEXT("[Shop] ì¸ë²¤í† ë¦¬ê°€ ê°€ë“ ì°¨ êµ¬ë§¤ ë¶ˆê°€"));
+		return;
 	}
+
+	// íŒ€ ê³µìœ  ì¬í™” ì°¨ê° (ì”ì•¡ ë¶€ì¡± ì‹œ false)
+	if (!GS->ConsumeSharedMoney(SelectedItemPrice))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Shop] ì”ì•¡ ë¶€ì¡±: %d í•„ìš”"), SelectedItemPrice);
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AAbyssItemBase* NewItem = GetWorld()->SpawnActor<AAbyssItemBase>(
+		SelectedItemClass, GetActorLocation(), GetActorRotation(), SpawnParams);
+
+	// ìŠ¤í° ë˜ëŠ” ì¸ë²¤í† ë¦¬ ì¶”ê°€ ì‹¤íŒ¨ ì‹œ í™˜ë¶ˆ (ëˆë§Œ ì‚¬ë¼ì§€ëŠ” ì‚¬ê³  ë°©ì§€)
+	if (!NewItem)
+	{
+		GS->AddSharedMoney(SelectedItemPrice);
+		UE_LOG(LogTemp, Error, TEXT("[Shop] ì•„ì´í…œ ìŠ¤í° ì‹¤íŒ¨ â†’ í™˜ë¶ˆ"));
+		return;
+	}
+	if (!Diver->AddItemToInventory(NewItem))
+	{
+		GS->AddSharedMoney(SelectedItemPrice);
+		NewItem->Destroy();
+		UE_LOG(LogTemp, Warning, TEXT("[Shop] ì¸ë²¤í† ë¦¬ ì¶”ê°€ ì‹¤íŒ¨ â†’ í™˜ë¶ˆ"));
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[Shop] êµ¬ë§¤ ì™„ë£Œ: %s (%d G)"), *SelectedItemName, SelectedItemPrice);
+
+	// íŒë§¤ íšŸìˆ˜ ì§‘ê³„ â†’ ë§¤ì§„ ë˜ëŠ” ì¬ì…ê³ 
+	++PurchasedCount;
+	if (MaxPurchaseCount >= 0 && PurchasedCount >= MaxPurchaseCount)
+	{
+		bSoldOut = true;
+		UpdateVisuals();
+	}
+	else
+	{
+		BeginRestock();
+	}
+}
+
+// [ì„œë²„] ì¬ì…ê³  ëŒ€ê¸° ì‹œì‘
+void AShopItemDisplay::BeginRestock()
+{
+	bIsRestocking = true;
+	UpdateVisuals();
+
+	if (RestockDelay <= 0.0f)
+	{
+		FinishRestock();
+		return;
+	}
+
+	GetWorldTimerManager().SetTimer(RestockTimerHandle, this,
+		&AShopItemDisplay::FinishRestock, RestockDelay, false);
+}
+
+// [ì„œë²„] ì¬ì…ê³  ì™„ë£Œ: ìƒˆ ìƒí’ˆ ì§„ì—´
+void AShopItemDisplay::FinishRestock()
+{
+	if (!bKeepSameItemOnRestock)
+	{
+		SelectRandomItem();
+	}
+	bIsRestocking = false;
+	UpdateVisuals();
 }
 
 void AShopItemDisplay::OnFocus_Implementation() { if (PriceWidget) PriceWidget->SetVisibility(true); }

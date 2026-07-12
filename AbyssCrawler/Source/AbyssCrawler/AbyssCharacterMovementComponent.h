@@ -50,10 +50,50 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Abyss Movement")
 	void SetSprinting(bool bActive);
 
+	// [네트워크 예측] 클라 예측 데이터를 커스텀 SavedMove를 쓰는 버전으로 교체
+	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
+
 protected:
 	// ���� �̵� ��忡 ���� �ִ� �ӵ��� ��ȯ�ϴ� �Լ� �������̵�
 	virtual float GetMaxSpeed() const override;
 
 	// �� ������ ���ӵ�, ����, �극��ŷ�� ó���Ͽ� Velocity�� ���� �Լ�
 	virtual void CalcVelocity(float DeltaTime, float Friction, bool bFluid, float BrakingDeceleration) override;
+
+	// [네트워크 예측] 클라가 보낸 이동 패킷의 압축 플래그에서 스프린트 상태 복원 (서버 측)
+	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
+};
+
+/**
+ * [네트워크 예측] 스프린트 플래그를 이동 패킷에 싣기 위한 SavedMove 확장.
+ * 클라 입력(bWantsToSprint)이 FLAG_Custom_0으로 압축되어 서버로 전달되므로
+ * 서버와 클라의 GetMaxSpeed()가 항상 일치한다 (고무줄 보정 방지).
+ */
+class FSavedMove_Abyss : public FSavedMove_Character
+{
+public:
+	typedef FSavedMove_Character Super;
+
+	// 이 무브가 기록될 때의 스프린트 입력 상태
+	uint8 bSavedWantsToSprint : 1;
+
+	virtual void Clear() override;
+	virtual uint8 GetCompressedFlags() const override;
+	virtual bool CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* InCharacter, float MaxDelta) const override;
+	virtual void SetMoveFor(ACharacter* C, float InDeltaTime, FVector const& NewAccel, FNetworkPredictionData_Client_Character& ClientData) override;
+	virtual void PrepMoveFor(ACharacter* C) override;
+};
+
+class FNetworkPredictionData_Client_Abyss : public FNetworkPredictionData_Client_Character
+{
+public:
+	typedef FNetworkPredictionData_Client_Character Super;
+
+	FNetworkPredictionData_Client_Abyss(const UCharacterMovementComponent& ClientMovement)
+		: Super(ClientMovement) {}
+
+	virtual FSavedMovePtr AllocateNewMove() override
+	{
+		return FSavedMovePtr(new FSavedMove_Abyss());
+	}
 };

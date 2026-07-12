@@ -25,6 +25,9 @@ public:
 
 	void SetDeadPlayerState(APlayerState* InPlayerState);
 
+	// 이 시체의 주인 (부활 장치 등에서 시체 정리 판단용)
+	APlayerState* GetDeadPlayerState() const { return DeadPlayerState; }
+
 	void InitCorpse(USkeletalMesh* DiverMesh, TArray<UMaterialInterface*> Materials);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

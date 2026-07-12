@@ -54,6 +54,9 @@ public:
 	virtual void OnFocus_Implementation() override;
 	virtual void OnLostFocus_Implementation() override;
 
+	// 현재 누군가의 인벤토리에 들어있는지 (판매존 등 외부에서 판매 가능 여부 판단용)
+	bool IsPickedUp() const { return bPickedUp; }
+
 	// 아이템 상태 전환
 	void SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USceneComponent* AttachParent, bool bVisibleInHand, FName AttachSocketName = NAME_None);
 	void SetAsDropped(const FVector& DropLocation, const FRotator& DropRotation, const FVector& ThrowImpulse);
