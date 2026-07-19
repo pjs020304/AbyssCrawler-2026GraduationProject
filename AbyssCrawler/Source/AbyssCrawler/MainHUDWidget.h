@@ -69,6 +69,13 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void BP_PlayFadeOut();
 
+	// Intensity: 0 = ê²½ê³  ë²”ìœ„ ì§„ì…, 1 = ë²½ì— ë°€ì°©
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void BP_ShowBoundaryWarning(float Intensity);
+
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void BP_HideBoundaryWarning();
+
 	UFUNCTION(BlueprintCallable)
 	UChatting* GetChattingUI() const;
 
@@ -79,14 +86,14 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UMissionUIWidget* MissionUI;
 
-	// À§Á¬ÀÌ ÃÊ±âÈ­µÉ ¶§ È£Ãâ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½
 	virtual void NativeConstruct() override;
 
-	// µ·ÀÌ º¯ÇßÀ» ¶§ ½ÇÇàµÉ UI ¾÷µ¥ÀÌÆ® ÇÔ¼ö
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ UI ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½Ô¼ï¿½
 	UFUNCTION()
 	void UpdateMoneyDisplay(int32 NewMoney);
 
-	// ºí·çÇÁ¸°Æ®¿¡¼­ ÅØ½ºÆ®¸¦ ¹Ù²Ü ¼ö ÀÖµµ·Ï ÀÌº¥Æ® »ı¼º
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½Ø½ï¿½Æ®ï¿½ï¿½ ï¿½Ù²ï¿½ ï¿½ï¿½ ï¿½Öµï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ® ï¿½ï¿½ï¿½ï¿½
 	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void OnUpdateMoneyText(int32 Money);
 	

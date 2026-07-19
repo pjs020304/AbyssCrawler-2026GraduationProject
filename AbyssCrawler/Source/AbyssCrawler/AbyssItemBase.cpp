@@ -1,5 +1,6 @@
 #include "AbyssItemBase.h"
 #include "AbyssDiverCharacter.h" // 캐릭터 함수 호출용
+#include "Components/BoxComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.h"
@@ -12,12 +13,19 @@ AAbyssItemBase::AAbyssItemBase()
 	bReplicates = true;
 	SetReplicateMovement(true);
 
-	// 1. 메쉬 생성 및 루트 설정
-	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMesh"));
-	RootComponent = ItemMesh;
+	// 1. 충돌 박스를 루트로 설정 (물리 시뮬레이션/이동 리플리케이션은 루트 프리미티브 기준으로 동작)
+	CollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComp"));
+	RootComponent = CollisionComp;
+	CollisionComp->SetBoxExtent(FVector(20.f));
 
 	// 2. 레이캐스트(LineTrace)에 맞을 수 있도록 충돌 설정 활성화
-	ItemMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+	CollisionComp->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+
+	// 3. 메시는 시각 전용 자식 컴포넌트 — BP에서 회전/이동 자유롭게 조절 가능
+	ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ItemMesh"));
+	ItemMesh->SetupAttachment(RootComponent);
+	ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ItemMesh->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// 기본 가격 설정
 	ItemPrice = 100;
@@ -33,6 +41,28 @@ AAbyssItemBase::AAbyssItemBase()
 	InteractWidgetComp->SetVisibility(false);
 
 	BatteryCost = 10.0f;
+}
+
+void AAbyssItemBase::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (ItemMesh)
+	{
+		// 구조 변경 전(메시=루트) 만들어진 BP들은 ItemMesh에 Simulate Physics가 켜져 있을 수 있다.
+		// 메시는 시각 전용 자식이 됐으므로 물리가 켜져 있으면 액터에서 분리되어 떨어진다 —
+		// BP에 남아 있는 물리 설정을 루트 박스로 이관하고 메시는 항상 물리/충돌 없음으로 강제한다.
+		const bool bMeshWantsPhysics = ItemMesh->BodyInstance.bSimulatePhysics;
+
+		ItemMesh->SetSimulatePhysics(false);
+		ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ItemMesh->SetCollisionProfileName(TEXT("NoCollision"));
+
+		if (bMeshWantsPhysics && CollisionComp && !bPickedUp)
+		{
+			CollisionComp->SetSimulatePhysics(true);
+		}
+	}
 }
 
 void AAbyssItemBase::UseItem()
@@ -278,10 +308,10 @@ void AAbyssItemBase::ApplyPickedUpState()
 	{
 		SetActorEnableCollision(false);
 
-		if (ItemMesh)
+		if (CollisionComp)
 		{
-			ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			ItemMesh->SetCollisionProfileName(TEXT("NoCollision"));
+			CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			CollisionComp->SetCollisionProfileName(TEXT("NoCollision"));
 		}
 
 		if (InteractWidgetComp)
@@ -294,10 +324,10 @@ void AAbyssItemBase::ApplyPickedUpState()
 		SetActorHiddenInGame(false);
 		SetActorEnableCollision(true);
 
-		if (ItemMesh)
+		if (CollisionComp)
 		{
-			ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			ItemMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+			CollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			CollisionComp->SetCollisionProfileName(TEXT("BlockAllDynamic"));
 		}
 	}
 }

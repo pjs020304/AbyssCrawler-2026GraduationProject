@@ -77,10 +77,10 @@ void AAbyssDiverCharacter::BeginPlay()
 		FirstPersonCameraComponent->AttachToComponent(
 			GetMesh(),
 			FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-			TEXT("Head"));
+			TEXT("Eye"));
 
 		// 머리에서 미세 조정이 필요하면 여기서 오프셋을 명시적으로 설정
-		FirstPersonCameraComponent->SetRelativeLocation(FVector::ZeroVector);
+		FirstPersonCameraComponent->SetRelativeLocation(CameraEyeOffset);
 	}
 
 	for (TActorIterator<APostProcessVolume> It(GetWorld()); It; ++It)

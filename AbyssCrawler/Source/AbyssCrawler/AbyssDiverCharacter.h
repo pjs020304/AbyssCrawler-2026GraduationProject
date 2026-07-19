@@ -67,6 +67,9 @@ public:
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
   UCameraComponent *FirstPersonCameraComponent;
 
+  UPROPERTY(EditAnywhere, Category = "Camera")
+  FVector CameraEyeOffset = FVector::ZeroVector;
+
   // 피격 시 로컬 화면에 재생할 카메라 쉐이크 (BP에서 CS_HitReaction 지정)
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera|Shake")
   TSubclassOf<class UCameraShakeBase> HitCameraShake;

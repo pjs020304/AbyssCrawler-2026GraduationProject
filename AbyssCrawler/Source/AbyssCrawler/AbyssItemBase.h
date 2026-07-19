@@ -20,6 +20,8 @@ class ABYSSCRAWLER_API AAbyssItemBase : public AActor, public IAbyssInteractionI
 public:	
 	// Sets default values for this actor's properties
 	AAbyssItemBase();
+
+	virtual void PostInitializeComponents() override;
 	
 	virtual void UseItem();
 	virtual void EndUseItem();
@@ -33,6 +35,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
 	UTexture2D* ItemIcon;
 
+	// 루트 컴포넌트. 충돌/물리/상호작용 트레이스를 담당한다.
+	// (메시를 루트로 두면 BP에서 메시 회전/이동이 불가능해서 분리함 — 각 아이템 BP에서 Extent를 메시 크기에 맞게 조절할 것)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UBoxComponent* CollisionComp;
+
+	// 시각용 메시. 루트가 아니므로 BP에서 자유롭게 회전/이동/스케일 조절 가능 (충돌 없음)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* ItemMesh;
 
