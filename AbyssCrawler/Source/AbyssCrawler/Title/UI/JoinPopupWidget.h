@@ -52,4 +52,7 @@ protected:
 
 	FTimerHandle ConnectingPopupTimerHandle;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<USoundBase> ClickSound;
+
 };

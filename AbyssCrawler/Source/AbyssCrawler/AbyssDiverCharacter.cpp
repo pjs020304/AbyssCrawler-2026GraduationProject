@@ -28,6 +28,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Mission/Contents/AbyssUSBItem.h"
 #include "Mission/Contents/AbyssDataConsole.h"
+#include "Sound/SoundBase.h"
 
 // 중요: 커스텀 무브먼트 컴포넌트 사용을 위한 생성자 선언
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
@@ -1391,6 +1392,8 @@ void AAbyssDiverCharacter::Server_DropItem_Implementation()
 			FirstPersonCameraComponent->GetComponentLocation() +
 			(FirstPersonCameraComponent->GetForwardVector() * 120.0f);
 
+		Multicast_PlayItemDropSound(DropLocation);
+
 		FRotator DropRotation = FirstPersonCameraComponent->GetComponentRotation();
 
 		// 시체는 회전 초기화
@@ -1743,6 +1746,14 @@ void AAbyssDiverCharacter::ApplyGrabDamage()
 	}
 }
 
+void AAbyssDiverCharacter::Client_PlaySound2D_Implementation(USoundBase* Sound)
+{
+	if (Sound)
+	{
+		UGameplayStatics::PlaySound2D(this, Sound);
+	}
+}
+
 bool AAbyssDiverCharacter::HasEnoughEmptyInventorySlots(int32 NeededSlots) const
 {
 	int32 EmptyCount = 0;
@@ -1764,6 +1775,14 @@ void AAbyssDiverCharacter::ApplyCorpseCarryPenalty()
 
 void AAbyssDiverCharacter::RemoveCorpseCarryPenalty()
 {
+}
+
+void AAbyssDiverCharacter::Multicast_PlayItemDropSound_Implementation(FVector SoundLocation)
+{
+	if (ItemDropSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ItemDropSound, SoundLocation);
+	}
 }
 
 void AAbyssDiverCharacter::OpenChatInput()

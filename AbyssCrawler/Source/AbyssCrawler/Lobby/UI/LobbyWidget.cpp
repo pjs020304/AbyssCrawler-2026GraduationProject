@@ -10,6 +10,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/GameState.h"
 #include "GameConfigPopupWidget.h"
+#include "Sound/SoundBase.h"
 #include "GameFramework/PlayerController.h"
 
 
@@ -128,6 +129,11 @@ ALobbyPlayerState* ULobbyWidget::GetLobbyPlayerStateAtIndex(int32 InIndex)
 
 void ULobbyWidget::OnGameConfigClicked()
 {
+    if (ClickSound)
+    {
+        UGameplayStatics::PlaySound2D(this, ClickSound);
+    }
+
     APlayerController* PC = GetOwningPlayer();
     if (!PC)
     {

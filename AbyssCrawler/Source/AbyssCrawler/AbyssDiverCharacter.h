@@ -33,6 +33,7 @@ class AAbyssMissionWorkObject;
 class UMainHUDWidget;
 class AAbyssUSBItem;
 class AAbyssDataConsole;
+class USoundBase;
 
 UENUM(BlueprintType)
 enum class EAbyssWorkType : uint8
@@ -387,6 +388,13 @@ public:
     UPROPERTY()
     UUserWidget* FadeWidget = nullptr;
 
+    // drop sound
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+    TObjectPtr<USoundBase> ItemDropSound;
+    
+    UFUNCTION(NetMulticast, Unreliable)
+    void Multicast_PlayItemDropSound(FVector SoundLocation);
+
     // Chatting
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
     UInputAction* ChatAction;
@@ -546,4 +554,7 @@ public:
 
   UFUNCTION(Client, Reliable)
   void Client_ShowGameOverUI();
+
+  UFUNCTION(Client, Unreliable)
+  void Client_PlaySound2D(USoundBase* Sound);
 };

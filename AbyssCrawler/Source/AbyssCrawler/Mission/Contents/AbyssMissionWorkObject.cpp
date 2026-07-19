@@ -9,6 +9,8 @@
 #include "AbyssGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Mission/UI/MissionInteractPromptWidget.h"
 
 AAbyssMissionWorkObject::AAbyssMissionWorkObject()
 {
@@ -18,11 +20,25 @@ AAbyssMissionWorkObject::AAbyssMissionWorkObject()
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	RootComponent = Mesh;
 
+	MissionPromptWidgetComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("MissionPromptWidgetComp"));
+	MissionPromptWidgetComp->SetupAttachment(RootComponent);
+	MissionPromptWidgetComp->SetWidgetSpace(EWidgetSpace::Screen);
+	MissionPromptWidgetComp->SetDrawAtDesiredSize(true);
+	MissionPromptWidgetComp->SetDrawSize(FVector2D(300.0f, 120.0f));
+	MissionPromptWidgetComp->SetVisibility(false);
 }
 
 void AAbyssMissionWorkObject::Interact_Implementation(AActor* InstigatorActor)
 {
 	if (!HasAuthority()) return;
+
+	if (!IsMissionActiveForPrompt())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[MissionInteract] Mission not active: %s"),
+			*MissionId.ToString());
+		return;
+	}
+
 	if (bCompleted) return;
 	if (bIsWorking) return;
 
@@ -158,6 +174,80 @@ bool AAbyssMissionWorkObject::IsEnemyNearWorkingCharacter() const
 	}
 
 	return false;
+}
+
+void AAbyssMissionWorkObject::OnFocus_Implementation()
+{
+	if (MissionPromptWidgetComp)
+	{
+		MissionPromptWidgetComp->SetVisibility(true);
+	}
+
+	UpdateMissionPromptUI();
+}
+
+void AAbyssMissionWorkObject::OnLostFocus_Implementation()
+{
+	if (MissionPromptWidgetComp)
+	{
+		MissionPromptWidgetComp->SetVisibility(false);
+	}
+}
+
+void AAbyssMissionWorkObject::UpdateMissionPromptUI()
+{
+	if (!MissionPromptWidgetComp)
+	{
+		return;
+	}
+
+	UMissionInteractPromptWidget* PromptWidget =
+		Cast<UMissionInteractPromptWidget>(MissionPromptWidgetComp->GetUserWidgetObject());
+
+	if (!PromptWidget)
+	{
+		return;
+	}
+
+	const bool bHasMission = IsMissionActiveForPrompt();
+
+	bool bCanInteract = bHasMission;
+	FText StateText = bHasMission ? ActiveStateText : InactiveStateText;
+
+	// 만약 오브젝트에 bCompleted 변수가 있다면
+	if (bCompleted)
+	{
+		bCanInteract = false;
+		StateText = CompletedStateText;
+	}
+
+	PromptWidget->UpdateMissionPrompt(
+		PromptObjectName,
+		StateText,
+		bCanInteract
+	);
+}
+
+bool AAbyssMissionWorkObject::IsMissionActiveForPrompt() const
+{
+	if (MissionId.IsNone())
+	{
+		return true;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	AAbyssGameState* GS = World->GetGameState<AAbyssGameState>();
+	if (!GS)
+	{
+		return false;
+	}
+
+	return GS->HasActiveMission(MissionId);
 }
 
 
