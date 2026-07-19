@@ -2,6 +2,8 @@
 #include "AbyssDiverCharacter.h" // 캐릭터 함수 호출용
 #include "Components/BoxComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.h"
 #include "TimerManager.h"
@@ -112,6 +114,18 @@ void AAbyssItemBase::NotifyUnequipped()
 	StopPassiveDrain();
 }
 
+void AAbyssItemBase::Multicast_PlayPickupSound_Implementation()
+{
+	if (PickupSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			PickupSound,
+			GetActorLocation()
+		);
+	}
+}
+
 void AAbyssItemBase::StartPassiveDrain()
 {
 	if (!HasAuthority()) return;
@@ -210,6 +224,15 @@ void AAbyssItemBase::Interact_Implementation(AActor* InstigatorActor)
 
 			//OwnerCharacter = Diver;
 
+			UE_LOG(LogTemp, Warning, TEXT("[PickupSound] Item=%s PickupSound=%s Diver=%s"),
+				*GetName(),
+				PickupSound ? *PickupSound->GetName() : TEXT("NULL"),
+				*Diver->GetName());
+
+			if (PickupSound)
+			{
+				Diver->Client_PlaySound2D(PickupSound);
+			}
 		}
 		else
 		{

@@ -4,13 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "AbyssInteractionInterface.h"
 #include "AbyssDataConsole.generated.h"
 
 class UStaticMeshComponent;
 class AAbyssDiverCharacter;
+class UWidgetComponent;
+class UMissionInteractPromptWidget;
 
 UCLASS()
-class ABYSSCRAWLER_API AAbyssDataConsole : public AActor
+class ABYSSCRAWLER_API AAbyssDataConsole : public AActor, public IAbyssInteractionInterface
 {
 	GENERATED_BODY()
 	
@@ -58,6 +61,29 @@ protected:
 	void CompleteDownload();
 
 	bool CanWork(AAbyssDiverCharacter* Character) const;
+
+	// InterectPrompt
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UWidgetComponent> MissionPromptWidgetComp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission|Prompt")
+	FText PromptObjectName = FText::FromString(TEXT("Mission Object"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission|Prompt")
+	FText ActiveStateText = FText::FromString(TEXT("Hold E"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission|Prompt")
+	FText InactiveStateText = FText::FromString(TEXT("Mission Not Accepted"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission|Prompt")
+	FText CompletedStateText = FText::FromString(TEXT("Completed"));
+
+	virtual void OnFocus_Implementation() override;
+	virtual void OnLostFocus_Implementation() override;
+
+	void UpdateMissionPromptUI();
+	bool IsMissionActiveForPrompt() const;
+
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

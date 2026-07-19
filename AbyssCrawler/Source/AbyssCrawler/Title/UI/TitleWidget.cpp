@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "JoinPopupWidget.h"
 #include "PasswordPopupWidget.h"
+#include "Sound/SoundBase.h"
 
 bool UTitleWidget::Initialize()
 {
@@ -34,6 +35,11 @@ void UTitleWidget::OnClicked_BtnJoin()
 		return;
 	}
 
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
+
 	UJoinPopupWidget* JoinPopup = CreateWidget<UJoinPopupWidget>(GetWorld(), JoinPopupClass);
 	if (JoinPopup)
 	{
@@ -48,6 +54,11 @@ void UTitleWidget::OnClicked_BtnCreate()
 	if (!PasswordPopupClass)
 	{
 		return;
+	}
+
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
 	}
 
 	UPasswordPopupWidget* PasswordPopup = CreateWidget<UPasswordPopupWidget>(GetWorld(), PasswordPopupClass);

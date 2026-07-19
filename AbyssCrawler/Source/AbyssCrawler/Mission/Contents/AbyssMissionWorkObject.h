@@ -11,6 +11,7 @@
 class UStaticMeshComponent;
 class UWidgetComponent;
 class AAbyssSharkCharacter;
+class UMissionInteractPromptWidget;
 
 UCLASS()
 class ABYSSCRAWLER_API AAbyssMissionWorkObject : public AActor, public IAbyssInteractionInterface
@@ -65,4 +66,27 @@ protected:
 	void CompleteWork();
 
 	bool IsEnemyNearWorkingCharacter() const;
+
+	// InterectPrompt
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	TObjectPtr<UWidgetComponent> MissionPromptWidgetComp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission|Prompt")
+	FText PromptObjectName = FText::FromString(TEXT("Mission Object"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission|Prompt")
+	FText ActiveStateText = FText::FromString(TEXT("Worked E"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission|Prompt")
+	FText InactiveStateText = FText::FromString(TEXT("Mission Not Accepted"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission|Prompt")
+	FText CompletedStateText = FText::FromString(TEXT("Completed"));
+
+	virtual void OnFocus_Implementation() override;
+	virtual void OnLostFocus_Implementation() override;
+
+	void UpdateMissionPromptUI();
+	bool IsMissionActiveForPrompt() const;
+
 };

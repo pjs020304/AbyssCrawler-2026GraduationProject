@@ -4,8 +4,12 @@
 #include "Mission/Contents/AbyssDataConsole.h"
 #include "AbyssDiverCharacter.h"
 #include "AbyssGameMode.h"
+#include "AbyssGameState.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Mission/UI/MissionInteractPromptWidget.h"
 #include "Net/UnrealNetwork.h"
+
 
 AAbyssDataConsole::AAbyssDataConsole()
 {
@@ -14,6 +18,13 @@ AAbyssDataConsole::AAbyssDataConsole()
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	RootComponent = MeshComp;
+
+	MissionPromptWidgetComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("MissionPromptWidgetComp"));
+	MissionPromptWidgetComp->SetupAttachment(RootComponent);
+	MissionPromptWidgetComp->SetWidgetSpace(EWidgetSpace::Screen);
+	MissionPromptWidgetComp->SetDrawAtDesiredSize(true);
+	MissionPromptWidgetComp->SetDrawSize(FVector2D(300.0f, 120.0f));
+	MissionPromptWidgetComp->SetVisibility(false);
 }
 
 // Called when the game starts or when spawned
@@ -174,6 +185,80 @@ void AAbyssDataConsole::CompleteDownload()
 void AAbyssDataConsole::OnRep_Completed()
 {
 	// 상호작용
+}
+
+void AAbyssDataConsole::OnFocus_Implementation()
+{
+	if (MissionPromptWidgetComp)
+	{
+		MissionPromptWidgetComp->SetVisibility(true);
+	}
+
+	UpdateMissionPromptUI();
+}
+
+void AAbyssDataConsole::OnLostFocus_Implementation()
+{
+	if (MissionPromptWidgetComp)
+	{
+		MissionPromptWidgetComp->SetVisibility(false);
+	}
+}
+
+void AAbyssDataConsole::UpdateMissionPromptUI()
+{
+	if (!MissionPromptWidgetComp)
+	{
+		return;
+	}
+
+	UMissionInteractPromptWidget* PromptWidget =
+		Cast<UMissionInteractPromptWidget>(MissionPromptWidgetComp->GetUserWidgetObject());
+
+	if (!PromptWidget)
+	{
+		return;
+	}
+
+	const bool bHasMission = IsMissionActiveForPrompt();
+
+	bool bCanInteract = bHasMission;
+	FText StateText = bHasMission ? ActiveStateText : InactiveStateText;
+
+	// 만약 오브젝트에 bCompleted 변수가 있다면
+	if (bCompleted)
+	{
+		bCanInteract = false;
+		StateText = CompletedStateText;
+	}
+
+	PromptWidget->UpdateMissionPrompt(
+		PromptObjectName,
+		StateText,
+		bCanInteract
+	);
+}
+
+bool AAbyssDataConsole::IsMissionActiveForPrompt() const
+{
+	if (MissionId.IsNone())
+	{
+		return true;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	AAbyssGameState* GS = World->GetGameState<AAbyssGameState>();
+	if (!GS)
+	{
+		return false;
+	}
+
+	return GS->HasActiveMission(MissionId);
 }
 
 void AAbyssDataConsole::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

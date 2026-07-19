@@ -5,6 +5,7 @@
 #include "Components/Button.h"
 #include "Components/EditableTextBox.h"
 #include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 bool UPasswordPopupWidget::Initialize()
 {
@@ -28,11 +29,21 @@ bool UPasswordPopupWidget::Initialize()
 
 void UPasswordPopupWidget::OnClicked_BtnCancel()
 {
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
+
 	RemoveFromParent();
 }
 
 void UPasswordPopupWidget::OnClicked_BtnCreate()
 {
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
+
 	FString PasswordString;
 
 	if (TxtBox_InputPassword)

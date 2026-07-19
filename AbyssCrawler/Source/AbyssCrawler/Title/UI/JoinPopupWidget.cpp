@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
+#include "Sound/SoundBase.h"
 
 bool UJoinPopupWidget::Initialize()
 {
@@ -31,11 +32,21 @@ bool UJoinPopupWidget::Initialize()
 
 void UJoinPopupWidget::OnClicked_BtnCancel()
 {
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
+
 	RemoveFromParent();
 }
 
 void UJoinPopupWidget::OnClicked_BtnJoin()
 {
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
+
 	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
 	if (!PC)
 	{

@@ -99,6 +99,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS|Cost")
 	FGameplayTag BatteryCostTag;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<USoundBase> PickupSound;
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayPickupSound();
+
 	// --- 지속 소모 (Passive Drain) ---
 
 	// 지속 소모 타이머 핸들

@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundMix.h"
 #include "Sound/SoundClass.h"
+#include "Sound/SoundBase.h"
 #include "GameFramework/GameUserSettings.h"
 #include "GameFramework/PlayerController.h"
 #include "Misc/ConfigCacheIni.h"
@@ -209,6 +210,11 @@ void UGameConfigPopupWidget::RefreshVolumeUI(float Value)
 
 void UGameConfigPopupWidget::OnCloseClicked()
 {
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
+
 	RemoveFromParent();
 
 	if (APlayerController* PC = GetOwningPlayer())

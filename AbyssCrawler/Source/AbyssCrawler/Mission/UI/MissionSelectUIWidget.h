@@ -61,6 +61,9 @@ protected:
 
 	void CloseUI();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<USoundBase> ClickSound;
+
 private:
 	UPROPERTY()
 	AAbyssDiverCharacter* OwnerCharacterRef = nullptr;

@@ -45,6 +45,9 @@ protected:
 	UFUNCTION()
 	void HandleSelectClicked();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<USoundBase> ClickSound;
+
 private:
 	FName CachedMissionId;
 

@@ -1,6 +1,8 @@
 #include "Mission/UI/MissionSelectSlotWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 
 
@@ -54,5 +56,10 @@ void UMissionSelectSlotWidget::SetMissionData(const FAbyssMissionData& InMission
 
 void UMissionSelectSlotWidget::HandleSelectClicked()
 {
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
+
 	OnMissionSelectClicked.Broadcast(CachedMissionId);
 }

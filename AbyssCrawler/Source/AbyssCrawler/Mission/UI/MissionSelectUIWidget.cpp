@@ -7,6 +7,8 @@
 #include "Mission/UI/MissionSelectSlotWidget.h"
 #include "Mission/Contents/AbyssMissionSender.h"
 #include "AbyssDiverCharacter.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 void UMissionSelectUIWidget::NativeConstruct()
 {
@@ -81,6 +83,11 @@ void UMissionSelectUIWidget::HandleMissionSelected(FName MissionId)
 		return;
 	}
 
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
+
 	SelectedMissionIds.Add(MissionId);
 
 	UE_LOG(LogTemp, Warning, TEXT("Selected: %s"), *MissionId.ToString());
@@ -116,6 +123,11 @@ void UMissionSelectUIWidget::HandleConfirmClicked()
 
 	AAbyssDiverCharacter* Character = Cast<AAbyssDiverCharacter>(GetOwningPlayerPawn());
 	if (!Character) return;
+
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
 
 	for (const FName& MissionId : SelectedMissionIds)
 	{
