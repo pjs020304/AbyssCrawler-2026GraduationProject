@@ -9,36 +9,36 @@ AAbyssSharkCharacter::AAbyssSharkCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// 1. [AI ¼³Á¤] ¸Ê¿¡ ¹èÄ¡µÇ°Å³ª ½ºÆùµÉ ¶§ ÀÚµ¿À¸·Î AI Controller°¡ ºùÀÇ(Possess)ÇÏµµ·Ï ¼³Á¤
+	// 1. [AI ï¿½ï¿½ï¿½ï¿½] ï¿½Ê¿ï¿½ ï¿½ï¿½Ä¡ï¿½Ç°Å³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ AI Controllerï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(Possess)ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
-	// 2. [¹°¸® & ÀÌµ¿ ¼³Á¤] ½ÉÇØ È¯°æ¿¡ ¸ÂÃá »ó¾îÀÇ ¿òÁ÷ÀÓ
+	// 2. [ï¿½ï¿½ï¿½ï¿½ & ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½] ï¿½ï¿½ï¿½ï¿½ È¯ï¿½æ¿¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (GetCapsuleComponent())
 	{
-		// ¹°¼ÓÀÌ¹Ç·Î Áß·ÂÀÇ ¿µÇâÀ» ¹ŞÁö ¾Êµµ·Ï ¼³Á¤
+		// ï¿½ï¿½ï¿½ï¿½ï¿½Ì¹Ç·ï¿½ ï¿½ß·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Êµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		GetCapsuleComponent()->SetEnableGravity(false);
 	}
 
 	if (GetCharacterMovement())
 	{
-		// »ó¾î´Â À§¾Æ·¡·Î ÀÚÀ¯·Ó°Ô ¿òÁ÷¿©¾ß ÇÏ¹Ç·Î ºñÇà(Flying) ¸ğµå »ç¿ë
+		// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ó°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ï¹Ç·ï¿½ ï¿½ï¿½ï¿½ï¿½(Flying) ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 		GetCharacterMovement()->DefaultLandMovementMode = MOVE_Flying;
 		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 
-		// È¸Àü ½Ã ¶Ò¶Ò ²÷±âÁö ¾Ê°í ºÎµå·´°Ô ¸ñÇ¥¸¦ ÇâÇØ ¸öÀ» µ¹¸®µµ·Ï ¼³Á¤
+		// È¸ï¿½ï¿½ ï¿½ï¿½ ï¿½Ò¶ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½ ï¿½Îµå·´ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		GetCharacterMovement()->bOrientRotationToMovement = true;
 		GetCharacterMovement()->RotationRate = FRotator(0.0f, 150.0f, 0.0f);
 
-		// ÃÖ´ë ¼ö¿µ ¼Óµµ (¿øÇÏ´Â °øÆ÷°¨¿¡ ¸ÂÃç Á¶ÀıÇÏ¼¼¿ä)
+		// ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ (ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½)
 		GetCharacterMovement()->MaxFlySpeed = 600.0f;
-		GetCharacterMovement()->BrakingDecelerationFlying = 1000.0f; // ¸ØÃâ ¶§ÀÇ ¸¶Âû·Â
+		GetCharacterMovement()->BrakingDecelerationFlying = 1000.0f; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
 
-	// 3. [GAS ¼³Á¤] ÇÃ·¹ÀÌ¾î¿Í µ¿ÀÏÇÏ°Ô µ¥¹ÌÁö¸¦ ¹ŞÀ» ¼ö ÀÖµµ·Ï ½Ã½ºÅÛ ºÎÂø
-	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent")); // ASC ÄÄÆ÷³ÍÆ® »ı¼º ¹× ±âº» ¼¼ÆÃ
-	// ¼­¹ö¿¡¼­¸¸ ±ÇÇÑÀ» °¡Áöµµ·Ï ¼³Á¤
+	// 3. [GAS ï¿½ï¿½ï¿½ï¿½] ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Öµï¿½ï¿½ï¿½ ï¿½Ã½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent")); // ASC ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½âº» ï¿½ï¿½ï¿½ï¿½
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	AbilitySystemComponent->SetIsReplicated(true);
-	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);// AI´Â ÃÖÀûÈ­¸¦ À§ÇØ Minimal ¸ğµå »ç¿ë 
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);// AIï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½È­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Minimal ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ 
 
 	AttributeSet = CreateDefaultSubobject<UAbyssAttributeSet>(TEXT("AttributeSet"));
 
@@ -58,7 +58,7 @@ void AAbyssSharkCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// AIÀÇ GAS ÃÊ±âÈ­ (¼­¹ö/ÀÚ½Å¿¡°Ô ±ÇÇÑ ºÎ¿©)
+	// AIï¿½ï¿½ GAS ï¿½Ê±ï¿½È­ (ï¿½ï¿½ï¿½ï¿½/ï¿½Ú½Å¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î¿ï¿½)
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
@@ -69,28 +69,28 @@ void AAbyssSharkCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	// 2. ASC ÃÊ±âÈ­ (Owner¿Í Avatar°¡ ´©±¸ÀÎÁö ¿£Áø¿¡ µî·Ï)
+	// 2. ASC ï¿½Ê±ï¿½È­ (Ownerï¿½ï¿½ Avatarï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
-		// 3. ¼­¹ö(±ÇÇÑÀÌ ÀÖ´Â °÷)¿¡¼­¸¸ ¾îºô¸®Æ¼¸¦ ºÎ¿©ÇÕ´Ï´Ù.
+		// 3. ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½)ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Æ¼ï¿½ï¿½ ï¿½Î¿ï¿½ï¿½Õ´Ï´ï¿½.
 		if (HasAuthority() && !bAbilitiesInitialized)
 		{
-			// ±âÀı ÅÂ±×ÀÇ Ãß°¡/»èÁ¦ ÀÌº¥Æ®¸¦ °¨ÁöÇÏµµ·Ï ¸®½º³Ê µî·Ï
+			// ï¿½ï¿½ï¿½ï¿½ ï¿½Â±ï¿½ï¿½ï¿½ ï¿½ß°ï¿½/ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 			AbilitySystemComponent->RegisterGameplayTagEvent(StunTag, EGameplayTagEventType::NewOrRemoved)
 				.AddUObject(this, &AAbyssSharkCharacter::OnStunTagChanged);
 
 			AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
 				.AddUObject(this, &AAbyssSharkCharacter::OnHealthChangedCallback);
 
-			// ¹è¿­¿¡ ¼¼ÆÃµÈ ½ºÅ³µéÀ» ÇÏ³ª¾¿ ²¨³»¼­ »ó¾î¿¡°Ô ºÎ¿©(Grant)ÇÕ´Ï´Ù.
+			// ï¿½è¿­ï¿½ï¿½ ï¿½ï¿½ï¿½Ãµï¿½ ï¿½ï¿½Å³ï¿½ï¿½ï¿½ï¿½ ï¿½Ï³ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½î¿¡ï¿½ï¿½ ï¿½Î¿ï¿½(Grant)ï¿½Õ´Ï´ï¿½.
 			for (TSubclassOf<UGameplayAbility>& StartupAbility : StartupAbilities)
 			{
 				if (StartupAbility)
 				{
-					// FGameplayAbilitySpecÀº ¾îºô¸®Æ¼ÀÇ ½ÇÇà Á¤º¸¸¦ ´ã´Â ÄÁÅ×ÀÌ³ÊÀÔ´Ï´Ù.
-					// ÀÎÀÚ: (ºÎ¿©ÇÒ ½ºÅ³, ·¹º§, ÀÔ·Â Å° ID(º¸Åë AI´Â INDEX_NONE), ½ºÅ³ÀÇ ÁÖÀÎ)
+					// FGameplayAbilitySpecï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Æ¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì³ï¿½ï¿½Ô´Ï´ï¿½.
+					// ï¿½ï¿½ï¿½ï¿½: (ï¿½Î¿ï¿½ï¿½ï¿½ ï¿½ï¿½Å³, ï¿½ï¿½ï¿½ï¿½, ï¿½Ô·ï¿½ Å° ID(ï¿½ï¿½ï¿½ï¿½ AIï¿½ï¿½ INDEX_NONE), ï¿½ï¿½Å³ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 					AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(StartupAbility, 1, INDEX_NONE, this));
 				}
 			}
@@ -109,7 +109,7 @@ void AAbyssSharkCharacter::OnStunTagChanged(const FGameplayTag CallbackTag, int3
 	
 	if (AIController && AIController->GetBlackboardComponent())
 	{
-		// NewCount°¡ 1 ÀÌ»óÀÌ¸é ÅÂ±×°¡ Á¸ÀçÇÏ´Â °Í(±âÀı »óÅÂ), 0ÀÌ¸é Ç®¸° °Í
+		// NewCountï¿½ï¿½ 1 ï¿½Ì»ï¿½ï¿½Ì¸ï¿½ ï¿½Â±×°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½), 0ï¿½Ì¸ï¿½ Ç®ï¿½ï¿½ ï¿½ï¿½
 		bool bIsStunned = (NewCount > 0);
 		AIController->GetBlackboardComponent()->SetValueAsBool(TEXT("IsStunned"), bIsStunned);
 
@@ -125,27 +125,48 @@ void AAbyssSharkCharacter::OnHealthChangedCallback(const FOnAttributeChangeData&
 	float NewHealth = Data.NewValue;
 	UE_LOG(LogTemp, Warning, TEXT("Shark Health Changed: %f"), NewHealth);
 
-	// Ã¼·ÂÀÌ 0 ÀÌÇÏ·Î ¶³¾îÁö¸é »ç¸Á Ã³¸®
+	// Ã¼ï¿½ï¿½ï¿½ï¿½ 0 ï¿½ï¿½ï¿½Ï·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
 	if (NewHealth <= 0.0f)
 	{
 		Die();
 	}
 }
 
+bool AAbyssSharkCharacter::IsAttacking() const
+{
+	// ê³µê²© ì–´ë¹Œë¦¬í‹°ê°€ ì‚´ì•„ìˆëŠ” ë™ì•ˆ ë¶€ì—¬ë˜ëŠ” íƒœê·¸ë¡œ íŒì •
+	return AbilitySystemComponent
+		&& AttackingTag.IsValid()
+		&& AbilitySystemComponent->HasMatchingGameplayTag(AttackingTag);
+}
+
 void AAbyssSharkCharacter::Die()
 {
-	UE_LOG(LogTemp, Warning, TEXT("»ó¾î »ç¸Á!"));
+	if (bIsDead)
+	{
+		return; // ì¤‘ë³µ ì‚¬ë§ ì²˜ë¦¬ ë°©ì§€
+	}
+	bIsDead = true;
 
-	// 1. Çàµ¿ Æ®¸® Á¤Áö
+	UE_LOG(LogTemp, Warning, TEXT("ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½!"));
+
+	// 1. ï¿½àµ¿ Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController && AIController->GetBrainComponent())
 	{
 		AIController->GetBrainComponent()->StopLogic("Shark Died");
 	}
 
-	// 2. Äİ¸®Àü ÇØÁ¦ (½ÃÃ¼¿¡ ºÎµúÈ÷Áö ¾Ê°Ô)
+	// 2. ï¿½İ¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½Ã¼ï¿½ï¿½ ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê°ï¿½)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	// 3. »ç¸Á ¾Ö´Ï¸ŞÀÌ¼Ç ¸ùÅ¸ÁÖ Àç»ı ¶Ç´Â ·¢µ¹(Ragdoll) ÄÑ±â
+	// ì´ë™ ì •ì§€ (ì‚¬ë§ ì• ë‹ˆë©”ì´ì…˜ ì¬ìƒ ì¤‘ ë¯¸ë„ëŸ¬ì§ ë°©ì§€)
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->DisableMovement();
+	}
+
+	// 3. ï¿½ï¿½ï¿½ ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½ï¿½(Ragdoll) ï¿½Ñ±ï¿½
 	// PlayAnimMontage(DeathMontage);
 }

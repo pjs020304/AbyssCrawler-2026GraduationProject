@@ -4,7 +4,7 @@
 #include "GameplayTagContainer.h"
 #include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
-#include "AbilitySystemInterface.h" // GAS ¿¬µ¿¿ë ÀÎÅÍÆäÀÌ½º
+#include "AbilitySystemInterface.h" // GAS ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì½ï¿½
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BrainComponent.h"
@@ -21,43 +21,58 @@ class ABYSSCRAWLER_API AAbyssSharkCharacter : public ACharacter, public IAbility
 public:
 	AAbyssSharkCharacter();
 
-	// --- [GAS ÇÊ¼ö ¿À¹ö¶óÀÌµå] ---
+	// --- [GAS ï¿½Ê¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ìµï¿½] ---
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	// AI°¡ ºùÀÇÇÒ ¶§ È£ÃâµÇ´Â ÇÔ¼ö (¿©±â¼­ ASC ÃÊ±âÈ­ ¹× ½ºÅ³ ºÎ¿©¸¦ ÁøÇàÇÕ´Ï´Ù)
+	// AIï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½Ç´ï¿½ ï¿½Ô¼ï¿½ (ï¿½ï¿½ï¿½â¼­ ASC ï¿½Ê±ï¿½È­ ï¿½ï¿½ ï¿½ï¿½Å³ ï¿½Î¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Õ´Ï´ï¿½)
 	virtual void PossessedBy(AController* NewController) override;
 
 protected:
 	virtual void BeginPlay() override;
 
-	// --- [GAS ÄÄÆ÷³ÍÆ®] ---
+	// --- [GAS ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®] ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
 	UAbilitySystemComponent* AbilitySystemComponent;
 
 
 
-	// °ÔÀÓ ½ÃÀÛ ½Ã »ó¾î¿¡°Ô ºÎ¿©ÇÒ ¾îºô¸®Æ¼(½ºÅ³) ¸ñ·Ï
-	// ¿¡µğÅÍ¿¡¼­ ¿©±â¿¡ ¹æ±İ ¸¸µç GA_SharkBite¸¦ »ğÀÔ
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½î¿¡ï¿½ï¿½ ï¿½Î¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Æ¼(ï¿½ï¿½Å³) ï¿½ï¿½ï¿½
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½â¿¡ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ GA_SharkBiteï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> StartupAbilities;	
 
-	// ¾îºô¸®Æ¼°¡ ÇÑ ¹ø¸¸ ºÎ¿©µÇµµ·Ï Ã¼Å©ÇÏ´Â ÇÃ·¡±×
+	// ï¿½ï¿½ï¿½ï¿½ï¿½Æ¼ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î¿ï¿½ï¿½Çµï¿½ï¿½ï¿½ Ã¼Å©ï¿½Ï´ï¿½ ï¿½Ã·ï¿½ï¿½ï¿½
 	bool bAbilitiesInitialized;
 
-	// ±âÀı ÅÂ±× ("State.Debuff.Stun")
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Â±ï¿½ ("State.Debuff.Stun")
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	FGameplayTag StunTag;
 
-	// ÅÂ±×°¡ Ãß°¡µÇ°Å³ª Áö¿öÁú ¶§ È£ÃâµÉ Äİ¹é ÇÔ¼ö
+	// ï¿½Â±×°ï¿½ ï¿½ß°ï¿½ï¿½Ç°Å³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½ï¿½ ï¿½İ¹ï¿½ ï¿½Ô¼ï¿½
 	virtual void OnStunTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
 
-	// ÇÃ·¹ÀÌ¾î¿Í µ¿ÀÏÇÑ AttributeSet »ç¿ë
+	// ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ AttributeSet ï¿½ï¿½ï¿½
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
 	UAbyssAttributeSet* AttributeSet;
 
-	// Ã¼·ÂÀÌ º¯ÇÒ ¶§ È£ÃâµÉ Äİ¹é ÇÔ¼ö
+	// Ã¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½ï¿½ ï¿½İ¹ï¿½ ï¿½Ô¼ï¿½
 	void OnHealthChangedCallback(const FOnAttributeChangeData& Data);
 
-	// »ç¸Á Ã³¸® ÇÔ¼ö
+	// ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ ï¿½Ô¼ï¿½
 	void Die();
+
+	// ê³µê²© ì–´ë¹Œë¦¬í‹°(GA_SharkBite)ê°€ í™œì„±í™”ëœ ë™ì•ˆ ASCì— ë¶€ì—¬ë˜ëŠ” íƒœê·¸ (ì˜ˆ: "State.Attacking")
+	UPROPERTY(EditDefaultsOnly, Category = "GAS")
+	FGameplayTag AttackingTag;
+
+	// ì‚¬ë§ ì—¬ë¶€ (Die()ì—ì„œ trueë¡œ ì„¤ì •, AnimBP íŠ¸ëœì§€ì…˜ì—ì„œ ì‚¬ìš©)
+	bool bIsDead = false;
+
+public:
+	// AnimInstance / Transition Ruleì—ì„œ ì¡°íšŒí•˜ëŠ” ìƒíƒœ í•¨ìˆ˜ë“¤
+	UFUNCTION(BlueprintPure, Category = "Animation")
+	bool IsAttacking() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation")
+	bool IsDead() const { return bIsDead; }
 };
