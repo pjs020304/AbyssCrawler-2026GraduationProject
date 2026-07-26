@@ -7,6 +7,7 @@
 #include "JoinPopupWidget.h"
 #include "PasswordPopupWidget.h"
 #include "Sound/SoundBase.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 bool UTitleWidget::Initialize()
 {
@@ -23,6 +24,11 @@ bool UTitleWidget::Initialize()
 	if (Btn_Create)
 	{
 		Btn_Create->OnClicked.AddDynamic(this, &UTitleWidget::OnClicked_BtnCreate);
+	}
+
+	if (Btn_Quit)
+	{
+		Btn_Quit->OnClicked.AddDynamic(this, &UTitleWidget::OnClicked_BtnQuit);
 	}
 
 	return true;
@@ -66,4 +72,19 @@ void UTitleWidget::OnClicked_BtnCreate()
 	{
 		PasswordPopup->AddToViewport();
 	}
+}
+
+void UTitleWidget::OnClicked_BtnQuit()
+{
+	if (ClickSound)
+	{
+		UGameplayStatics::PlaySound2D(this, ClickSound);
+	}
+
+	UKismetSystemLibrary::QuitGame(
+		this,
+		GetOwningPlayer(),
+		EQuitPreference::Quit,
+		false
+	);
 }
