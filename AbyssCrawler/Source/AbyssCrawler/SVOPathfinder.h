@@ -42,21 +42,30 @@ public:
 	// 26방향 이웃 오프셋 미리 계산 (상하좌우, 대각선 모두 포함)
 	static const TArray<FIntVector>& Get26Directions()
 	{
-		static TArray<FIntVector> Directions;
-		if (Directions.Num() == 0)
-		{
-			for (int32 X = -1; X <= 1; ++X)
+		static const TArray<FIntVector> Directions = []()
 			{
-				for (int32 Y = -1; Y <= 1; ++Y)
+				TArray<FIntVector> Result;
+				Result.Reserve(26);
+
+				for (int32 X = -1; X <= 1; ++X)
 				{
-					for (int32 Z = -1; Z <= 1; ++Z)
+					for (int32 Y = -1; Y <= 1; ++Y)
 					{
-						if (X == 0 && Y == 0 && Z == 0) continue; // 자기 자신 제외
-						Directions.Add(FIntVector(X, Y, Z));
+						for (int32 Z = -1; Z <= 1; ++Z)
+						{
+							if (X == 0 && Y == 0 && Z == 0)
+							{
+								continue;
+							}
+
+							Result.Add(FIntVector(X, Y, Z));
+						}
 					}
 				}
-			}
-		}
+
+				return Result;
+			}();
+
 		return Directions;
 	}
 

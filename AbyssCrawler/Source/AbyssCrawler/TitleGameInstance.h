@@ -9,6 +9,7 @@
 
 class USoundMix;
 class USoundClass;
+class ULoadingScreenWidget;
 
 UCLASS()
 class ABYSSCRAWLER_API UTitleGameInstance : public UGameInstance
@@ -42,4 +43,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
 	TObjectPtr<USoundClass> MasterSoundClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loading")
+	TSubclassOf<ULoadingScreenWidget> LoadingScreenWidgetClass;
 };

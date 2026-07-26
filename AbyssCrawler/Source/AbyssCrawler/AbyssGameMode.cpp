@@ -431,3 +431,29 @@ void AAbyssGameMode::UpdateGameTimer()
         FinishGameOver();
     }
 }
+
+void AAbyssGameMode::Debug_SetProgressFull()
+{
+    AAbyssGameState* GS = GetGameState<AAbyssGameState>();
+    if (!GS)
+    {
+        return;
+    }
+
+    GS->Debug_SetProgressFull();
+
+    UE_LOG(LogTemp, Warning, TEXT("[Exhibition] Mission Progress set to 100%%"));
+}
+
+void AAbyssGameMode::Debug_SetRemainingTime(float NewRemainingTime)
+{
+    AAbyssGameState* GS = GetGameState<AAbyssGameState>();
+    if (!GS)
+    {
+        return;
+    }
+
+    GS->SetRemainingGameTime(NewRemainingTime);
+
+    UE_LOG(LogTemp, Warning, TEXT("[Exhibition] Remaining Time set to %.1f"), NewRemainingTime);
+}

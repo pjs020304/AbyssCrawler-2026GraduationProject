@@ -297,3 +297,20 @@ TArray<FAbyssMissionData> AAbyssGameState::GetAvailableMissions() const
 
     return Result;
 }
+
+void AAbyssGameState::Debug_SetProgressFull()
+{
+    if (!HasAuthority())
+    {
+        return;
+    }
+
+    ProgressPoint = TargetProgressPoint;
+
+    // 서버에서는 OnRep이 자동 호출되지 않으므로 직접 UI 갱신용 함수 호출
+    OnRep_Missions();
+
+    UE_LOG(LogTemp, Warning, TEXT("[Exhibition] ProgressPoint = %d / %d"),
+        ProgressPoint,
+        TargetProgressPoint);
+}

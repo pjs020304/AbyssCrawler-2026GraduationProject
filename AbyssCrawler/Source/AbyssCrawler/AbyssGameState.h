@@ -141,6 +141,7 @@ public:
 	void SetGamePhase(EAbyssGamePhase NewPhase);
 	void SetRemainingGameTime(float NewTime);
 
+	void Debug_SetProgressFull();
 
 protected:
 	// 팀이 공유하는 돈 (서버에서 클라이언트로 동기화됨)

@@ -42,6 +42,7 @@ void ALobbyGameMode::TryStartGame()
 {
 	if (IsEverybodyReady())
 	{
+		/*
 		// Append
 		FString Commnad = TEXT("ServerTravel L_DeepSea_VerLightStudio");
 
@@ -50,6 +51,9 @@ void ALobbyGameMode::TryStartGame()
 		{
 			PC->ConsoleCommand(Commnad);
 		}
+		*/
+
+		GetWorld()->ServerTravel(TEXT("/Game/AbyssCrawler/Maps/MainGame/L_DeepSea_VerLightStudio"));
 	}
 }
 

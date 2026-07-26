@@ -57,6 +57,9 @@ public:
 
 	void TravelToEndingMap();
 
+	void Debug_SetProgressFull();
+	void Debug_SetRemainingTime(float NewRemainingTime);
+
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Game Flow")
 	float GameLimitTime = 1200.0f; // 20Ка

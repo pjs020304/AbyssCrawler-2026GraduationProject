@@ -11,6 +11,8 @@
 #include "Sound/SoundClass.h"
 #include "Misc/ConfigCacheIni.h"
 #include "GameFramework/GameUserSettings.h"
+#include "LoadingScreenSubsystem.h"
+#include "LoadingScreenWidget.h"
 
 void UTitleGameInstance::Init()
 {
@@ -21,6 +23,14 @@ void UTitleGameInstance::Init()
 	if (GEngine)
 	{
 		GEngine->OnNetworkFailure().AddUObject(this, &UTitleGameInstance::OnNetworkFailure);
+	}
+
+	if (ULoadingScreenSubsystem* LoadingSubsystem = GetSubsystem<ULoadingScreenSubsystem>())
+	{
+		LoadingSubsystem->SetLoadingWidgetClass(LoadingScreenWidgetClass);
+
+		UE_LOG(LogTemp, Warning, TEXT("[Loading] GameInstance Set WidgetClass: %s"),
+			LoadingScreenWidgetClass ? *LoadingScreenWidgetClass->GetName() : TEXT("NULL"));
 	}
 }
 

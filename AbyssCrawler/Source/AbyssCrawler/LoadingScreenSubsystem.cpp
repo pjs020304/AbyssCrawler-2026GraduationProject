@@ -23,6 +23,11 @@ void ULoadingScreenSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		if (UClass* Loaded = LoadClass<ULoadingScreenWidget>(nullptr, DefaultWidgetPath))
 		{
 			LoadingWidgetClass = Loaded;
+			UE_LOG(LogTemp, Warning, TEXT("[Loading] WidgetClass Loaded: %s"), *Loaded->GetName());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[Loading] Failed to load widget class: %s"), DefaultWidgetPath);
 		}
 	}
 
@@ -58,11 +63,14 @@ void ULoadingScreenSubsystem::SetLoadingWidgetClass(TSubclassOf<ULoadingScreenWi
 // ──────────────────────────────────────────────────────────────
 void ULoadingScreenSubsystem::HandlePreLoadMap(const FString& MapName)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[Loading] PreLoadMap: %s"), *MapName);
+
 	// 이전 로딩 위젯이 남아있으면 정리
 	HideLoadingWidget();
 
 	if (IsGameplayMap(MapName))
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[Loading] Gameplay map detected. ShowMoviePlayer."));
 		ShowMoviePlayer();
 	}
 }
@@ -91,6 +99,10 @@ void ULoadingScreenSubsystem::ShowMoviePlayer()
 // ──────────────────────────────────────────────────────────────
 void ULoadingScreenSubsystem::HandlePostLoadMap(UWorld* LoadedWorld)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[Loading] PostLoadMap: World=%s"),
+		LoadedWorld ? *LoadedWorld->GetName() : TEXT("NULL"));
+
+
 	if (!LoadedWorld || !LoadedWorld->IsGameWorld())
 	{
 		return;
@@ -112,33 +124,51 @@ void ULoadingScreenSubsystem::HandlePostLoadMap(UWorld* LoadedWorld)
 
 	// 리슨서버 호스트 / Standalone(권한 보유): 렌더가 빠르므로 진행률 화면 스킵.
 	// MoviePlayer 는 패키지 로드가 끝나면 자동으로 사라진다.
+	/*
 	const bool bIsHostOrStandalone =
 		(NetMode == NM_ListenServer) || (NetMode == NM_Standalone);
 	if (bIsHostOrStandalone)
 	{
 		return;
 	}
-
+	*/
 	// 여기부터 순수 클라이언트(NM_Client)
 	ShowLoadingWidget(LoadedWorld);
 }
 
 void ULoadingScreenSubsystem::ShowLoadingWidget(UWorld* World)
 {
+	if (bLoadingActive || LoadingWidget)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Loading] Already active. Skip ShowLoadingWidget."));
+		return;
+	}
+
 	DisplayedProgress = 0.f;
 	bLoadingActive = true;
 	LoadingStartTime = FPlatformTime::Seconds();
 
-	APlayerController* PC = World->GetFirstPlayerController();
+	APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
 
-	if (LoadingWidgetClass)
+	UE_LOG(LogTemp, Warning, TEXT("[Loading] PC=%s, LoadingWidgetClass=%s"),
+		PC ? *PC->GetName() : TEXT("NULL"),
+		LoadingWidgetClass ? *LoadingWidgetClass->GetName() : TEXT("NULL"));
+
+	if (PC && LoadingWidgetClass)
 	{
-		LoadingWidget = CreateWidget<ULoadingScreenWidget>(World->GetGameInstance(), LoadingWidgetClass);
+		LoadingWidget = CreateWidget<ULoadingScreenWidget>(PC, LoadingWidgetClass);
+
 		if (LoadingWidget)
 		{
-			LoadingWidget->AddToViewport(1000); // 최상단
+			LoadingWidget->AddToViewport(90000);
 			LoadingWidget->OnProgressUpdated(0.f);
+
+			UE_LOG(LogTemp, Warning, TEXT("[Loading] Widget Added To Player Screen"));
 		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Loading] PC or LoadingWidgetClass is NULL"));
 	}
 
 	if (PC)
@@ -148,7 +178,6 @@ void ULoadingScreenSubsystem::ShowLoadingWidget(UWorld* World)
 		PC->bShowMouseCursor = false;
 	}
 
-	// 폴링 시작
 	if (!TickHandle.IsValid())
 	{
 		TickHandle = FTSTicker::GetCoreTicker().AddTicker(

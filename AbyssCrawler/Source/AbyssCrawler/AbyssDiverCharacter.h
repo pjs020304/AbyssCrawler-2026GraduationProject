@@ -435,6 +435,10 @@ private:
   UPROPERTY()
   TObjectPtr<AAbyssDataConsole> CurrentDataConsole = nullptr;
 
+  // Debug
+  void Debug_SetProgressFull();
+  void Debug_SetRemainingTime10();
+
 protected:
   // 이동 함수
   void Move(const FInputActionValue &Value);
