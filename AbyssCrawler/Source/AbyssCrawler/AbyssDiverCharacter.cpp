@@ -16,7 +16,9 @@
 #include "AbyssFlashLight.h"
 #include "AbyssCorpseItem.h"
 #include "AbyssGameMode.h"
+#include "AbyssGameState.h"
 #include "AbyssPlayerState.h"
+#include "InputCoreTypes.h"
 #include "MainHUDWidget.h"
 #include "Mission/UI/MissionSelectUIWidget.h"
 #include "Mission/Contents/AbyssMissionSender.h"
@@ -324,6 +326,10 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 		EnhancedInputComponent->BindAction(MissionUIAction, ETriggerEvent::Started, this, &AAbyssDiverCharacter::ToggleMissionPanel);
 	}
+
+	// 전시용 디버그 키
+	PlayerInputComponent->BindKey(EKeys::F1, IE_Pressed, this, &AAbyssDiverCharacter::Debug_SetProgressFull);
+	PlayerInputComponent->BindKey(EKeys::F2, IE_Pressed, this, &AAbyssDiverCharacter::Debug_SetRemainingTime10);
 }
 
 void AAbyssDiverCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -601,6 +607,44 @@ void AAbyssDiverCharacter::Client_PlayFadeOut_Implementation()
 	{
 		MainHUDRef->BP_PlayFadeOut();
 	}
+}
+
+void AAbyssDiverCharacter::Debug_SetProgressFull()
+{
+	// Listen Server 호스트만 허용
+	if (!HasAuthority() || !IsLocallyControlled())
+	{
+		return;
+	}
+
+	AAbyssGameMode* GM = GetWorld()->GetAuthGameMode<AAbyssGameMode>();
+	if (!GM)
+	{
+		return;
+	}
+
+	GM->Debug_SetProgressFull();
+
+	UE_LOG(LogTemp, Warning, TEXT("[Exhibition] F1 pressed: Progress 100%%"));
+}
+
+void AAbyssDiverCharacter::Debug_SetRemainingTime10()
+{
+	// Listen Server 호스트만 허용
+	if (!HasAuthority() || !IsLocallyControlled())
+	{
+		return;
+	}
+
+	AAbyssGameMode* GM = GetWorld()->GetAuthGameMode<AAbyssGameMode>();
+	if (!GM)
+	{
+		return;
+	}
+
+	GM->Debug_SetRemainingTime(10.0f);
+
+	UE_LOG(LogTemp, Warning, TEXT("[Exhibition] F2 pressed: Remaining Time 10 sec"));
 }
 
 void AAbyssDiverCharacter::Move(const FInputActionValue& Value)

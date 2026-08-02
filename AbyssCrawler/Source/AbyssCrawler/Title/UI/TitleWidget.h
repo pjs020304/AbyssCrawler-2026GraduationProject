@@ -9,6 +9,7 @@
 class UButton;
 class UJoinPopupWidget;
 class UPasswordPopupWidget;
+class USoundBase;
 
 /**
  * 
@@ -28,12 +29,18 @@ protected:
 	UFUNCTION()
 	void OnClicked_BtnCreate();
 
+	UFUNCTION()
+	void OnClicked_BtnQuit();
+
 protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Join;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Btn_Create;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> Btn_Quit;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Title")
 	TSubclassOf<UJoinPopupWidget> JoinPopupClass;
