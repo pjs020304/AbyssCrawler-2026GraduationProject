@@ -9,6 +9,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.h"
+#include "GameplayEffect.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
@@ -257,6 +258,12 @@ void AAbyssDiverCharacter::Tick(float DeltaTime)
 	}
 
 	CheckForInteractables();
+
+	// 서버에서만 배터리 공유 진행도 누적
+	if (HasAuthority() && bIsSharingBattery)
+	{
+		TickBatteryShare(DeltaTime);
+	}
 
 	// Multiplayer: Sync camera rotation for simulated proxies to replicate look direction and flashlight direction
 	if (!IsLocallyControlled() && FirstPersonCameraComponent)
@@ -964,6 +971,17 @@ void AAbyssDiverCharacter::TryInteract()
 			return;
 		}
 
+		// 다른 플레이어를 바라보며 E 홀드 -> 배터리 공유 시작
+		if (AAbyssDiverCharacter* TargetDiver = Cast<AAbyssDiverCharacter>(HitActor))
+		{
+			if (TargetDiver != this)
+			{
+				bAttemptingBatteryShare = true;
+				Server_StartBatteryShare(TargetDiver);
+				return;
+			}
+		}
+
 		// 기존 상호작용
 		if (HitActor->Implements<UAbyssInteractionInterface>())
 		{
@@ -990,6 +1008,13 @@ void AAbyssDiverCharacter::StopInteract()
 	{
 		Server_StopDataConsole(CurrentDataConsole);
 		CurrentDataConsole = nullptr;
+	}
+
+	// 배터리 공유 홀드 중 E를 뗐다면 취소 요청
+	if (bAttemptingBatteryShare)
+	{
+		bAttemptingBatteryShare = false;
+		Server_StopBatteryShare();
 	}
 }
 
@@ -1019,6 +1044,169 @@ void AAbyssDiverCharacter::Server_StopDataConsole_Implementation(AAbyssDataConso
 	if (CurrentDataConsole == Console)
 	{
 		CurrentDataConsole = nullptr;
+	}
+}
+
+// ===========================================================
+// 배터리 공유 (Player-to-Player Battery Share)
+// ===========================================================
+
+bool AAbyssDiverCharacter::CanShareBatteryWith(AAbyssDiverCharacter* Target) const
+{
+	if (!Target || Target == this) return false;
+
+	// 양쪽 모두 살아 있어야 함
+	if (bIsDead || Target->bIsDead) return false;
+
+	// 거리 유지 검사
+	const float Distance = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
+	if (Distance > BatteryShareMaxDistance) return false;
+
+	UAbilitySystemComponent* GiverASC = GetAbilitySystemComponent();
+	UAbilitySystemComponent* TargetASC = Target->GetAbilitySystemComponent();
+	if (!GiverASC || !TargetASC) return false;
+
+	// 주는 사람이 최소 보유량 이상 가지고 있어야 함
+	const float GiverBattery = GiverASC->GetNumericAttribute(UAbyssAttributeSet::GetBatteryAttribute());
+	if (GiverBattery < BatteryShareMinRequired) return false;
+
+	// 받는 사람에게 채울 공간이 있어야 함
+	const float TargetBattery = TargetASC->GetNumericAttribute(UAbyssAttributeSet::GetBatteryAttribute());
+	const float TargetMaxBattery = TargetASC->GetNumericAttribute(UAbyssAttributeSet::GetMaxBatteryAttribute());
+	if (TargetBattery >= TargetMaxBattery) return false;
+
+	return true;
+}
+
+void AAbyssDiverCharacter::Server_StartBatteryShare_Implementation(AAbyssDiverCharacter* Target)
+{
+	if (!HasAuthority()) return;
+	if (bIsSharingBattery) return;
+	if (!CanShareBatteryWith(Target)) return;
+
+	BatteryShareTarget = Target;
+	bIsSharingBattery = true;
+	BatteryShareElapsed = 0.0f;
+
+	Client_ShowBatteryShareUI();
+	Client_UpdateBatteryShareProgress(0.0f);
+}
+
+void AAbyssDiverCharacter::Server_StopBatteryShare_Implementation()
+{
+	if (!HasAuthority()) return;
+	if (!bIsSharingBattery) return;
+
+	bIsSharingBattery = false;
+	BatteryShareTarget = nullptr;
+	BatteryShareElapsed = 0.0f;
+
+	Client_UpdateBatteryShareProgress(0.0f);
+	Client_HideBatteryShareUI();
+}
+
+void AAbyssDiverCharacter::TickBatteryShare(float DeltaTime)
+{
+	// 도중에 조건이 깨지면(거리 이탈/사망/잔량 부족 등) 취소
+	if (!CanShareBatteryWith(BatteryShareTarget))
+	{
+		Server_StopBatteryShare_Implementation();
+		return;
+	}
+
+	BatteryShareElapsed += DeltaTime;
+
+	const float Progress = FMath::Clamp(BatteryShareElapsed / BatteryShareDuration, 0.0f, 1.0f);
+	Client_UpdateBatteryShareProgress(Progress);
+
+	if (BatteryShareElapsed >= BatteryShareDuration)
+	{
+		CompleteBatteryShare();
+	}
+}
+
+void AAbyssDiverCharacter::CompleteBatteryShare()
+{
+	if (!HasAuthority()) return;
+
+	AAbyssDiverCharacter* Target = BatteryShareTarget;
+
+	if (Target && BatteryShareEffectClass)
+	{
+		UAbilitySystemComponent* GiverASC = GetAbilitySystemComponent();
+		UAbilitySystemComponent* TargetASC = Target->GetAbilitySystemComponent();
+
+		if (GiverASC && TargetASC)
+		{
+			// 실제 이전량 = min(설정량, 주는사람 잔량, 받는사람 여유분)
+			const float GiverBattery = GiverASC->GetNumericAttribute(UAbyssAttributeSet::GetBatteryAttribute());
+			const float TargetBattery = TargetASC->GetNumericAttribute(UAbyssAttributeSet::GetBatteryAttribute());
+			const float TargetMaxBattery = TargetASC->GetNumericAttribute(UAbyssAttributeSet::GetMaxBatteryAttribute());
+			const float TargetRoom = FMath::Max(0.0f, TargetMaxBattery - TargetBattery);
+
+			const float ActualAmount = FMath::Min3(BatteryShareAmount, GiverBattery, TargetRoom);
+
+			if (ActualAmount > 0.0f)
+			{
+				// 주는 사람: -ActualAmount
+				{
+					FGameplayEffectContextHandle Context = GiverASC->MakeEffectContext();
+					Context.AddInstigator(this, this);
+					FGameplayEffectSpecHandle SpecHandle = GiverASC->MakeOutgoingSpec(BatteryShareEffectClass, 1.0f, Context);
+					if (SpecHandle.IsValid())
+					{
+						SpecHandle.Data->SetSetByCallerMagnitude(BatteryShareCostTag, -ActualAmount);
+						GiverASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+					}
+				}
+
+				// 받는 사람: +ActualAmount
+				{
+					FGameplayEffectContextHandle Context = TargetASC->MakeEffectContext();
+					Context.AddInstigator(this, this);
+					FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(BatteryShareEffectClass, 1.0f, Context);
+					if (SpecHandle.IsValid())
+					{
+						SpecHandle.Data->SetSetByCallerMagnitude(BatteryShareCostTag, ActualAmount);
+						TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+					}
+				}
+
+				UE_LOG(LogTemp, Log, TEXT("[BatteryShare] Transferred %.1f battery to %s"), ActualAmount, *Target->GetName());
+			}
+		}
+	}
+
+	// 상태 초기화 및 UI 종료
+	bIsSharingBattery = false;
+	BatteryShareTarget = nullptr;
+	BatteryShareElapsed = 0.0f;
+
+	Client_UpdateBatteryShareProgress(1.0f);
+	Client_HideBatteryShareUI();
+}
+
+void AAbyssDiverCharacter::Client_ShowBatteryShareUI_Implementation()
+{
+	if (MainHUDRef)
+	{
+		MainHUDRef->BP_ShowBatteryShareUI();
+	}
+}
+
+void AAbyssDiverCharacter::Client_HideBatteryShareUI_Implementation()
+{
+	if (MainHUDRef)
+	{
+		MainHUDRef->BP_HideBatteryShareUI();
+	}
+}
+
+void AAbyssDiverCharacter::Client_UpdateBatteryShareProgress_Implementation(float Progress)
+{
+	if (MainHUDRef)
+	{
+		MainHUDRef->BP_UpdateBatteryShareProgress(Progress);
 	}
 }
 
