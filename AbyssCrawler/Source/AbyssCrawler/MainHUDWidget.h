@@ -42,16 +42,6 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void BP_UpdateWorkProgress(float Progress);
 
-	// 배터리 공유 전용 진행 UI
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	void BP_ShowBatteryShareUI();
-
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	void BP_HideBatteryShareUI();
-
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
-	void BP_UpdateBatteryShareProgress(float Progress);
-
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void BP_ShowMissionComplete(const FText& MissionName);
 

@@ -181,3 +181,17 @@ void UTitleGameInstance::SaveAndApplyVolume(float Volume)
 		);
 	}
 }
+
+void UTitleGameInstance::SetSelectedPlayerColorIndex(int32 NewIndex)
+{
+	const int32 MaxColorCount = 3;
+
+	SelectedPlayerColorIndex = FMath::Clamp(NewIndex, 0, MaxColorCount - 1);
+
+	UE_LOG(LogTemp, Warning, TEXT("[ColorGI] Set SelectedColorIndex=%d"), SelectedPlayerColorIndex);
+}
+
+int32 UTitleGameInstance::GetSelectedPlayerColorIndex() const
+{
+	return SelectedPlayerColorIndex;
+}

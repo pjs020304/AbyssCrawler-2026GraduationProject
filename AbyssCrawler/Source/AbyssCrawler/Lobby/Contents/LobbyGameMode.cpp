@@ -75,6 +75,10 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 
 	// Set Nickname
 	LobbyPS->Nickname = FText::FromString(NameString);
+
+	const int32 MaxColorCount = 3;
+	LobbyPS->PlayerColorIndex = (NicknameIndex - 1) % MaxColorCount;
+	LobbyPS->OnRep_PlayerColorIndex();
 }
 
 void ALobbyGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)

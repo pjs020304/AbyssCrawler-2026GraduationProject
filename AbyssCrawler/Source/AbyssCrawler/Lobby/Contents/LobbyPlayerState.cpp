@@ -29,11 +29,17 @@ void ALobbyPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 	DOREPLIFETIME(ALobbyPlayerState, Ready);
 	DOREPLIFETIME(ALobbyPlayerState, Nickname);
+	DOREPLIFETIME(ALobbyPlayerState, PlayerColorIndex);
 }
 
 void ALobbyPlayerState::CopyProperties(APlayerState* PlayerState)
 {
 	Super::CopyProperties(PlayerState);
+
+	UE_LOG(LogTemp, Warning, TEXT("[ColorCopy] CopyProperties Called. From LobbyPS=%s ColorIndex=%d TargetPS=%s"),
+		*GetName(),
+		PlayerColorIndex,
+		PlayerState ? *PlayerState->GetName() : TEXT("NULL"));
 
 	AAbyssPlayerState* NewPlayerState = Cast<AAbyssPlayerState>(PlayerState);
 
@@ -41,6 +47,13 @@ void ALobbyPlayerState::CopyProperties(APlayerState* PlayerState)
 	{
 		NewPlayerState->Nickname = Nickname;
 	}
+
+	NewPlayerState->Nickname = Nickname;
+	NewPlayerState->PlayerColorIndex = PlayerColorIndex;
+
+	UE_LOG(LogTemp, Warning, TEXT("[ColorCopy] Copied ColorIndex=%d to AbyssPS=%s"),
+		PlayerColorIndex,
+		*NewPlayerState->GetName());
 }
 
 void ALobbyPlayerState::Client_KickedByServer_Implementation()
@@ -84,3 +97,56 @@ void ALobbyPlayerState::OnRep_NicknameChange()
 	RefreshLobbyUI();
 }
 
+void ALobbyPlayerState::AddPlayerColorIndex(int32 Delta)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	const int32 MaxColorCount = 3;
+
+	PlayerColorIndex = (PlayerColorIndex + Delta + MaxColorCount) % MaxColorCount;
+
+	OnRep_PlayerColorIndex();
+
+	UE_LOG(LogTemp, Warning, TEXT("[LobbyColor] Changed ColorIndex=%d"), PlayerColorIndex);
+}
+
+FLinearColor ALobbyPlayerState::GetPlayerColor() const
+{
+	switch (PlayerColorIndex)
+	{
+	case 0:
+		return FLinearColor(0.0f, 0.6f, 0.1f, 1.0f); // Green
+
+	case 1:
+		return FLinearColor(0.8f, 0.0f, 0.0f, 1.0f); // Red
+
+	case 2:
+		return FLinearColor(0.0f, 0.2f, 1.0f, 1.0f); // Blue
+
+	default:
+		return FLinearColor::White;
+	}
+}
+
+void ALobbyPlayerState::SetPlayerColorIndex(int32 NewIndex)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	const int32 MaxColorCount = 3;
+	PlayerColorIndex = FMath::Clamp(NewIndex, 0, MaxColorCount - 1);
+
+	OnRep_PlayerColorIndex();
+}
+
+void ALobbyPlayerState::OnRep_PlayerColorIndex()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[LobbyColor] OnRep ColorIndex=%d"), PlayerColorIndex);
+
+	OnLobbyColorChanged.Broadcast();
+}

@@ -40,7 +40,7 @@ void ULobbyWidget::SetInfo()
         if (LobbyUserWidgetClass == nullptr)
             continue;
 
-        ULobbyUserWidget* ChildWidget = CreateWidget<ULobbyUserWidget>(GetWorld(), LobbyUserWidgetClass);
+        ULobbyUserWidget* ChildWidget = CreateWidget<ULobbyUserWidget>(GetOwningPlayer(), LobbyUserWidgetClass);
         if (ChildWidget == nullptr)
             continue;
 
@@ -56,45 +56,36 @@ void ULobbyWidget::SetInfo()
 
 void ULobbyWidget::RefreshUI()
 {
-    AGameStateBase* GameState = UGameplayStatics::GetGameState(this);
-    if (GameState == nullptr)
-        return;
-
-    // Cache Player Length
-    TArray<ALobbyPlayerState*> LobbyPlayerStates = GetLobbyPlayerStates();
-    const int32 PlayerLength = LobbyPlayerStates.Num();
-
-    for (int32 i = 0; i < LobbyUsers.Num(); i++)
+    if (!UserList || !LobbyUserWidgetClass)
     {
-        const int32 Index = i;
-
-        if (Index < PlayerLength)
-        {
-            // Show UI
-            LobbyUsers[Index]->SetVisibility(ESlateVisibility::Visible);
-
-            // SetInfo
-            ALobbyPlayerState* PlayerState = GetLobbyPlayerStateAtIndex(Index);
-            LobbyUsers[Index]->SetInfo(PlayerState);
-        }
-        else
-        {
-            // Hide UI
-            // Hidden은 자리 차지하고 collapse는 자리를 차지하지 않는다.
-            LobbyUsers[Index]->SetVisibility(ESlateVisibility::Collapsed);
-        }
-
+        return;
     }
 
-    // Hidden은 자리 차지 collapse는 자리를 차지하지 않는다.
+    UserList->ClearChildren();
 
-    /*
-    if (UKismetSystemLibrary::IsServer(this))
-        Btn_GameConfig->SetVisibility(ESlateVisibility::Visible);
-    else
-        Btn_GameConfig->SetVisibility(ESlateVisibility::Hidden);
+    AGameStateBase* GS = GetWorld() ? GetWorld()->GetGameState() : nullptr;
+    if (!GS)
+    {
+        return;
+    }
 
-     */
+    for (APlayerState* PS : GS->PlayerArray)
+    {
+        ALobbyPlayerState* LobbyPS = Cast<ALobbyPlayerState>(PS);
+        if (!LobbyPS)
+        {
+            continue;
+        }
+
+        ULobbyUserWidget* UserWidget =
+            CreateWidget<ULobbyUserWidget>(GetOwningPlayer(), LobbyUserWidgetClass);
+
+        if (UserWidget)
+        {
+            UserWidget->SetInfo(LobbyPS);
+            UserList->AddChild(UserWidget);
+        }
+    }
 }
 
 TArray<ALobbyPlayerState*> ULobbyWidget::GetLobbyPlayerStates()
