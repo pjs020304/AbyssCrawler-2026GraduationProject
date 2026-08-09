@@ -28,4 +28,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void HandleChangeNickname(const FText& InNickname);
 
+	UFUNCTION(Server, Reliable)
+	void Server_SetPlayerColorIndex(int32 NewIndex);
 };

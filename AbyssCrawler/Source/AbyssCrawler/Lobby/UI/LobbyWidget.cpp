@@ -40,7 +40,7 @@ void ULobbyWidget::SetInfo()
         if (LobbyUserWidgetClass == nullptr)
             continue;
 
-        ULobbyUserWidget* ChildWidget = CreateWidget<ULobbyUserWidget>(GetWorld(), LobbyUserWidgetClass);
+        ULobbyUserWidget* ChildWidget = CreateWidget<ULobbyUserWidget>(GetOwningPlayer(), LobbyUserWidgetClass);
         if (ChildWidget == nullptr)
             continue;
 
@@ -56,15 +56,7 @@ void ULobbyWidget::SetInfo()
 
 void ULobbyWidget::RefreshUI()
 {
-    AGameStateBase* GameState = UGameplayStatics::GetGameState(this);
-    if (GameState == nullptr)
-        return;
-
-    // Cache Player Length
-    TArray<ALobbyPlayerState*> LobbyPlayerStates = GetLobbyPlayerStates();
-    const int32 PlayerLength = LobbyPlayerStates.Num();
-
-    for (int32 i = 0; i < LobbyUsers.Num(); i++)
+    if (!UserList || !LobbyUserWidgetClass)
     {
         const int32 Index = i;
 
@@ -87,14 +79,34 @@ void ULobbyWidget::RefreshUI()
     }
 
     // Hidden은 자리 차지 collapse는 자리를 차지하지 않는다.
+        return;
+    }
 
-    /*
-    if (UKismetSystemLibrary::IsServer(this))
-        Btn_GameConfig->SetVisibility(ESlateVisibility::Visible);
-    else
-        Btn_GameConfig->SetVisibility(ESlateVisibility::Hidden);
+    UserList->ClearChildren();
 
-     */
+    AGameStateBase* GS = GetWorld() ? GetWorld()->GetGameState() : nullptr;
+    if (!GS)
+    {
+        return;
+    }
+
+    for (APlayerState* PS : GS->PlayerArray)
+    {
+        ALobbyPlayerState* LobbyPS = Cast<ALobbyPlayerState>(PS);
+        if (!LobbyPS)
+        {
+            continue;
+        }
+
+        ULobbyUserWidget* UserWidget =
+            CreateWidget<ULobbyUserWidget>(GetOwningPlayer(), LobbyUserWidgetClass);
+
+        if (UserWidget)
+        {
+            UserWidget->SetInfo(LobbyPS);
+            UserList->AddChild(UserWidget);
+        }
+    }
 }
 
 TArray<ALobbyPlayerState*> ULobbyWidget::GetLobbyPlayerStates()

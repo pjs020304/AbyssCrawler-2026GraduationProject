@@ -50,3 +50,14 @@ void ALobbyPlayerController::HandleChangeNickname(const FText& InNickname)
 {
 	Server_HandleChangeUsername(InNickname);
 }
+
+void ALobbyPlayerController::Server_SetPlayerColorIndex_Implementation(int32 NewIndex)
+{
+	ALobbyPlayerState* LobbyPS = GetPlayerState<ALobbyPlayerState>();
+	if (!LobbyPS)
+	{
+		return;
+	}
+
+	LobbyPS->SetPlayerColorIndex(NewIndex);
+}

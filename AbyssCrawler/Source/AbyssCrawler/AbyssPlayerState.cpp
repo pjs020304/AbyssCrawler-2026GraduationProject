@@ -1,6 +1,7 @@
 ﻿#include "AbyssPlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "AbyssDiverCharacter.h"
 #include <Lobby/Contents/LobbyPlayerState.h>
 
 AAbyssPlayerState::AAbyssPlayerState()
@@ -25,8 +26,38 @@ void AAbyssPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AAbyssPlayerState, bIsAlive);
 	DOREPLIFETIME(AAbyssPlayerState, Nickname);
+	DOREPLIFETIME(AAbyssPlayerState, PlayerColorIndex);
 }
 
 void AAbyssPlayerState::OnRep_Nickname()
 {
+}
+
+void AAbyssPlayerState::OnRep_PlayerColorIndex()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[PlayerColor] OnRep ColorIndex=%d"), PlayerColorIndex);
+
+	if (APawn* Pawn = GetPawn())
+	{
+		if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(Pawn))
+		{
+			Diver->ApplyPlayerSuitMaterial();
+		}
+	}
+}
+
+void AAbyssPlayerState::SetPlayerColorIndex(int32 NewIndex)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	const int32 MaxColorCount = 3;
+
+	PlayerColorIndex = FMath::Clamp(NewIndex, 0, MaxColorCount - 1);
+
+	OnRep_PlayerColorIndex();
+
+	UE_LOG(LogTemp, Warning, TEXT("[PlayerColor] Set ColorIndex=%d"), PlayerColorIndex);
 }

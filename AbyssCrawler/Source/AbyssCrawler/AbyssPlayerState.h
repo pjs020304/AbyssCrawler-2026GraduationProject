@@ -30,6 +30,14 @@ public:
 	UFUNCTION()
 	void OnRep_Nickname();
 
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerColorIndex, BlueprintReadOnly, Category = "Player|Color")
+	int32 PlayerColorIndex = 0;
+
+	UFUNCTION()
+	void OnRep_PlayerColorIndex();
+
+	void SetPlayerColorIndex(int32 NewIndex);
+
 protected:
 	// GAS 컴포넌트 (Replicated)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abyss GAS")

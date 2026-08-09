@@ -34,6 +34,7 @@ class UMainHUDWidget;
 class AAbyssUSBItem;
 class AAbyssDataConsole;
 class USoundBase;
+class UMaterialInterface;
 
 UENUM(BlueprintType)
 enum class EAbyssWorkType : uint8
@@ -230,68 +231,6 @@ public:
 
   UFUNCTION(Client, Reliable)
   void Client_ShowMissionComplete(const FText &MissionName);
-
-  // --- [배터리 공유 (Player-to-Player Battery Share)] ---
-  // 완충까지 E를 홀드해야 하는 시간(초)
-  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Battery Share")
-  float BatteryShareDuration = 2.0f;
-
-  // 완료 시 주는 사람 -> 받는 사람으로 이전할 배터리량
-  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Battery Share")
-  float BatteryShareAmount = 25.0f;
-
-  // 공유를 유지하기 위한 최대 거리(벗어나면 취소)
-  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Battery Share")
-  float BatteryShareMaxDistance = 250.0f;
-
-  // 주는 사람이 공유를 시작하기 위해 보유해야 하는 최소 배터리량
-  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Battery Share")
-  float BatteryShareMinRequired = 25.0f;
-
-  // 배터리 증감에 사용할 GE (SetByCaller). GE_ConsumeBattery 재사용 가능
-  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Battery Share")
-  TSubclassOf<class UGameplayEffect> BatteryShareEffectClass;
-
-  // GE 내부 SetByCaller 매그니튜드 태그와 일치해야 함 (예: Data.Cost.Battery)
-  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Battery Share")
-  FGameplayTag BatteryShareCostTag;
-
-  // 현재 공유 대상 (서버 전용)
-  UPROPERTY()
-  AAbyssDiverCharacter *BatteryShareTarget = nullptr;
-
-  // 서버 전용 공유 진행 상태
-  bool bIsSharingBattery = false;
-  float BatteryShareElapsed = 0.0f;
-
-  // 클라측 플래그: E를 뗄 때 공유 취소 RPC를 보낼지 판단
-  bool bAttemptingBatteryShare = false;
-
-  // 클라 -> 서버: 대상 플레이어에게 배터리 공유 시작/중단 요청
-  UFUNCTION(Server, Reliable)
-  void Server_StartBatteryShare(AAbyssDiverCharacter *Target);
-
-  UFUNCTION(Server, Reliable)
-  void Server_StopBatteryShare();
-
-  // 서버: 공유 가능 여부 검증
-  bool CanShareBatteryWith(AAbyssDiverCharacter *Target) const;
-
-  // 서버: Tick에서 진행도 누적
-  void TickBatteryShare(float DeltaTime);
-
-  // 서버: 완충 시 실제 배터리 이전
-  void CompleteBatteryShare();
-
-  // 전용 배터리 공유 진행 UI (기존 Work UI와 별개)
-  UFUNCTION(Client, Reliable)
-  void Client_ShowBatteryShareUI();
-
-  UFUNCTION(Client, Reliable)
-  void Client_HideBatteryShareUI();
-
-  UFUNCTION(Client, Reliable)
-  void Client_UpdateBatteryShareProgress(float Progress);
 
   bool HasEmptyInventorySlot() const;
 
@@ -500,6 +439,23 @@ private:
   // Debug
   void Debug_SetProgressFull();
   void Debug_SetRemainingTime10();
+
+  public:
+      void ApplyPlayerSuitMaterial();
+
+protected:
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Suit")
+    TArray<TObjectPtr<UMaterialInterface>> SuitMaterialVariants;
+
+    void TrySubmitColorFromGameInstance();
+
+    UFUNCTION(Server, Reliable)
+    void Server_SubmitPlayerColorIndex(int32 ColorIndex);
+
+    FTimerHandle SubmitColorTimerHandle;
+
+public:
+    virtual void OnRep_PlayerState() override;
 
 protected:
   // 이동 함수

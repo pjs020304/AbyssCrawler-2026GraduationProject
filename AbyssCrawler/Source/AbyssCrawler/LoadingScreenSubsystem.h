@@ -53,17 +53,20 @@ private:
 
 	// 현재 진행률 화면이 표시할 대상 위젯
 	UPROPERTY(Transient)
-	TObjectPtr<ULoadingScreenWidget> LoadingWidget = nullptr;
+	TMap<int32, TObjectPtr<ULoadingScreenWidget>> LoadingWidgets;
 
 	// 표시할 위젯 클래스 (SetLoadingWidgetClass 또는 기본 경로 로드로 채워짐)
 	UPROPERTY(Transient)
 	TSubclassOf<ULoadingScreenWidget> LoadingWidgetClass;
 
-	FTSTicker::FDelegateHandle TickHandle;
+	UPROPERTY(Transient)
+	TMap<int32, TObjectPtr<UWorld>> LoadingWorlds;
 
-	// 화면에 표시되는(스무딩된) 진행률
-	float DisplayedProgress = 0.f;
-	bool  bLoadingActive = false;
+	TMap<int32, TWeakObjectPtr<APlayerController>> LoadingPlayerControllers;
+	TMap<int32, float> DisplayedProgressMap;
+	TMap<int32, double> LoadingStartTimeMap;
+
+	FTSTicker::FDelegateHandle TickHandle;
 
 	// ─── 설정값(필요 시 여기만 수정) ───────────────────────────
 	// 진행률 바가 실제 완료 전까지 도달할 상한 (완료 시 1.0으로 스냅)
@@ -72,7 +75,6 @@ private:
 	static constexpr float ProgressInterpSpeed = 0.6f;
 	// 로딩 화면 최소 노출 시간(초). 순식간에 깜빡이는 것을 방지.
 	static constexpr float MinDisplayTime = 0.75f;
-	double LoadingStartTime = 0.0;
 
 	// 기본 위젯 애셋 경로. 이 경로에 WBP_LoadingScreen(ULoadingScreenWidget 상속)을 만들어두면 자동 로드된다.
 	static const TCHAR* DefaultWidgetPath;

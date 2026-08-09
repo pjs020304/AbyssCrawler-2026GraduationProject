@@ -4,12 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "TimerManager.h"
 #include "LobbyUserWidget.generated.h"
 
 class UTextBlock;
 class UEditableTextBox;
 class UButton;
 class ALobbyPlayerState;
+class UImage;
 
 /**
  * 
@@ -28,6 +30,9 @@ public:
 
 
 protected:
+
+	virtual void NativeConstruct() override;
+
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UTextBlock> Txt_Ready;
 
@@ -43,8 +48,25 @@ protected:
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	TObjectPtr<UButton> Btn_KickPlayer;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> Btn_ColorPrev;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> Btn_ColorNext;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UImage> Img_ColorPreview;
+
+	UFUNCTION()
+	void HandlePrevColorClicked();
+
+	UFUNCTION()
+	void HandleNextColorClicked();
+
 protected:
 	UPROPERTY(BlueprintReadWrite)
 	TObjectPtr<ALobbyPlayerState> PlayerState;
 
+protected:
+	FTimerHandle DelayedRefreshTimerHandle;
 };

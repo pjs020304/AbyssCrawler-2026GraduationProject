@@ -33,6 +33,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SaveAndApplyVolume(float Volume);
 
+	UFUNCTION(BlueprintCallable, Category = "Player|Color")
+	void SetSelectedPlayerColorIndex(int32 NewIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "Player|Color")
+	int32 GetSelectedPlayerColorIndex() const;
+
 protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -46,4 +52,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loading")
 	TSubclassOf<ULoadingScreenWidget> LoadingScreenWidgetClass;
+
+private:
+	UPROPERTY()
+	int32 SelectedPlayerColorIndex = 0;
 };

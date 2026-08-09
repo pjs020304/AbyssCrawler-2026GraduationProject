@@ -138,38 +138,50 @@ void ULoadingScreenSubsystem::HandlePostLoadMap(UWorld* LoadedWorld)
 
 void ULoadingScreenSubsystem::ShowLoadingWidget(UWorld* World)
 {
-	if (bLoadingActive || LoadingWidget)
+	if (!World)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Loading] Already active. Skip ShowLoadingWidget."));
 		return;
 	}
 
-	DisplayedProgress = 0.f;
-	bLoadingActive = true;
-	LoadingStartTime = FPlatformTime::Seconds();
+	const int32 WorldKey = World->GetUniqueID();
 
-	APlayerController* PC = World ? World->GetFirstPlayerController() : nullptr;
+	// 같은 월드에 이미 있으면 중복 생성 방지
+	if (LoadingWidgets.Contains(WorldKey))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Loading] Already has widget for World=%s"), *World->GetName());
+		return;
+	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[Loading] PC=%s, LoadingWidgetClass=%s"),
+	APlayerController* PC = World->GetFirstPlayerController();
+
+	UE_LOG(LogTemp, Warning, TEXT("[Loading] ShowLoadingWidget World=%s PC=%s Class=%s"),
+		*World->GetName(),
 		PC ? *PC->GetName() : TEXT("NULL"),
 		LoadingWidgetClass ? *LoadingWidgetClass->GetName() : TEXT("NULL"));
 
-	if (PC && LoadingWidgetClass)
+	if (!LoadingWidgetClass)
 	{
-		LoadingWidget = CreateWidget<ULoadingScreenWidget>(PC, LoadingWidgetClass);
-
-		if (LoadingWidget)
-		{
-			LoadingWidget->AddToViewport(90000);
-			LoadingWidget->OnProgressUpdated(0.f);
-
-			UE_LOG(LogTemp, Warning, TEXT("[Loading] Widget Added To Player Screen"));
-		}
+		UE_LOG(LogTemp, Error, TEXT("[Loading] LoadingWidgetClass is NULL"));
+		return;
 	}
-	else
+
+	ULoadingScreenWidget* NewWidget =
+		CreateWidget<ULoadingScreenWidget>(World->GetGameInstance(), LoadingWidgetClass);
+
+	if (!NewWidget)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Loading] PC or LoadingWidgetClass is NULL"));
+		UE_LOG(LogTemp, Error, TEXT("[Loading] CreateWidget failed"));
+		return;
 	}
+
+	NewWidget->AddToViewport(99999);
+	NewWidget->OnProgressUpdated(0.f);
+
+	LoadingWidgets.Add(WorldKey, NewWidget);
+	LoadingWorlds.Add(WorldKey, World);
+	LoadingPlayerControllers.Add(WorldKey, PC);
+	DisplayedProgressMap.Add(WorldKey, 0.f);
+	LoadingStartTimeMap.Add(WorldKey, FPlatformTime::Seconds());
 
 	if (PC)
 	{
@@ -187,28 +199,25 @@ void ULoadingScreenSubsystem::ShowLoadingWidget(UWorld* World)
 
 void ULoadingScreenSubsystem::HideLoadingWidget()
 {
-	bLoadingActive = false;
+	for (auto& Pair : LoadingWidgets)
+	{
+		if (ULoadingScreenWidget* Widget = Pair.Value)
+		{
+			Widget->OnLoadingFinished();
+			Widget->RemoveFromParent();
+		}
+	}
+
+	LoadingWidgets.Empty();
+	LoadingWorlds.Empty();
+	LoadingPlayerControllers.Empty();
+	DisplayedProgressMap.Empty();
+	LoadingStartTimeMap.Empty();
 
 	if (TickHandle.IsValid())
 	{
 		FTSTicker::GetCoreTicker().RemoveTicker(TickHandle);
 		TickHandle.Reset();
-	}
-
-	if (LoadingWidget)
-	{
-		LoadingWidget->OnLoadingFinished();
-		LoadingWidget->RemoveFromParent();
-		LoadingWidget = nullptr;
-	}
-
-	// 인풋 복구
-	if (UWorld* World = GetWorld())
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			PC->SetInputMode(FInputModeGameOnly());
-		}
 	}
 }
 
@@ -217,32 +226,78 @@ void ULoadingScreenSubsystem::HideLoadingWidget()
 // ──────────────────────────────────────────────────────────────
 bool ULoadingScreenSubsystem::Tick(float DeltaTime)
 {
-	if (!bLoadingActive)
+	TArray<int32> KeysToRemove;
+
+	for (auto& Pair : LoadingWidgets)
 	{
-		return false; // 티커 제거
+		const int32 WorldKey = Pair.Key;
+		ULoadingScreenWidget* Widget = Pair.Value;
+
+		UWorld* World = nullptr;
+		if (TObjectPtr<UWorld>* FoundWorld = LoadingWorlds.Find(WorldKey))
+		{
+			World = FoundWorld->Get();
+		}
+
+		if (!Widget || !World)
+		{
+			KeysToRemove.Add(WorldKey);
+			continue;
+		}
+
+		const bool bReady = IsWorldReady(World);
+		const double StartTime = LoadingStartTimeMap.Contains(WorldKey)
+			? LoadingStartTimeMap[WorldKey]
+			: FPlatformTime::Seconds();
+
+		const double Elapsed = FPlatformTime::Seconds() - StartTime;
+
+		float& DisplayedProgress = DisplayedProgressMap.FindOrAdd(WorldKey);
+		const float Target = bReady ? 1.f : ProgressHoldCap;
+
+		DisplayedProgress = FMath::FInterpConstantTo(
+			DisplayedProgress,
+			Target,
+			DeltaTime,
+			ProgressInterpSpeed
+		);
+
+		Widget->OnProgressUpdated(DisplayedProgress);
+
+		if (bReady && DisplayedProgress >= 0.999f && Elapsed >= MinDisplayTime)
+		{
+			Widget->OnLoadingFinished();
+			Widget->RemoveFromParent();
+
+			if (TWeakObjectPtr<APlayerController>* FoundPC = LoadingPlayerControllers.Find(WorldKey))
+			{
+				if (APlayerController* PC = FoundPC->Get())
+				{
+					PC->SetInputMode(FInputModeGameOnly());
+					PC->bShowMouseCursor = false;
+				}
+			}
+
+			KeysToRemove.Add(WorldKey);
+		}
 	}
 
-	UWorld* World = GetWorld();
-	const bool bReady = IsWorldReady(World);
-	const double Elapsed = FPlatformTime::Seconds() - LoadingStartTime;
-
-	// 완료 전에는 상한(0.9)까지만 부드럽게 채우고, 완료되면 1.0으로 채운다.
-	const float Target = bReady ? 1.f : ProgressHoldCap;
-	DisplayedProgress = FMath::FInterpConstantTo(DisplayedProgress, Target, DeltaTime, ProgressInterpSpeed);
-
-	if (LoadingWidget)
+	for (int32 Key : KeysToRemove)
 	{
-		LoadingWidget->OnProgressUpdated(DisplayedProgress);
+		LoadingWidgets.Remove(Key);
+		LoadingWorlds.Remove(Key);
+		LoadingPlayerControllers.Remove(Key);
+		DisplayedProgressMap.Remove(Key);
+		LoadingStartTimeMap.Remove(Key);
 	}
 
-	// 완료 && 바가 다 참 && 최소 노출 시간 경과 -> 종료
-	if (bReady && DisplayedProgress >= 0.999f && Elapsed >= MinDisplayTime)
+	if (LoadingWidgets.Num() <= 0)
 	{
-		HideLoadingWidget();
-		return false; // 티커 종료
+		TickHandle.Reset();
+		return false;
 	}
 
-	return true; // 계속 폴링
+	return true;
 }
 
 // B 단계 완료 판정

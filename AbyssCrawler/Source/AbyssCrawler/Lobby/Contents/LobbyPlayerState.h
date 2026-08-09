@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerState.h"
 #include "LobbyPlayerState.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnLobbyColorChanged);
 /**
  * 
  */
@@ -50,4 +51,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing = OnRep_NicknameChange)
 	FText Nickname;
 
+	// color
+	UPROPERTY(ReplicatedUsing = OnRep_PlayerColorIndex, BlueprintReadOnly, Category = "Lobby|Color")
+	int32 PlayerColorIndex = 0;
+
+	FOnLobbyColorChanged OnLobbyColorChanged;
+
+	void AddPlayerColorIndex(int32 Delta);
+
+	UFUNCTION(BlueprintCallable, Category = "Lobby|Color")
+	FLinearColor GetPlayerColor() const;
+
+	void SetPlayerColorIndex(int32 NewIndex);
+
+	UFUNCTION()
+	void OnRep_PlayerColorIndex();
 };
