@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "LobbyWidget.h"
@@ -58,27 +58,6 @@ void ULobbyWidget::RefreshUI()
 {
     if (!UserList || !LobbyUserWidgetClass)
     {
-        const int32 Index = i;
-
-        if (Index < PlayerLength)
-        {
-            // Show UI
-            LobbyUsers[Index]->SetVisibility(ESlateVisibility::Visible);
-
-            // SetInfo
-            ALobbyPlayerState* PlayerState = GetLobbyPlayerStateAtIndex(Index);
-            LobbyUsers[Index]->SetInfo(PlayerState);
-        }
-        else
-        {
-            // Hide UI
-            // Hidden은 자리 차지하고 collapse는 자리를 차지하지 않는다.
-            LobbyUsers[Index]->SetVisibility(ESlateVisibility::Collapsed);
-        }
-
-    }
-
-    // Hidden은 자리 차지 collapse는 자리를 차지하지 않는다.
         return;
     }
 
