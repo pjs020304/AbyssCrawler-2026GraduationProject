@@ -1,4 +1,4 @@
-
+ï»¿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -20,17 +20,17 @@ class ABYSSCRAWLER_API IAbyssInteractionInterface
 
 public:
 
-	// BlueprintNativeEvent: C++¿¡¼­ ±âº» ·ÎÁ÷À» ±¸ÇöÇÏ°í, ºí·çÇÁ¸°Æ®¿¡¼­ È®Àå(Override) °¡´É
+	// BlueprintNativeEvent: C++ì—ì„œ ê¸°ë³¸ ë¡œì§ì„ êµ¬í˜„í•˜ê³ , ë¸”ë£¨í”„ë¦°íŠ¸ì—ì„œ í™•ì¥(Override) ê°€ëŠ¥
 
-	// »óÈ£ÀÛ¿ë ½ÇÇà ÇÔ¼ö
+	// ìƒí˜¸ì‘ìš© ì‹¤í–‰ í•¨ìˆ˜
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
 	void Interact(AActor* InstigatorActor);
 
-	// ÇÃ·¹ÀÌ¾îÀÇ ½Ã¼±ÀÌ ´ê¾ÒÀ» ¶§
+	// í”Œë ˆì´ì–´ì˜ ì‹œì„ ì´ ë‹¿ì•˜ì„ ë•Œ
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	void OnFocus();
 
-	// ÇÃ·¹ÀÌ¾îÀÇ ½Ã¼±ÀÌ ¹ş¾î³µÀ» ¶§
+	// í”Œë ˆì´ì–´ì˜ ì‹œì„ ì´ ë²—ì–´ë‚¬ì„ ë•Œ
 	UFUNCTION(BlueprintNativeEvent, Category = "Interaction")
 	void OnLostFocus();
 };

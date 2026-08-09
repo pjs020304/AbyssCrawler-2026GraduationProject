@@ -1,4 +1,4 @@
-#include "HarpoonGunItem.h"
+ï»¿#include "HarpoonGunItem.h"
 #include "HarpoonProjectile.h"
 #include "AbyssDiverCharacter.h"
 #include "GameFramework/Character.h"
@@ -16,16 +16,16 @@ void AHarpoonGunItem::UseItem()
 
 	if (OwnerCharacter && ProjectileClass)
 	{
-		// Ä«¸Þ¶ó°¡ ¹Ù¶óº¸´Â ¹æÇâÀ¸·Î ¹ß»ç À§Ä¡¿Í È¸Àü°ª °è»ê
+		// ì¹´ë©”ë¼ê°€ ë°”ë¼ë³´ëŠ” ë°©í–¥ìœ¼ë¡œ ë°œì‚¬ ìœ„ì¹˜ì™€ íšŒì „ê°’ ê³„ì‚°
 		FVector SpawnLocation = OwnerCharacter->GetActorLocation() + (OwnerCharacter->GetActorForwardVector() * 100.0f);
-		FRotator SpawnRotation = OwnerCharacter->GetControlRotation(); // ÇÃ·¹ÀÌ¾î ½Ã¼± ¹æÇâ
+		FRotator SpawnRotation = OwnerCharacter->GetControlRotation(); // í”Œë ˆì´ì–´ ì‹œì„  ë°©í–¥
 
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = OwnerCharacter;
-		SpawnParams.Instigator = OwnerCharacter; // ÃÑÀ» ½ð ÁÖÃ¼¸¦ ÇÃ·¹ÀÌ¾î·Î ¸í½Ã
+		SpawnParams.Instigator = OwnerCharacter; // ì´ì„ ìœ ì£¼ì²´ë¥¼ í”Œë ˆì´ì–´ë¡œ ëª…ì‹œ
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		// ¿ùµå¿¡ ¹ß»çÃ¼ ¼ÒÈ¯
+		// ì›”ë“œì— ë°œì‚¬ì²´ ì†Œí™˜
 		GetWorld()->SpawnActor<AHarpoonProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
 
 	}

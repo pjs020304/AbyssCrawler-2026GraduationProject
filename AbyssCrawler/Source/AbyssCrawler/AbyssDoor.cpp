@@ -1,4 +1,4 @@
-#include "AbyssDoor.h"
+ï»¿#include "AbyssDoor.h"
 #include "Math/UnrealMathUtility.h"
 #include "Net/UnrealNetwork.h"
 
@@ -26,45 +26,45 @@ void AAbyssDoor::BeginPlay()
 	CurrentYaw = DoorMesh->GetRelativeRotation().Yaw;
 }
 
-// [ÇÙ½É] »óÈ£ÀÛ¿ëÀÌ µé¾î¿À¸é ±×³É »óÅÂ¸¸ µÚÁý½À´Ï´Ù.
+// [í•µì‹¬] ìƒí˜¸ìž‘ìš©ì´ ë“¤ì–´ì˜¤ë©´ ê·¸ëƒ¥ ìƒíƒœë§Œ ë’¤ì§‘ìŠµë‹ˆë‹¤.
 void AAbyssDoor::Interact_Implementation(AActor* InstigatorActor)
 {
     if (!HasAuthority()) return;
     if (!InstigatorActor) return;
 
-    if (!bIsOpen) // ¹®ÀÌ ´ÝÇôÀÖ¾î¼­ '¿­¾î¾ß' ÇÒ ¶§¸¸ ¹æÇâÀ» °è»êÇÕ´Ï´Ù.
+    if (!bIsOpen) // ë¬¸ì´ ë‹«í˜€ìžˆì–´ì„œ 'ì—´ì–´ì•¼' í•  ë•Œë§Œ ë°©í–¥ì„ ê³„ì‚°í•©ë‹ˆë‹¤.
     {
-        // 1. ¹®ÀÇ Á¤¸é ¹æÇâ º¤ÅÍ ±¸ÇÏ±â
+        // 1. ë¬¸ì˜ ì •ë©´ ë°©í–¥ ë²¡í„° êµ¬í•˜ê¸°
         FVector DoorForward = GetActorRightVector();
 
-        // 2. ¹®¿¡¼­ ÇÃ·¹ÀÌ¾î¸¦ ÇâÇÏ´Â º¤ÅÍ ±¸ÇÏ±â
+        // 2. ë¬¸ì—ì„œ í”Œë ˆì´ì–´ë¥¼ í–¥í•˜ëŠ” ë²¡í„° êµ¬í•˜ê¸°
         FVector DirToPlayer = InstigatorActor->GetActorLocation() - GetActorLocation();
-        DirToPlayer.Normalize(); // ¹æÇâ¸¸ ÇÊ¿äÇÏ¹Ç·Î ±æÀÌ¸¦ 1·Î Á¤±ÔÈ­
+        DirToPlayer.Normalize(); // ë°©í–¥ë§Œ í•„ìš”í•˜ë¯€ë¡œ ê¸¸ì´ë¥¼ 1ë¡œ ì •ê·œí™”
 
-        // 3. µÎ º¤ÅÍÀÇ ³»Àû(Dot Product: ¾ó¸¶³ª °°Àº ¹æÇâÀÎ°¡) °è»ê
+        // 3. ë‘ ë²¡í„°ì˜ ë‚´ì (Dot Product: ì–¼ë§ˆë‚˜ ê°™ì€ ë°©í–¥ì¸ê°€) ê³„ì‚°
         float DotResult = FVector::DotProduct(DoorForward, DirToPlayer);
 
         /*
         
-        // 4. ÇÃ·¹ÀÌ¾î À§Ä¡¿¡ µû¶ó ¹®ÀÌ ¿­¸± ¹æÇâ(ºÎÈ£) °áÁ¤
+        // 4. í”Œë ˆì´ì–´ ìœ„ì¹˜ì— ë”°ë¼ ë¬¸ì´ ì—´ë¦´ ë°©í–¥(ë¶€í˜¸) ê²°ì •
         if (DotResult > 0)
         {
-            // ÇÃ·¹ÀÌ¾î°¡ ¹® ¾Õ¿¡ ÀÖÀ½ -> ¹®À» ¹Ð¾î³»·Á¸é À½¼ö ¹æÇâÀ¸·Î È¸Àü
+            // í”Œë ˆì´ì–´ê°€ ë¬¸ ì•žì— ìžˆìŒ -> ë¬¸ì„ ë°€ì–´ë‚´ë ¤ë©´ ìŒìˆ˜ ë°©í–¥ìœ¼ë¡œ íšŒì „
             DirectionMultiplier = -1.0f;
         }
         else
         {
-            // ÇÃ·¹ÀÌ¾î°¡ ¹® µÚ¿¡ ÀÖÀ½ -> ¹®À» ¹Ð¾î³»·Á¸é ¾ç¼ö ¹æÇâÀ¸·Î È¸Àü
+            // í”Œë ˆì´ì–´ê°€ ë¬¸ ë’¤ì— ìžˆìŒ -> ë¬¸ì„ ë°€ì–´ë‚´ë ¤ë©´ ì–‘ìˆ˜ ë°©í–¥ìœ¼ë¡œ íšŒì „
             DirectionMultiplier = 1.0f;
         }
 
         */
     }
 
-    // »óÅÂ µÚÁý±â (¿­¸² <-> ´ÝÈû)
+    // ìƒíƒœ ë’¤ì§‘ê¸° (ì—´ë¦¼ <-> ë‹«íž˜)
     bIsOpen = !bIsOpen;
 
-	// ¿©±â¿¡ ¹® ¿­¸®´Â ¼Ò¸® Ãß°¡ °¡´É
+	// ì—¬ê¸°ì— ë¬¸ ì—´ë¦¬ëŠ” ì†Œë¦¬ ì¶”ê°€ ê°€ëŠ¥
 	// UGameplayStatics::PlaySoundAtLocation(this, DoorSound, GetActorLocation());
 }
 

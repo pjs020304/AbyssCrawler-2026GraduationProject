@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -18,7 +18,7 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 
 public:
-	// --- ÄÄÆ÷³ÍÆ® ---
+	// --- ì»´í¬ë„ŒíŠ¸ ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door Components")
 	USceneComponent* RootScene;
 
@@ -28,24 +28,24 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Door Components")
 	UStaticMeshComponent* DoorMesh;
 
-	// --- ÀÎÅÍÆäÀÌ½º ÇÔ¼ö ¿À¹ö¶óÀÌµå ---
+	// --- ì¸í„°í˜ì´ìŠ¤ í•¨ìˆ˜ ì˜¤ë²„ë¼ì´ë“œ ---
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
-	// ·ÎÄÃ º¯¼ö
+	// ë¡œì»¬ ë³€ìˆ˜
 	UPROPERTY(ReplicatedUsing = OnRep_DoorState)
 	bool bIsOpen;
 
-	// [New] ¹®ÀÌ ¿­¸®´Â °¢µµÀÇ Å©±â (¹«Á¶°Ç ¾ç¼ö·Î 90µµ)
+	// [New] ë¬¸ì´ ì—´ë¦¬ëŠ” ê°ë„ì˜ í¬ê¸° (ë¬´ì¡°ê±´ ì–‘ìˆ˜ë¡œ 90ë„)
 	UPROPERTY(EditAnywhere, Category = "Door Settings")
 	float OpenAngle = 90.0f;
 
-	// [New] ¹®ÀÌ ¿­¸®´Â ¹æÇâ (1.0f ¶Ç´Â -1.0f)
+	// [New] ë¬¸ì´ ì—´ë¦¬ëŠ” ë°©í–¥ (1.0f ë˜ëŠ” -1.0f)
 	UPROPERTY(Replicated)
 	float DirectionMultiplier;
 
-	// ÇöÀç ¹®ÀÇ È¸Àü °¢µµ
+	// í˜„ì¬ ë¬¸ì˜ íšŒì „ ê°ë„
 	float CurrentYaw;
 
 	UFUNCTION()

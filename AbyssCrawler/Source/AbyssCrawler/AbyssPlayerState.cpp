@@ -1,18 +1,18 @@
-#include "AbyssPlayerState.h"
+ï»¿#include "AbyssPlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
 #include <Lobby/Contents/LobbyPlayerState.h>
 
 AAbyssPlayerState::AAbyssPlayerState()
 {
-	// ¸ÖÆ¼ÇÃ·¹ÀÌ¾î °ÔÀÓ¿¡¼­ GAS´Â PlayerState¿¡ µÎ´Â °ÍÀÌ Á¤¼®ÀÔ´Ï´Ù.
-	// (Ä³¸¯ÅÍ°¡ Á×¾î¼­ »ç¶óÁ®µµ ½ºÅÈ Á¤º¸´Â ³²¾Æ¾ß ÇÏ°Å³ª, ¸®½ºÆù ½Ã º¹±¸ÇÏ±â À§ÇØ)
+	// ë©€í‹°í”Œë ˆì´ì–´ ê²Œì„ì—ì„œ GASëŠ” PlayerStateì— ë‘ëŠ” ê²ƒì´ ì •ì„ì…ë‹ˆë‹¤.
+	// (ìºë¦­í„°ê°€ ì£½ì–´ì„œ ì‚¬ë¼ì ¸ë„ ìŠ¤íƒ¯ ì •ë³´ëŠ” ë‚¨ì•„ì•¼ í•˜ê±°ë‚˜, ë¦¬ìŠ¤í° ì‹œ ë³µêµ¬í•˜ê¸° ìœ„í•´)
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	bIsAlive = true;
-	//NetUpdateFrequency = 100.0f; // ºü¸¥ µ¿±âÈ­
+	//NetUpdateFrequency = 100.0f; // ë¹ ë¥¸ ë™ê¸°í™”
 }
 
 UAbilitySystemComponent* AAbyssPlayerState::GetAbilitySystemComponent() const

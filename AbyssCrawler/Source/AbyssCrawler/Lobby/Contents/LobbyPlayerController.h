@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -21,7 +21,7 @@ public:
 	UFUNCTION(BlueprintCallable, Server, Reliable)
 	void Server_HandleChangeUsername(const FText& InNickname);
 
-	// UI ȣ��
+	// UI 호출
 	UFUNCTION(BlueprintCallable)
 	void HandleReadyButton();
 

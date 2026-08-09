@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
@@ -13,13 +13,13 @@ public:
 	UBTTask_SVOChasePlayer();
 
 protected:
-	// Task°¡ ½ÇÇàµÉ ¶§ È£ÃâµÇ´Â ¸ŞÀÎ ÇÔ¼ö
+	// Taskê°€ ì‹¤í–‰ë  ë•Œ í˜¸ì¶œë˜ëŠ” ë©”ì¸ í•¨ìˆ˜
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
-	// ¸Å ÇÁ·¹ÀÓ(Tick)¸¶´Ù »ó¾îÀÇ À§Ä¡¸¦ °»½ÅÇÏ±â À§ÇØ ÇÊ¿ä
+	// ë§¤ í”„ë ˆì„(Tick)ë§ˆë‹¤ ìƒì–´ì˜ ìœ„ì¹˜ë¥¼ ê°±ì‹ í•˜ê¸° ìœ„í•´ í•„ìš”
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
-	// ºí·¢º¸µå¿¡¼­ Å¸°Ù(ÇÃ·¹ÀÌ¾î)À» °¡Á®¿À±â À§ÇÑ Å°
+	// ë¸”ë™ë³´ë“œì—ì„œ íƒ€ê²Ÿ(í”Œë ˆì´ì–´)ì„ ê°€ì ¸ì˜¤ê¸° ìœ„í•œ í‚¤
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector TargetKey;
 };

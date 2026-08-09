@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
-#include "AbilitySystemInterface.h" // GAS ÇÊ¼ö Çì´õ
+#include "AbilitySystemInterface.h" // GAS í•„ìˆ˜ í—¤ë”
 #include "AbyssPlayerState.generated.h"
 
 class UAbilitySystemComponent;
@@ -22,7 +22,7 @@ public:
 
 	// --- Custom State ---
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Abyss State")
-	bool bIsAlive; // »ıÁ¸ ¿©ºÎ (»ç¸Á ½Ã °üÀü ¸ğµå ÀüÈ¯¿ë)
+	bool bIsAlive; // ìƒì¡´ ì—¬ë¶€ (ì‚¬ë§ ì‹œ ê´€ì „ ëª¨ë“œ ì „í™˜ìš©)
 
 	UPROPERTY(ReplicatedUsing = OnRep_Nickname, EditAnywhere, BlueprintReadWrite)
 	FText Nickname = FText::FromString(TEXT("Player"));
@@ -31,11 +31,11 @@ public:
 	void OnRep_Nickname();
 
 protected:
-	// GAS ÄÄÆ÷³ÍÆ® (Replicated)
+	// GAS ì»´í¬ë„ŒíŠ¸ (Replicated)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abyss GAS")
 	UAbilitySystemComponent* AbilitySystemComponent;
 
-	// ½ºÅÈ (Ã¼·Â, »ê¼Ò, ¹èÅÍ¸®) Á¤ÀÇ
+	// ìŠ¤íƒ¯ (ì²´ë ¥, ì‚°ì†Œ, ë°°í„°ë¦¬) ì •ì˜
 	UPROPERTY()
 	UAttributeSet* AttributeSet;
 };

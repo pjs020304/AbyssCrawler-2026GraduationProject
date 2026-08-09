@@ -1,7 +1,7 @@
-#include "AbyssSubmarine.h"
+ï»¿#include "AbyssSubmarine.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Components/TextRenderComponent.h" // [Ãß°¡µÊ]
+#include "Components/TextRenderComponent.h" // [ì¶”ê°€ë¨]
 #include "AbyssDiverCharacter.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/GameStateBase.h"
@@ -19,21 +19,21 @@ AAbyssSubmarine::AAbyssSubmarine()
 	bIsDescending = false;
 	bIsAscending = false;
 
-	// 1. ÃÖ»óÀ§ ·çÆ® ÄÄÆ÷³ÍÆ® »ı¼º
+	// 1. ìµœìƒìœ„ ë£¨íŠ¸ ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
-	// 2. Àá¼öÇÔ ¸Ş½¬ »ı¼º ¹× Á¶¸³
+	// 2. ì ìˆ˜í•¨ ë©”ì‰¬ ìƒì„± ë° ì¡°ë¦½
 	SubmarineMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SubmarineMesh"));
 	SubmarineMesh->SetupAttachment(RootComponent);
-	// ¿ÜÇü ¸Ş½¬´Â Ãæµ¹¸¸ Ã³¸®ÇÏ°í ·¹ÀÌÄ³½ºÆ®(»óÈ£ÀÛ¿ë)¸¦ ¸·Áö ¾Ê°Ô ¼³Á¤ÇÒ ¼öµµ ÀÖ½À´Ï´Ù.
+	// ì™¸í˜• ë©”ì‰¬ëŠ” ì¶©ëŒë§Œ ì²˜ë¦¬í•˜ê³  ë ˆì´ìºìŠ¤íŠ¸(ìƒí˜¸ì‘ìš©)ë¥¼ ë§‰ì§€ ì•Šê²Œ ì„¤ì •í•  ìˆ˜ë„ ìˆìŠµë‹ˆë‹¤.
 
-	// 3. ÄÜ¼Ö ¸Ş½¬ »ı¼º ¹× Á¶¸³
+	// 3. ì½˜ì†” ë©”ì‰¬ ìƒì„± ë° ì¡°ë¦½
 	ConsoleMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ConsoleMesh"));
-	ConsoleMesh->SetupAttachment(SubmarineMesh); // Àá¼öÇÔ ³»ºÎ¿¡ ¹èÄ¡µÇµµ·Ï ¼³Á¤
-	// »óÈ£ÀÛ¿ë ·¹ÀÌÀú¿¡ ¸Â¾Æ¾ß ÇÏ¹Ç·Î Block ¼³Á¤
+	ConsoleMesh->SetupAttachment(SubmarineMesh); // ì ìˆ˜í•¨ ë‚´ë¶€ì— ë°°ì¹˜ë˜ë„ë¡ ì„¤ì •
+	// ìƒí˜¸ì‘ìš© ë ˆì´ì €ì— ë§ì•„ì•¼ í•˜ë¯€ë¡œ Block ì„¤ì •
 	ConsoleMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
 
-	// ÅØ½ºÆ® ÄÄÆ÷³ÍÆ® Ãß°¡
+	// í…ìŠ¤íŠ¸ ì»´í¬ë„ŒíŠ¸ ì¶”ê°€
 	InteractionText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("InteractionText"));
 	InteractionText->SetupAttachment(ConsoleMesh);
 	InteractionText->SetHorizontalAlignment(EHTA_Center);
@@ -43,11 +43,11 @@ AAbyssSubmarine::AAbyssSubmarine()
 	InteractionText->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
 	InteractionText->SetTextRenderColor(FColor::Cyan);
 
-	// 4. Å¾½Â È®ÀÎ¿ë ¹Ú½º ¼³Á¤
+	// 4. íƒ‘ìŠ¹ í™•ì¸ìš© ë°•ìŠ¤ ì„¤ì •
 	InteriorVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("InteriorVolume"));
-	InteriorVolume->SetupAttachment(SubmarineMesh); // Àá¼öÇÔ ¸Ş½¬¸¦ µû¶ó´Ù´Ïµµ·Ï ¼³Á¤
+	InteriorVolume->SetupAttachment(SubmarineMesh); // ì ìˆ˜í•¨ ë©”ì‰¬ë¥¼ ë”°ë¼ë‹¤ë‹ˆë„ë¡ ì„¤ì •
 	InteriorVolume->SetBoxExtent(FVector(300.0f, 200.0f, 200.0f));
-	// °ãÄ§¸¸ Çã¿ëÇÏ°í ¹°¸®Àû Ãæµ¹Àº ¹«½Ã
+	// ê²¹ì¹¨ë§Œ í—ˆìš©í•˜ê³  ë¬¼ë¦¬ì  ì¶©ëŒì€ ë¬´ì‹œ
 	InteriorVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
 	InteriorVolume->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
@@ -83,7 +83,7 @@ void AAbyssSubmarine::Interact_Implementation(AActor* InstigatorActor)
 	}
 }
 
-// ÄÜ¼ÖÀ» ÃÄ´Ùº¼ ¶§ ÅØ½ºÆ® ¶ç¿ì±â (ÇÊ¿ä½Ã ±¸Çö)
+// ì½˜ì†”ì„ ì³ë‹¤ë³¼ ë•Œ í…ìŠ¤íŠ¸ ë„ìš°ê¸° (í•„ìš”ì‹œ êµ¬í˜„)
 void AAbyssSubmarine::OnFocus_Implementation()
 {
 	if (InteractionText)
@@ -161,12 +161,12 @@ void AAbyssSubmarine::TryClearGameByBoarding()
 	GM->OnPlayerEscaped(nullptr);
 }
 
-// »õ·Î¿î ÇÔ¼öµé ±¸ÇöºÎ Ãß°¡
+// ìƒˆë¡œìš´ í•¨ìˆ˜ë“¤ êµ¬í˜„ë¶€ ì¶”ê°€
 void AAbyssSubmarine::OnInteriorOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(OtherActor))
 	{
-		// ¼­¹ö¿Í Å¬¶óÀÌ¾ğÆ® ¸ğµÎ ¿¹ÃøÀ» À§ÇØ ½ÇÇàÇÕ´Ï´Ù.
+		// ì„œë²„ì™€ í´ë¼ì´ì–¸íŠ¸ ëª¨ë‘ ì˜ˆì¸¡ì„ ìœ„í•´ ì‹¤í–‰í•©ë‹ˆë‹¤.
 		Diver->SetInsideSubmarine(true);
 
 		if (InteractionText && InteractionText->IsVisible())
@@ -174,7 +174,7 @@ void AAbyssSubmarine::OnInteriorOverlapBegin(UPrimitiveComponent* OverlappedComp
 			UpdateInteractionText();
 		}
 
-		// ¼­¹ö Å¬¸®¾î ÆÇÁ¤
+		// ì„œë²„ í´ë¦¬ì–´ íŒì •
 		if (HasAuthority())
 		{
 			TryClearGameByBoarding();

@@ -1,35 +1,35 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
-#include "Algo/Reverse.h" // Algo::Reverse »ç¿ëÀ» À§ÇØ ÇÊ¼ö
+#include "Algo/Reverse.h" // Algo::Reverse ì‚¬ìš©ì„ ìœ„í•´ í•„ìˆ˜
 #include "SVOVolume.h"
 
 
-// º¹¼¿ÀÇ 3D ÀÎµ¦½º(ÁÂÇ¥)¸¦ ÇØ½Ã ¸Ê¿¡¼­ Å°(Key)·Î ¾²±â À§ÇÑ ÇØ½Ã ÇÔ¼ö
+// ë³µì…€ì˜ 3D ì¸ë±ìŠ¤(ì¢Œí‘œ)ë¥¼ í•´ì‹œ ë§µì—ì„œ í‚¤(Key)ë¡œ ì“°ê¸° ìœ„í•œ í•´ì‹œ í•¨ìˆ˜
 FORCEINLINE uint32 GetTypeHash(const FIntVector& Vector)
 {
 	return FCrc::MemCrc32(&Vector, sizeof(FIntVector));
 }
 
-// A* Å½»ö¿¡ »ç¿ëµÉ ³ëµå ±¸Á¶Ã¼
+// A* íƒìƒ‰ì— ì‚¬ìš©ë  ë…¸ë“œ êµ¬ì¡°ì²´
 struct FSVOPathNode
 {
-	FIntVector GridIndex;     // º¹¼¿ÀÇ 3Â÷¿ø ¹è¿­ ÀÎµ¦½º (X, Y, Z)
-	FVector WorldLocation;    // ½ÇÁ¦ ¿ùµå ÁÂÇ¥ (º¹¼¿ÀÇ Áß½ÉÁ¡)
+	FIntVector GridIndex;     // ë³µì…€ì˜ 3ì°¨ì› ë°°ì—´ ì¸ë±ìŠ¤ (X, Y, Z)
+	FVector WorldLocation;    // ì‹¤ì œ ì›”ë“œ ì¢Œí‘œ (ë³µì…€ì˜ ì¤‘ì‹¬ì )
 
-	float GCost;              // ½ÃÀÛÁ¡ºÎÅÍ ¿©±â±îÁö ¿À´Â µ¥ °É¸° ½ÇÁ¦ ºñ¿ë
-	float HCost;              // (ÈŞ¸®½ºÆ½) ¿©±â¼­ºÎÅÍ ¸ñÀûÁö±îÁöÀÇ ¿¹»ó ºñ¿ë
+	float GCost;              // ì‹œì‘ì ë¶€í„° ì—¬ê¸°ê¹Œì§€ ì˜¤ëŠ” ë° ê±¸ë¦° ì‹¤ì œ ë¹„ìš©
+	float HCost;              // (íœ´ë¦¬ìŠ¤í‹±) ì—¬ê¸°ì„œë¶€í„° ëª©ì ì§€ê¹Œì§€ì˜ ì˜ˆìƒ ë¹„ìš©
 
-	FSVOPathNode* Parent;     // °æ·Î¸¦ ¿ªÃßÀûÇÏ±â À§ÇÑ ºÎ¸ğ ³ëµå Æ÷ÀÎÅÍ
+	FSVOPathNode* Parent;     // ê²½ë¡œë¥¼ ì—­ì¶”ì í•˜ê¸° ìœ„í•œ ë¶€ëª¨ ë…¸ë“œ í¬ì¸í„°
 
 	FSVOPathNode(FIntVector InIndex, FVector InLoc)
 		: GridIndex(InIndex), WorldLocation(InLoc), GCost(0), HCost(0), Parent(nullptr) {
 	}
 
-	// F = G + H. A* ¾Ë°í¸®ÁòÀº Ç×»ó FCost°¡ °¡Àå ³·Àº ³ëµå¸¦ ¿ì¼± Å½»öÇÕ´Ï´Ù.
+	// F = G + H. A* ì•Œê³ ë¦¬ì¦˜ì€ í•­ìƒ FCostê°€ ê°€ì¥ ë‚®ì€ ë…¸ë“œë¥¼ ìš°ì„  íƒìƒ‰í•©ë‹ˆë‹¤.
 	float GetFCost() const { return GCost + HCost; }
 
-	// ÀÌÁø Èü(Min-Heap) Á¤·ÄÀ» À§ÇÑ ¿¬»êÀÚ ¿À¹ö·Îµù (FCost°¡ ÀÛÀ»¼ö·Ï ¿ì¼±¼øÀ§ ³ôÀ½)
+	// ì´ì§„ í™(Min-Heap) ì •ë ¬ì„ ìœ„í•œ ì—°ì‚°ì ì˜¤ë²„ë¡œë”© (FCostê°€ ì‘ì„ìˆ˜ë¡ ìš°ì„ ìˆœìœ„ ë†’ìŒ)
 	bool operator<(const FSVOPathNode& Other) const
 	{
 		return GetFCost() < Other.GetFCost();
@@ -39,7 +39,7 @@ struct FSVOPathNode
 class FSVOPathfinder
 {
 public:
-	// 26¹æÇâ ÀÌ¿ô ¿ÀÇÁ¼Â ¹Ì¸® °è»ê (»óÇÏÁÂ¿ì, ´ë°¢¼± ¸ğµÎ Æ÷ÇÔ)
+	// 26ë°©í–¥ ì´ì›ƒ ì˜¤í”„ì…‹ ë¯¸ë¦¬ ê³„ì‚° (ìƒí•˜ì¢Œìš°, ëŒ€ê°ì„  ëª¨ë‘ í¬í•¨)
 	static const TArray<FIntVector>& Get26Directions()
 	{
 		static const TArray<FIntVector> Directions = []()
@@ -69,14 +69,14 @@ public:
 		return Directions;
 	}
 
-	// 3D Ã¼ºñ¼îÇÁ °Å¸® ÈŞ¸®½ºÆ½ ÇÔ¼ö °è»ê
+	// 3D ì²´ë¹„ì‡¼í”„ ê±°ë¦¬ íœ´ë¦¬ìŠ¤í‹± í•¨ìˆ˜ ê³„ì‚°
 	static float CalculateChebyshevHeuristic(const FIntVector& NodeA, const FIntVector& NodeB)
 	{
 		int32 Dx = FMath::Abs(NodeA.X - NodeB.X);
 		int32 Dy = FMath::Abs(NodeA.Y - NodeB.Y);
 		int32 Dz = FMath::Abs(NodeA.Z - NodeB.Z);
 
-		// 3°³ ÃàÀÇ Â÷ÀÌ Áß °¡Àå Å« °ªÀ» ¹İÈ¯
+		// 3ê°œ ì¶•ì˜ ì°¨ì´ ì¤‘ ê°€ì¥ í° ê°’ì„ ë°˜í™˜
 		return static_cast<float>(FMath::Max3(Dx, Dy, Dz));
 	}
 	static TArray<FVector> FindPath(ASVOVolume* SVOData, FIntVector StartIndex, FVector StartLoc, FIntVector TargetIndex, FVector TargetLoc, float VoxelSize);
@@ -85,21 +85,21 @@ public:
 
 };
 
-// °¡»óÀÇ ÇÔ¼ö ¼±¾ğ: ½ÇÁ¦ SVO µ¥ÀÌÅÍ¿¡¼­ ÇØ´ç ÀÎµ¦½ºÀÇ º¹¼¿ÀÌ ºñ¾îÀÖ´ÂÁö(ÀÌµ¿ °¡´ÉÇÑÁö) È®ÀÎÇÏ´Â ÇÔ¼ö
+// ê°€ìƒì˜ í•¨ìˆ˜ ì„ ì–¸: ì‹¤ì œ SVO ë°ì´í„°ì—ì„œ í•´ë‹¹ ì¸ë±ìŠ¤ì˜ ë³µì…€ì´ ë¹„ì–´ìˆëŠ”ì§€(ì´ë™ ê°€ëŠ¥í•œì§€) í™•ì¸í•˜ëŠ” í•¨ìˆ˜
 // bool IsVoxelWalkable(FIntVector GridIndex); 
 
 inline TArray<FVector> FSVOPathfinder::FindPath(ASVOVolume* SVOData, FIntVector StartIndex, FVector StartLoc, FIntVector TargetIndex, FVector TargetLoc, float VoxelSize)
 {
 	TArray<FVector> OutPath;
 
-	// SVO µ¥ÀÌÅÍ°¡ ¾øÀ¸¸é ±æÃ£±â Ãë¼Ò
+	// SVO ë°ì´í„°ê°€ ì—†ìœ¼ë©´ ê¸¸ì°¾ê¸° ì·¨ì†Œ
 	if (!SVOData || StartIndex == TargetIndex) return OutPath;
 
 	TMap<FIntVector, TSharedPtr<FSVOPathNode>> AllNodes;
 	TArray<TSharedPtr<FSVOPathNode>> OpenList;
 	TSet<FIntVector> ClosedList;
 
-	// ¹«ÇÑ ·çÇÁ ¹× ÇÁ·¹ÀÓ µå¶ø ¹æÁö¸¦ À§ÇÑ Å³ ½ºÀ§Ä¡
+	// ë¬´í•œ ë£¨í”„ ë° í”„ë ˆì„ ë“œë ë°©ì§€ë¥¼ ìœ„í•œ í‚¬ ìŠ¤ìœ„ì¹˜
 	int32 MaxIterations = 2000;
 	int32 CurrentIterations = 0;
 	TSharedPtr<FSVOPathNode> BestNodeSoFar = nullptr;
@@ -113,11 +113,11 @@ inline TArray<FVector> FSVOPathfinder::FindPath(ASVOVolume* SVOData, FIntVector 
 
 	while (OpenList.Num() > 0)
 	{
-		// ¾ÈÀüÀåÄ¡: ¿¬»ê È½¼ö°¡ ÇÑ°è¿¡ ´ŞÇÏ¸é °­Á¦ Á¾·á
+		// ì•ˆì „ì¥ì¹˜: ì—°ì‚° íšŸìˆ˜ê°€ í•œê³„ì— ë‹¬í•˜ë©´ ê°•ì œ ì¢…ë£Œ
 		if (++CurrentIterations > MaxIterations)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("A* overwork(partition path return)"));
-			// ¿Ïº®ÇÑ ±æÀº ¸ø Ã£¾ÒÁö¸¸, ¸ñÀûÁö¿Í °¡Àå °¡±î¿öÁø ³ëµå¿¡¼­ºÎÅÍ °æ·Î¸¦ ¿ªÃßÀûÇÏ¿© ¹İÈ¯ÇÕ´Ï´Ù.
+			// ì™„ë²½í•œ ê¸¸ì€ ëª» ì°¾ì•˜ì§€ë§Œ, ëª©ì ì§€ì™€ ê°€ì¥ ê°€ê¹Œì›Œì§„ ë…¸ë“œì—ì„œë¶€í„° ê²½ë¡œë¥¼ ì—­ì¶”ì í•˜ì—¬ ë°˜í™˜í•©ë‹ˆë‹¤.
 			if (BestNodeSoFar.IsValid())
 			{
 				FSVOPathNode* TraceNode = BestNodeSoFar.Get();
@@ -136,7 +136,7 @@ inline TArray<FVector> FSVOPathfinder::FindPath(ASVOVolume* SVOData, FIntVector 
 			return *A < *B;
 			});
 
-		// ¸ñÀûÁö¿Í °¡Àå °¡±î¿î ³ëµå °»½Å (Å³ ½ºÀ§Ä¡ ¹ßµ¿ ½Ã »ç¿ë)
+		// ëª©ì ì§€ì™€ ê°€ì¥ ê°€ê¹Œìš´ ë…¸ë“œ ê°±ì‹  (í‚¬ ìŠ¤ìœ„ì¹˜ ë°œë™ ì‹œ ì‚¬ìš©)
 		float DistToTarget = FVector::Dist(CurrentNode->WorldLocation, TargetLoc);
 		if (DistToTarget < ClosestDist)
 		{
@@ -163,11 +163,11 @@ inline TArray<FVector> FSVOPathfinder::FindPath(ASVOVolume* SVOData, FIntVector 
 			FIntVector NeighborIndex = CurrentNode->GridIndex + Dir;
 			if (ClosedList.Contains(NeighborIndex)) continue;
 
-			// [ÇÙ½É ÇØ°á] ÀÌ¿ô º¹¼¿ÀÇ ½ÇÁ¦ ¿ùµå ÁÂÇ¥ °è»ê (VoxelSize Àû¿ë)
+			// [í•µì‹¬ í•´ê²°] ì´ì›ƒ ë³µì…€ì˜ ì‹¤ì œ ì›”ë“œ ì¢Œí‘œ ê³„ì‚° (VoxelSize ì ìš©)
 			FVector NeighborWorldLoc = CurrentNode->WorldLocation + (FVector(Dir) * VoxelSize);
 
-			// [¸¶Ä§³» Àû¿ëµÈ 3D SVO Ãæµ¹ °Ë»ç!] 
-			// SVO Áöµµ¸¦ µÚÁ®¼­ ÀÌ ÁÂÇ¥°¡ º®(¶¥¼Ó/¾ÏÃÊ)ÀÌ¶ó¸é ¹«½ÃÇÏ°í ´Ù¸¥ ¹æÇâÀ» Ã£½À´Ï´Ù!
+			// [ë§ˆì¹¨ë‚´ ì ìš©ëœ 3D SVO ì¶©ëŒ ê²€ì‚¬!] 
+			// SVO ì§€ë„ë¥¼ ë’¤ì ¸ì„œ ì´ ì¢Œí‘œê°€ ë²½(ë•…ì†/ì•”ì´ˆ)ì´ë¼ë©´ ë¬´ì‹œí•˜ê³  ë‹¤ë¥¸ ë°©í–¥ì„ ì°¾ìŠµë‹ˆë‹¤!
 			if (!SVOData->IsWalkable(NeighborWorldLoc)) continue;
 
 			float TentativeGCost = CurrentNode->GCost + 1.0f;
@@ -226,7 +226,7 @@ inline TArray<FVector> FSVOPathfinder::SmoothPath(ASVOVolume* SVOData, const TAr
 		FVector Start = OriginalPath[CheckPointIndex];
 		FVector Target = OriginalPath[CurrentIndex + 1];
 
-		// ¹«°Å¿î ¹°¸® ¿£Áø Sweep ´ë½Å, SVO ¸Ş¸ğ¸® ±â¹İ ÃÊ°í¼Ó ·¹ÀÌÄ³½ºÆ® »ç¿ë!
+		// ë¬´ê±°ìš´ ë¬¼ë¦¬ ì—”ì§„ Sweep ëŒ€ì‹ , SVO ë©”ëª¨ë¦¬ ê¸°ë°˜ ì´ˆê³ ì† ë ˆì´ìºìŠ¤íŠ¸ ì‚¬ìš©!
 		bool bHit = SVOData->SVORaycast(Start, Target);
 
 		if (!bHit)

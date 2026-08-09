@@ -1,18 +1,18 @@
-#include "BTTask_SmoothChasePlayer.h"
+ï»¿#include "BTTask_SmoothChasePlayer.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include "GameFramework/Character.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Kismet/GameplayStatics.h" // ¸Ê¿¡ ÀÖ´Â ¾×ÅÍ¸¦ Ã£±â À§ÇØ ÇÊ¿ä
-#include "SVOPathfinder.h" // SVO °æ·Î Å½»ö±â Æ÷ÇÔ
-#include "SVOVolume.h"              // ASVOVolume Å¬·¡½º¸¦ ¾Ë±â À§ÇØ ÇÊ¿ä
-#include "DrawDebugHelpers.h"// µğ¹ö±× µå·ÎÀ×À» À§ÇÑ ¿£Áø Çì´õ
+#include "Kismet/GameplayStatics.h" // ë§µì— ìˆëŠ” ì•¡í„°ë¥¼ ì°¾ê¸° ìœ„í•´ í•„ìš”
+#include "SVOPathfinder.h" // SVO ê²½ë¡œ íƒìƒ‰ê¸° í¬í•¨
+#include "SVOVolume.h"              // ASVOVolume í´ë˜ìŠ¤ë¥¼ ì•Œê¸° ìœ„í•´ í•„ìš”
+#include "DrawDebugHelpers.h"// ë””ë²„ê·¸ ë“œë¡œì‰ì„ ìœ„í•œ ì—”ì§„ í—¤ë”
 
 UBTTask_SmoothChasePlayer::UBTTask_SmoothChasePlayer()
 {
 	NodeName = TEXT("Smooth 3D Chase Async");
 
-	// ¸Å ÇÁ·¹ÀÓ »ó¾î¸¦ ¿òÁ÷¿©¾ß ÇÏ¹Ç·Î Tick È°¼ºÈ­
+	// ë§¤ í”„ë ˆì„ ìƒì–´ë¥¼ ì›€ì§ì—¬ì•¼ í•˜ë¯€ë¡œ Tick í™œì„±í™”
 	bNotifyTick = true;
 }
 
@@ -26,7 +26,7 @@ EBTNodeResult::Type UBTTask_SmoothChasePlayer::ExecuteTask(UBehaviorTreeComponen
 
 	if (!Shark || !TargetActor) return EBTNodeResult::Failed;
 
-	// --- [SVO °æ·Î Å½»ö È£ÃâºÎ] ---
+	// --- [SVO ê²½ë¡œ íƒìƒ‰ í˜¸ì¶œë¶€] ---
 
 	FVector StartLoc = Shark->GetActorLocation();
 	FVector TargetLoc = TargetActor->GetActorLocation();
@@ -42,14 +42,14 @@ EBTNodeResult::Type UBTTask_SmoothChasePlayer::ExecuteTask(UBehaviorTreeComponen
 	UE_LOG(LogTemp, Warning, TEXT("A* Finder Start"));
 
 	// ------------------------------------------------------------------
-	// [New] ¿øÀÎ ÃßÀû Áø´Ü ·ÎÁ÷: ½ÃÀÛÁ¡°ú µµÂøÁ¡ÀÌ °¥ ¼ö ÀÖ´Â °÷ÀÎÁö È®ÀÎ
+	// [New] ì›ì¸ ì¶”ì  ì§„ë‹¨ ë¡œì§: ì‹œì‘ì ê³¼ ë„ì°©ì ì´ ê°ˆ ìˆ˜ ìˆëŠ” ê³³ì¸ì§€ í™•ì¸
 	// ------------------------------------------------------------------
 	bool bStartWalkable = SVOData->IsWalkable(StartLoc);
 	bool bTargetWalkable = SVOData->IsWalkable(TargetLoc);
 
 	UE_LOG(LogTemp, Warning, TEXT("SVO Check -> Start Walkable: %d, Target Walkable: %d"), bStartWalkable, bTargetWalkable);
 
-	// 1. Å¸°Ù(ÇÃ·¹ÀÌ¾î) À§Ä¡ ¾ÈÀü º¸Á¤
+	// 1. íƒ€ê²Ÿ(í”Œë ˆì´ì–´) ìœ„ì¹˜ ì•ˆì „ ë³´ì •
 	FVector SafeTargetLoc = TargetLoc;
 	if (!bTargetWalkable)
 	{
@@ -57,15 +57,15 @@ EBTNodeResult::Type UBTTask_SmoothChasePlayer::ExecuteTask(UBehaviorTreeComponen
 		UE_LOG(LogTemp, Warning, TEXT("Target inside blocked voxel! Adjusted SafeTargetLoc Z +300."));
 	}
 
-	// 2. [New] ½ÃÀÛÁ¡(»ó¾î) À§Ä¡ ¾ÈÀü º¸Á¤
+	// 2. [New] ì‹œì‘ì (ìƒì–´) ìœ„ì¹˜ ì•ˆì „ ë³´ì •
 	FVector SafeStartLoc = StartLoc;
 	if (!bStartWalkable)
 	{
-		SafeStartLoc.Z += 300.0f; // »ó¾îµµ ¹Ù´Ú¿¡ ÆÄ¹¯Çô ÀÖ´Ù¸é À§·Î »ìÂ¦ µé¾î ¿Ã¸³´Ï´Ù.
+		SafeStartLoc.Z += 300.0f; // ìƒì–´ë„ ë°”ë‹¥ì— íŒŒë¬»í˜€ ìˆë‹¤ë©´ ìœ„ë¡œ ì‚´ì§ ë“¤ì–´ ì˜¬ë¦½ë‹ˆë‹¤.
 		UE_LOG(LogTemp, Warning, TEXT("Shark inside blocked voxel! Adjusted SafeStartLoc Z +300."));
 	}
 
-	// 3. ÀÎµ¦½º º¯È¯ ½Ã Safe À§Ä¡µéÀ» »ç¿ë!
+	// 3. ì¸ë±ìŠ¤ ë³€í™˜ ì‹œ Safe ìœ„ì¹˜ë“¤ì„ ì‚¬ìš©!
 	float VoxelSize = 250.0f;
 	FIntVector SafeStartIndex(
 		FMath::RoundToInt(SafeStartLoc.X / VoxelSize),
@@ -79,9 +79,9 @@ EBTNodeResult::Type UBTTask_SmoothChasePlayer::ExecuteTask(UBehaviorTreeComponen
 		FMath::RoundToInt(SafeTargetLoc.Z / VoxelSize)
 	);
 
-	// --- [¸ÖÆ¼½º·¹µå Áö½Ã ÆÄÆ®] ---
+	// --- [ë©€í‹°ìŠ¤ë ˆë“œ ì§€ì‹œ íŒŒíŠ¸] ---
 
-	// 1. ±âÁ¸¿¡ µ¹°í ÀÖ´ø ½º·¹µå°¡ ÀÖ´Ù¸é ¾ÈÀüÇÏ°Ô »èÁ¦ (¸Ş¸ğ¸® ´©¼ö ¹æÁö)
+	// 1. ê¸°ì¡´ì— ëŒê³  ìˆë˜ ìŠ¤ë ˆë“œê°€ ìˆë‹¤ë©´ ì•ˆì „í•˜ê²Œ ì‚­ì œ (ë©”ëª¨ë¦¬ ëˆ„ìˆ˜ ë°©ì§€)
 	if (PathfinderTask)
 	{
 		PathfinderTask->EnsureCompletion();
@@ -89,15 +89,15 @@ EBTNodeResult::Type UBTTask_SmoothChasePlayer::ExecuteTask(UBehaviorTreeComponen
 		PathfinderTask = nullptr;
 	}
 
-	// 2. ÀÌÀü °æ·Î ÃÊ±âÈ­
+	// 2. ì´ì „ ê²½ë¡œ ì´ˆê¸°í™”
 	CurrentPath.Empty();
 
-	// 3. ¹é±×¶ó¿îµå ½º·¹µå »ı¼º ¹× ½ÇÇà (Fire and Forget)
+	// 3. ë°±ê·¸ë¼ìš´ë“œ ìŠ¤ë ˆë“œ ìƒì„± ë° ì‹¤í–‰ (Fire and Forget)
 	UE_LOG(LogTemp, Warning, TEXT("A* Thread Started..."));
 	PathfinderTask = new FAsyncTask<FSVOPathfindingTask>(SVOData, SafeStartIndex, SafeStartLoc, SafeTargetIndex, SafeTargetLoc, VoxelSize);
 	PathfinderTask->StartBackgroundTask();
 
-	// ¸ŞÀÎ ½º·¹µå´Â Áï½Ã InProgress¸¦ ¹İÈ¯ÇÏ¿© ÇÁ·¹ÀÓ µå¶øÀ» ¸·½À´Ï´Ù!
+	// ë©”ì¸ ìŠ¤ë ˆë“œëŠ” ì¦‰ì‹œ InProgressë¥¼ ë°˜í™˜í•˜ì—¬ í”„ë ˆì„ ë“œëì„ ë§‰ìŠµë‹ˆë‹¤!
 	return EBTNodeResult::InProgress;
 }
 
@@ -110,16 +110,16 @@ void UBTTask_SmoothChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	ACharacter* Shark = Cast<ACharacter>(AIController->GetPawn());
 
-	// --- [¸ÖÆ¼½º·¹µå °á°ú ¼ö½Å ÆÄÆ®] ---
+	// --- [ë©€í‹°ìŠ¤ë ˆë“œ ê²°ê³¼ ìˆ˜ì‹  íŒŒíŠ¸] ---
 	if (CurrentPath.Num() == 0 && PathfinderTask != nullptr)
 	{
-		// ½º·¹µå ¿¬»êÀÌ ³¡³µ´ÂÁö ¹°¾îº¾´Ï´Ù.
+		// ìŠ¤ë ˆë“œ ì—°ì‚°ì´ ëë‚¬ëŠ”ì§€ ë¬¼ì–´ë´…ë‹ˆë‹¤.
 		if (PathfinderTask->IsDone())
 		{
-			// ³¡³µ´Ù¸é °á°ú¸¦ »©¿É´Ï´Ù!
+			// ëë‚¬ë‹¤ë©´ ê²°ê³¼ë¥¼ ë¹¼ì˜µë‹ˆë‹¤!
 			CurrentPath = PathfinderTask->GetTask().ResultPath;
 
-			// ´Ù ¾´ ½º·¹µå Ã»¼Ò
+			// ë‹¤ ì“´ ìŠ¤ë ˆë“œ ì²­ì†Œ
 			delete PathfinderTask;
 			PathfinderTask = nullptr;
 
@@ -128,7 +128,7 @@ void UBTTask_SmoothChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint
 				UE_LOG(LogTemp, Warning, TEXT("A* Thread Complete! NodeNum: %d"), CurrentPath.Num());
 				CurrentWaypointIndex = 0;
 
-				// [µğ¹ö±× µå·ÎÀ×] ±æÃ£±â°¡ ³¡³­ ½ÃÁ¡¿¡ ÃÖÁ¾ ¼±À» ±×¾îÁİ´Ï´Ù.
+				// [ë””ë²„ê·¸ ë“œë¡œì‰] ê¸¸ì°¾ê¸°ê°€ ëë‚œ ì‹œì ì— ìµœì¢… ì„ ì„ ê·¸ì–´ì¤ë‹ˆë‹¤.
 #if ENABLE_DRAW_DEBUG 
 				UWorld* World = GetWorld();
 				FVector DebugOffset = FVector(0.0f, 0.0f, 30.0f);
@@ -149,43 +149,43 @@ void UBTTask_SmoothChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint
 			}
 		}
 		else {
-			// ¾ÆÁ÷ ¿¬»ê ÁßÀÌ¶ó¸é ÀÌ¹ø ÇÁ·¹ÀÓÀº »ó¾î¸¦ ¿òÁ÷ÀÌÁö ¾Ê°í ´ë±âÇÕ´Ï´Ù.
+			// ì•„ì§ ì—°ì‚° ì¤‘ì´ë¼ë©´ ì´ë²ˆ í”„ë ˆì„ì€ ìƒì–´ë¥¼ ì›€ì§ì´ì§€ ì•Šê³  ëŒ€ê¸°í•©ë‹ˆë‹¤.
 			return;
 		}
 	}
 	if (CurrentPath.Num() > 0 && CurrentPath.IsValidIndex(CurrentWaypointIndex)) {
-		// 1. ÇöÀç ÇâÇØ¾ß ÇÒ ¸ñÀûÁö (¿şÀÌÆ÷ÀÎÆ®)
+		// 1. í˜„ì¬ í–¥í•´ì•¼ í•  ëª©ì ì§€ (ì›¨ì´í¬ì¸íŠ¸)
 		FVector TargetLocation = CurrentPath[CurrentWaypointIndex];
 		FVector CurrentLocation = Shark->GetActorLocation();
 
-		// 2. Á¶Çâ Çàµ¿ (Steering Behavior) - °¡°í ½ÍÀº ¹æÇâ °è»ê
+		// 2. ì¡°í–¥ í–‰ë™ (Steering Behavior) - ê°€ê³  ì‹¶ì€ ë°©í–¥ ê³„ì‚°
 		FVector DirectionToTarget = (TargetLocation - CurrentLocation).GetSafeNormal();
 
-		// 3. ºÎµå·¯¿î È¸Àü (RInterpTo)
-		// »ó¾î°¡ ÆÅ! ÇÏ°í ²ªÀÌÁö ¾Ê°í ¼­¼­È÷ ¸ñÇ¥ ¹æÇâÀ¸·Î ¸Ó¸®¸¦ µ¹¸³´Ï´Ù.
+		// 3. ë¶€ë“œëŸ¬ìš´ íšŒì „ (RInterpTo)
+		// ìƒì–´ê°€ íŒ! í•˜ê³  êº¾ì´ì§€ ì•Šê³  ì„œì„œíˆ ëª©í‘œ ë°©í–¥ìœ¼ë¡œ ë¨¸ë¦¬ë¥¼ ëŒë¦½ë‹ˆë‹¤.
 		FRotator CurrentRotation = Shark->GetActorRotation();
 		FRotator TargetRotation = DirectionToTarget.Rotation();
 
-		// ZÃà È¸Àü(Pitch)µµ Æ÷ÇÔÇÏ¿© À§¾Æ·¡·Î ÀÚ¿¬½º·´°Ô Çì¾öÄ¡°Ô ÇÕ´Ï´Ù.
+		// Zì¶• íšŒì „(Pitch)ë„ í¬í•¨í•˜ì—¬ ìœ„ì•„ë˜ë¡œ ìì—°ìŠ¤ëŸ½ê²Œ í—¤ì—„ì¹˜ê²Œ í•©ë‹ˆë‹¤.
 		FRotator SmoothedRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaSeconds, TurnSpeed);
 		Shark->SetActorRotation(SmoothedRotation);
 
-		// 4. ÀüÁø ÃßÁø·Â ºÎ¿© (AddMovementInput)
-		// ¸Ó¸®°¡ ÇâÇÏ°í ÀÖ´Â ¹æÇâ(ForwardVector)À¸·Î Áö¼ÓÀûÀ¸·Î Çì¾öÄ¨´Ï´Ù.
-		// ¸Ó¸®°¡ ¾ÆÁ÷ ´ú µ¹¾Æ°¬¾îµµ ÀÏ´Ü ¾ÕÀ¸·Î ³ª¾Æ°¡±â ¶§¹®¿¡, ÀÚ¿¬½º·´°Ô Å©°Ô µµ´Â(Drifting) ±ËÀûÀÌ »ı±é´Ï´Ù.
+		// 4. ì „ì§„ ì¶”ì§„ë ¥ ë¶€ì—¬ (AddMovementInput)
+		// ë¨¸ë¦¬ê°€ í–¥í•˜ê³  ìˆëŠ” ë°©í–¥(ForwardVector)ìœ¼ë¡œ ì§€ì†ì ìœ¼ë¡œ í—¤ì—„ì¹©ë‹ˆë‹¤.
+		// ë¨¸ë¦¬ê°€ ì•„ì§ ëœ ëŒì•„ê°”ì–´ë„ ì¼ë‹¨ ì•ìœ¼ë¡œ ë‚˜ì•„ê°€ê¸° ë•Œë¬¸ì—, ìì—°ìŠ¤ëŸ½ê²Œ í¬ê²Œ ë„ëŠ”(Drifting) ê¶¤ì ì´ ìƒê¹ë‹ˆë‹¤.
 		Shark->AddMovementInput(Shark->GetActorForwardVector(), 1.0f);
 
-		// 5. ¿şÀÌÆ÷ÀÎÆ® µµ´Ş Ã¼Å©
+		// 5. ì›¨ì´í¬ì¸íŠ¸ ë„ë‹¬ ì²´í¬
 		float DistanceToWaypoint = FVector::Dist(CurrentLocation, TargetLocation);
 		if (DistanceToWaypoint < AcceptanceRadius)
 		{
-			// ¸ñÀûÁö ¹İ°æ¿¡ µé¾î¿Ô´Ù¸é ´ÙÀ½ °æ·ÎÁ¡À¸·Î ÀÎµ¦½º¸¦ ³Ñ±é´Ï´Ù.
+			// ëª©ì ì§€ ë°˜ê²½ì— ë“¤ì–´ì™”ë‹¤ë©´ ë‹¤ìŒ ê²½ë¡œì ìœ¼ë¡œ ì¸ë±ìŠ¤ë¥¼ ë„˜ê¹ë‹ˆë‹¤.
 			CurrentWaypointIndex++;
 
-			// ¸¸¾à ¸¶Áö¸· °æ·ÎÁ¡±îÁö µµ´ŞÇß´Ù¸é (ÇÃ·¹ÀÌ¾î ÄÚ¾Õ±îÁö ¿Ô´Ù¸é)
+			// ë§Œì•½ ë§ˆì§€ë§‰ ê²½ë¡œì ê¹Œì§€ ë„ë‹¬í–ˆë‹¤ë©´ (í”Œë ˆì´ì–´ ì½”ì•ê¹Œì§€ ì™”ë‹¤ë©´)
 			if (CurrentWaypointIndex >= CurrentPath.Num())
 			{
-				// ÃßÀû ¿Ï·á ÆÇÁ¤ ÈÄ ´ÙÀ½ Task(¿¹: ¹°¾î¶â±â °ø°İ)·Î ³Ñ¾î°©´Ï´Ù.
+				// ì¶”ì  ì™„ë£Œ íŒì • í›„ ë‹¤ìŒ Task(ì˜ˆ: ë¬¼ì–´ëœ¯ê¸° ê³µê²©)ë¡œ ë„˜ì–´ê°‘ë‹ˆë‹¤.
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 			}
 		}

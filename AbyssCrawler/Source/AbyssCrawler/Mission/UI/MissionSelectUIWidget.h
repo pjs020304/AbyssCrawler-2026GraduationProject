@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -40,14 +40,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Mission")
 	TSubclassOf<UMissionSelectSlotWidget> MissionSlotClass;
 
-	// ¼±ÅÃµÈ ¹Ì¼Ç
+	// ì„ íƒëœ ë¯¸ì…˜
 	UPROPERTY()
 	TArray<FName> SelectedMissionIds;
 
 	UPROPERTY(EditAnywhere)
 	int32 MaxSelectableCount = 3;
 
-	// ½½·Ô Å¬¸¯ ÀÌº¥Æ®
+	// ìŠ¬ë¡¯ í´ë¦­ ì´ë²¤íŠ¸
 	UFUNCTION()
 	void HandleMissionSelected(FName MissionId);
 

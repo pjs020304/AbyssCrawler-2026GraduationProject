@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "MainHUDWidget.h"
@@ -19,11 +19,11 @@ void UMainHUDWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    // GameState¸¦ °¡Á®¿Í¼­ ÀÌº¥Æ®¿¡ ¹ÙÀÎµùÇÕ´Ï´Ù.
+    // GameStateë¥¼ ê°€ì ¸ì™€ì„œ ì´ë²¤íŠ¸ì— ë°”ì¸ë”©í•©ë‹ˆë‹¤.
     if (AAbyssGameState* GS = GetWorld()->GetGameState<AAbyssGameState>())
     {
         GS->OnMoneyChanged.AddDynamic(this, &UMainHUDWidget::UpdateMoneyDisplay);
-        // ÃÊ±â°ª Ç¥½Ã
+        // ì´ˆê¸°ê°’ í‘œì‹œ
         UpdateMoneyDisplay(GS->GetSharedMoney());
 
         GS->OnRemainingGameTimeChanged.AddDynamic(this, &UMainHUDWidget::UpdateRemainingTimeDisplay);
@@ -33,7 +33,7 @@ void UMainHUDWidget::NativeConstruct()
 
 void UMainHUDWidget::UpdateMoneyDisplay(int32 NewMoney)
 {
-    // ºí·çÇÁ¸°Æ® ÀÌº¥Æ®¸¦ È£ÃâÇÏ¿© ÅØ½ºÆ®¸¦ °»½ÅÇÕ´Ï´Ù.
+    // ë¸”ë£¨í”„ë¦°íŠ¸ ì´ë²¤íŠ¸ë¥¼ í˜¸ì¶œí•˜ì—¬ í…ìŠ¤íŠ¸ë¥¼ ê°±ì‹ í•©ë‹ˆë‹¤.
     OnUpdateMoneyText(NewMoney);
 }
 

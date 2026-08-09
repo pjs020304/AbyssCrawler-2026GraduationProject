@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
@@ -14,23 +14,23 @@ public:
 	UBTTask_FindRandomSVOPosition();
 
 protected:
-	// Task°¡ ½ÇÇàµÉ ¶§ È£ÃâµÇ´Â ¸ŞÀÎ ÇÔ¼ö
+	// Taskê°€ ì‹¤í–‰ë  ë•Œ í˜¸ì¶œë˜ëŠ” ë©”ì¸ í•¨ìˆ˜
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
 
-	// Ã£¾Æ³½ ·£´ı 3D ÁÂÇ¥(FVector)¸¦ ÀúÀåÇÒ ºí·¢º¸µå Å°
+	// ì°¾ì•„ë‚¸ ëœë¤ 3D ì¢Œí‘œ(FVector)ë¥¼ ì €ì¥í•  ë¸”ë™ë³´ë“œ í‚¤
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector RandomLocation;
 
-	// »ó¾î¸¦ ±âÁØÀ¸·Î ¾î´À Á¤µµ ¹İ°æ ³»¿¡¼­ ¹«ÀÛÀ§ ÁÂÇ¥¸¦ Ã£À»Áö ¼³Á¤
+	// ìƒì–´ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ì–´ëŠ ì •ë„ ë°˜ê²½ ë‚´ì—ì„œ ë¬´ì‘ìœ„ ì¢Œí‘œë¥¼ ì°¾ì„ì§€ ì„¤ì •
 	UPROPERTY(EditAnywhere, Category = "Search")
 	float SearchRadius = 2000.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Steering")
 	float AcceptanceRadius = 400.0f;
 
-	// Á¤Âû ½Ã¿¡´Â ÃßÀû(3.0f)º¸´Ù ºÎµå·´°í ÃµÃµÈ÷ µ¹µµ·Ï ±âº»°ªÀ» ³·Ãä´Ï´Ù.
+	// ì •ì°° ì‹œì—ëŠ” ì¶”ì (3.0f)ë³´ë‹¤ ë¶€ë“œëŸ½ê³  ì²œì²œíˆ ëŒë„ë¡ ê¸°ë³¸ê°’ì„ ë‚®ì¶¥ë‹ˆë‹¤.
 	UPROPERTY(EditAnywhere, Category = "Steering")
 	float TurnSpeed = 1.5f;
 

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
@@ -21,26 +21,26 @@ protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
-	// ÂÑ¾Æ°¥ ´ë»ó(ÇÃ·¹ÀÌ¾î)À» °¡Á®¿Ã ºí·¢º¸µå Å°
+	// ì«“ì•„ê°ˆ ëŒ€ìƒ(í”Œë ˆì´ì–´)ì„ ê°€ì ¸ì˜¬ ë¸”ë™ë³´ë“œ í‚¤
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector TargetKey;
 
-	// ¿şÀÌÆ÷ÀÎÆ®(°æ·ÎÁ¡)¿¡ ÀÌ¸¸Å­ °¡±î¿öÁö¸é ´ÙÀ½ Á¡À¸·Î ³Ñ¾î°¨
+	// ì›¨ì´í¬ì¸íŠ¸(ê²½ë¡œì )ì— ì´ë§Œí¼ ê°€ê¹Œì›Œì§€ë©´ ë‹¤ìŒ ì ìœ¼ë¡œ ë„˜ì–´ê°
 	UPROPERTY(EditAnywhere, Category = "Steering")
 	float AcceptanceRadius = 400.0f;
 
-	// »ó¾î°¡ ¸öÀ» µ¹¸®´Â È¸Àü ¼Óµµ (³·À»¼ö·Ï Å©°Ô µº)
+	// ìƒì–´ê°€ ëª¸ì„ ëŒë¦¬ëŠ” íšŒì „ ì†ë„ (ë‚®ì„ìˆ˜ë¡ í¬ê²Œ ë)
 	UPROPERTY(EditAnywhere, Category = "Steering")
 	float TurnSpeed = 3.0f;
 
 private:
-	// A* ¾Ë°í¸®ÁòÀÌ ¹ñ¾î³½ °æ·ÎÁ¡µéÀ» ´ã¾ÆµÑ ¹è¿­
+	// A* ì•Œê³ ë¦¬ì¦˜ì´ ë±‰ì–´ë‚¸ ê²½ë¡œì ë“¤ì„ ë‹´ì•„ë‘˜ ë°°ì—´
 	TArray<FVector> CurrentPath;
 
-	// ÇöÀç »ó¾î°¡ ÇâÇÏ°í ÀÖ´Â °æ·ÎÁ¡ÀÇ ÀÎµ¦½º
+	// í˜„ì¬ ìƒì–´ê°€ í–¥í•˜ê³  ìˆëŠ” ê²½ë¡œì ì˜ ì¸ë±ìŠ¤
 	int32 CurrentWaypointIndex;
 
-	// ¹é±×¶ó¿îµå ÀÛ¾÷À» °ü¸®ÇÒ Æ÷ÀÎÅÍ
+	// ë°±ê·¸ë¼ìš´ë“œ ì‘ì—…ì„ ê´€ë¦¬í•  í¬ì¸í„°
 	FAsyncTask<FSVOPathfindingTask>* PathfinderTask = nullptr;
 };
 
@@ -48,11 +48,11 @@ private:
 // ------------------------------------ PathFinding Task Thread Class -----------------------------------------
 // ------------------------------------------------------------------------------------------------------------
 
-// ¹é±×¶ó¿îµå¿¡¼­ A* ¾Ë°í¸®ÁòÀ» ¼öÇàÇÒ Àü¿ë Task Å¬·¡½º
+// ë°±ê·¸ë¼ìš´ë“œì—ì„œ A* ì•Œê³ ë¦¬ì¦˜ì„ ìˆ˜í–‰í•  ì „ìš© Task í´ë˜ìŠ¤
 class FSVOPathfindingTask : public FNonAbandonableTask
 {
 public:
-	// 1. ÀÔ·Â¹ŞÀ» ÀÎÀÚµé (Inputs)
+	// 1. ì…ë ¥ë°›ì„ ì¸ìë“¤ (Inputs)
 	ASVOVolume* SVOData;
 	FIntVector StartIndex;
 	FVector StartLoc;
@@ -60,30 +60,30 @@ public:
 	FVector TargetLoc;
 	float VoxelSize;
 
-	// 2. ¸ŞÀÎ ½º·¹µå·Î µ¹·ÁÁÙ °á°ú¹° (Output)
+	// 2. ë©”ì¸ ìŠ¤ë ˆë“œë¡œ ëŒë ¤ì¤„ ê²°ê³¼ë¬¼ (Output)
 	TArray<FVector> ResultPath;
 
-	// 3. »ı¼ºÀÚ: ¸ŞÀÎ ½º·¹µå¿¡¼­ ½º·¹µå¸¦ »ı¼ºÇÒ ¶§ ÀÎÀÚ °ªÀ» ¹Ş¾Æ¿É´Ï´Ù.
+	// 3. ìƒì„±ì: ë©”ì¸ ìŠ¤ë ˆë“œì—ì„œ ìŠ¤ë ˆë“œë¥¼ ìƒì„±í•  ë•Œ ì¸ì ê°’ì„ ë°›ì•„ì˜µë‹ˆë‹¤.
 	FSVOPathfindingTask(ASVOVolume* InSVOData, FIntVector InStartIndex, FVector InStartLoc, FIntVector InTargetIndex, FVector InTargetLoc, float InVoxelSize)
 		: SVOData(InSVOData), StartIndex(InStartIndex), StartLoc(InStartLoc), TargetIndex(InTargetIndex), TargetLoc(InTargetLoc), VoxelSize(InVoxelSize)
 	{
 	}
 
-	// 4. ¾ğ¸®¾ó ÇÁ·ÎÆÄÀÏ·¯(Stat) ÃßÀûÀ» À§ÇÑ ¸ÅÅ©·Î (ÇÊ¼ö º¸ÀÏ·¯ÇÃ·¹ÀÌÆ® ÄÚµå)
+	// 4. ì–¸ë¦¬ì–¼ í”„ë¡œíŒŒì¼ëŸ¬(Stat) ì¶”ì ì„ ìœ„í•œ ë§¤í¬ë¡œ (í•„ìˆ˜ ë³´ì¼ëŸ¬í”Œë ˆì´íŠ¸ ì½”ë“œ)
 	FORCEINLINE TStatId GetStatId() const
 	{
 		RETURN_QUICK_DECLARE_CYCLE_STAT(FSVOPathfindingTask, STATGROUP_ThreadPoolAsyncTasks);
 	}
 
-	// 5. [°¡Àå Áß¿ä] ¹é±×¶ó¿îµå ½º·¹µå¿¡¼­ ½ÇÁ¦ ½ÇÇàµÉ ÇÔ¼ö!
+	// 5. [ê°€ì¥ ì¤‘ìš”] ë°±ê·¸ë¼ìš´ë“œ ìŠ¤ë ˆë“œì—ì„œ ì‹¤ì œ ì‹¤í–‰ë  í•¨ìˆ˜!
 	void DoWork()
 	{
-		// ÀÌ ¾ÈÀÇ ÄÚµå´Â ¸ŞÀÎ ½º·¹µå¿Í ¿ÏÀüÈ÷ ºĞ¸®µÇ¾î ½ÇÇàµÇ¹Ç·Î °ÔÀÓ ÇÁ·¹ÀÓ¿¡ ¿µÇâÀ» ÁÖÁö ¾Ê½À´Ï´Ù.
+		// ì´ ì•ˆì˜ ì½”ë“œëŠ” ë©”ì¸ ìŠ¤ë ˆë“œì™€ ì™„ì „íˆ ë¶„ë¦¬ë˜ì–´ ì‹¤í–‰ë˜ë¯€ë¡œ ê²Œì„ í”„ë ˆì„ì— ì˜í–¥ì„ ì£¼ì§€ ì•ŠìŠµë‹ˆë‹¤.
 
-		// ¹«°Å¿î A* ¿¬»êÀ» µ¹¸³´Ï´Ù.
+		// ë¬´ê±°ìš´ A* ì—°ì‚°ì„ ëŒë¦½ë‹ˆë‹¤.
 		TArray<FVector> RawPath = FSVOPathfinder::FindPath(SVOData, StartIndex, StartLoc, TargetIndex, TargetLoc, VoxelSize);
 
-		// ½ºÆ®¸µ Ç®¸µµµ ¿¬»êÀÌ ¹«°Å¿ì´Ï ¾Æ¿¹ ¹é±×¶ó¿îµå¿¡¼­ °°ÀÌ ÇØ¹ö¸³´Ï´Ù!
+		// ìŠ¤íŠ¸ë§ í’€ë§ë„ ì—°ì‚°ì´ ë¬´ê±°ìš°ë‹ˆ ì•„ì˜ˆ ë°±ê·¸ë¼ìš´ë“œì—ì„œ ê°™ì´ í•´ë²„ë¦½ë‹ˆë‹¤!
 		if (RawPath.Num() > 0)
 		{
 			ResultPath = FSVOPathfinder::SmoothPath(SVOData, RawPath);

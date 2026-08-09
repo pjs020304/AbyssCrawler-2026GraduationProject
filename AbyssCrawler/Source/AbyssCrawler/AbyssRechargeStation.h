@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -15,7 +15,7 @@ class ABYSSCRAWLER_API AAbyssRechargeStation : public AActor, public IAbyssInter
 public:
 	AAbyssRechargeStation();
 
-	// EÅ° »óÈ£ÀÛ¿ë
+	// Eí‚¤ ìƒí˜¸ì‘ìš©
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 	virtual void OnFocus_Implementation() override;
 	virtual void OnLostFocus_Implementation() override;
@@ -24,15 +24,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* MeshComp;
 
-	// "E ´­·¯¼­ ÃæÀü" µîÀ» ¶ç¿ï UI
+	// "E ëˆŒëŸ¬ì„œ ì¶©ì „" ë“±ì„ ë„ìš¸ UI
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UWidgetComponent* InteractWidget;
 
-	// ÇÃ·¹ÀÌ¾î¿¡°Ô Àû¿ëÇÒ ÃæÀü ÀÌÆåÆ® (»ê¼Ò 100% È¸º¹ ¶Ç´Â ¹èÅÍ¸® 100% È¸º¹)
+	// í”Œë ˆì´ì–´ì—ê²Œ ì ìš©í•  ì¶©ì „ ì´í™íŠ¸ (ì‚°ì†Œ 100% íšŒë³µ ë˜ëŠ” ë°°í„°ë¦¬ 100% íšŒë³µ)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Station Config")
 	TSubclassOf<class UGameplayEffect> RechargeEffectClass;
 
-	// ÇÑ ¹ø ´©¸£¸é ¸î ÃÊ µÚ¿¡ ´Ù½Ã ¾µ ¼ö ÀÖ´ÂÁö (ÄğÅ¸ÀÓ)
+	// í•œ ë²ˆ ëˆ„ë¥´ë©´ ëª‡ ì´ˆ ë’¤ì— ë‹¤ì‹œ ì“¸ ìˆ˜ ìˆëŠ”ì§€ (ì¿¨íƒ€ì„)
 	UPROPERTY(EditDefaultsOnly, Category = "Station Config")
 	float RechargeCooldown;
 

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Mission/Contents/AbyssMissionArea.h"
@@ -221,7 +221,7 @@ void AAbyssMissionArea::UpdateMarkerDistanceVisibility()
 		return;
 	}
 
-	// ¹Ì¼ÇÀÌ È°¼ºÈ­µÇÁö ¾Ê¾Ò°Å³ª ÀÌ¹Ì µµÂøÇß´Ù¸é ¼û±è
+	// ë¯¸ì…˜ì´ í™œì„±í™”ë˜ì§€ ì•Šì•˜ê±°ë‚˜ ì´ë¯¸ ë„ì°©í–ˆë‹¤ë©´ ìˆ¨ê¹€
 	if (!bMissionMarkerVisible || bTriggered)
 	{
 		MissionMarkerWidget->SetVisibility(false);

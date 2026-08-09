@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Mission/Contents/AbyssMissionWorkObject.h"
@@ -214,7 +214,7 @@ void AAbyssMissionWorkObject::UpdateMissionPromptUI()
 	bool bCanInteract = bHasMission;
 	FText StateText = bHasMission ? ActiveStateText : InactiveStateText;
 
-	// ¸¸¾à ¿ÀºêÁ§Æ®¿¡ bCompleted º¯¼ö°¡ ÀÖ´Ù¸é
+	// ë§Œì•½ ì˜¤ë¸Œì íŠ¸ì— bCompleted ë³€ìˆ˜ê°€ ìˆë‹¤ë©´
 	if (bCompleted)
 	{
 		bCanInteract = false;

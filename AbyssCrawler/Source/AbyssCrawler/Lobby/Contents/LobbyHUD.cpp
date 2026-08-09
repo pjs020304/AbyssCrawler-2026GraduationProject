@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Lobby/Contents/LobbyHUD.h"
@@ -36,7 +36,7 @@ void ALobbyHUD::RefreshUI()
 {
 	if (LobbyUI)
 	{
-		// BP À§Á¬ ÇÔ¼ö È£Ãâ
+		// BP ìœ„ì ¯ í•¨ìˆ˜ í˜¸ì¶œ
 		LobbyUI->RefreshUI();
 	}
 }

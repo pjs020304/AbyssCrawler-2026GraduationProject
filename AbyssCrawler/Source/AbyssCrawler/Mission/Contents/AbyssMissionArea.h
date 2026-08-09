@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -57,10 +57,10 @@ protected:
 	float ArrowRotationSpeed = 60.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission|Marker")
-	float ArrowBobAmplitude = 80.0f; // À§¾Æ·¡ ¿òÁ÷ÀÌ´Â °Å¸®
+	float ArrowBobAmplitude = 80.0f; // ìœ„ì•„ë˜ ì›€ì§ì´ëŠ” ê±°ë¦¬
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission|Marker")
-	float ArrowBobSpeed = 2.0f; // ¿òÁ÷ÀÌ´Â ¼Óµµ
+	float ArrowBobSpeed = 2.0f; // ì›€ì§ì´ëŠ” ì†ë„
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mission|Marker")
 	float ArrowHideDistance = 300.0f;

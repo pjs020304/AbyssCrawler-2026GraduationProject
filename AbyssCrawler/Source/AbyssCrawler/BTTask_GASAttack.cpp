@@ -1,9 +1,9 @@
-#include "BTTask_GASAttack.h"
+ï»¿#include "BTTask_GASAttack.h"
 #include "AIController.h"
 #include "GameFramework/Character.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
-// GAS °ü·Ã ÇÊ¼ö Çì´õ
+// GAS ê´€ë ¨ í•„ìˆ˜ í—¤ë”
 #include "AbilitySystemBlueprintLibrary.h" 
 #include "AbilitySystemComponent.h"
 
@@ -11,20 +11,20 @@ UBTTask_GASAttack::UBTTask_GASAttack()
 {
 	NodeName = TEXT("GAS Attack (Event Driven)");
 
-	// ±âº» °ø°Ý »ç°Å¸®¸¦ ¼³Á¤ (2.5¹ÌÅÍ)
+	// ê¸°ë³¸ ê³µê²© ì‚¬ê±°ë¦¬ë¥¼ ì„¤ì • (2.5ë¯¸í„°)
 	AttackRange = 600.0f;
 }
 
 EBTNodeResult::Type UBTTask_GASAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	// 1. ÄÁÆ®·Ñ·¯¿Í Æù(»ó¾î) À¯È¿¼º °Ë»ç
+	// 1. ì»¨íŠ¸ë¡¤ëŸ¬ì™€ í°(ìƒì–´) ìœ íš¨ì„± ê²€ì‚¬
 	AAIController* AIController = OwnerComp.GetAIOwner();
 	if (!AIController) return EBTNodeResult::Failed;
 
 	APawn* Shark = AIController->GetPawn();
 	if (!Shark) return EBTNodeResult::Failed;
 
-	// 2. »ó¾îÀÇ Ability System Component (ASC)¸¦ ¾ÈÀüÇÏ°Ô °¡Á®¿É´Ï´Ù.
+	// 2. ìƒì–´ì˜ Ability System Component (ASC)ë¥¼ ì•ˆì „í•˜ê²Œ ê°€ì ¸ì˜µë‹ˆë‹¤.
 	UAbilitySystemComponent* ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Shark);
 	if (!ASC)
 	{
@@ -32,12 +32,12 @@ EBTNodeResult::Type UBTTask_GASAttack::ExecuteTask(UBehaviorTreeComponent& Owner
 		return EBTNodeResult::Failed;
 	}
 
-	// 3. ¾Ë¸²(Event) ¹æ½ÄÀÇ ÇÙ½É: ¾îºô¸®Æ¼¿¡ ³Ñ°ÜÁÙ 'µ¥ÀÌÅÍ ÆäÀÌ·Îµå' »ý¼º
+	// 3. ì•Œë¦¼(Event) ë°©ì‹ì˜ í•µì‹¬: ì–´ë¹Œë¦¬í‹°ì— ë„˜ê²¨ì¤„ 'ë°ì´í„° íŽ˜ì´ë¡œë“œ' ìƒì„±
 	FGameplayEventData Payload;
-	Payload.EventTag = AttackAbilityTag; // Çì´õ¿¡¼­ ÁöÁ¤ÇÑ ÅÂ±×
-	Payload.Instigator = Shark;          // °ø°ÝÀÇ ÁÖÃ¼ (»ó¾î)
+	Payload.EventTag = AttackAbilityTag; // í—¤ë”ì—ì„œ ì§€ì •í•œ íƒœê·¸
+	Payload.Instigator = Shark;          // ê³µê²©ì˜ ì£¼ì²´ (ìƒì–´)
 
-	// Çì´õ ÆÄÀÏ¿¡ TargetKey(FBlackboardKeySelector)¸¦ Ãß°¡ÇØ targetÀ» ³Ñ°ÜÁÜ.
+	// í—¤ë” íŒŒì¼ì— TargetKey(FBlackboardKeySelector)ë¥¼ ì¶”ê°€í•´ targetì„ ë„˜ê²¨ì¤Œ.
 	
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
 	if (BlackboardComp)
@@ -48,20 +48,20 @@ EBTNodeResult::Type UBTTask_GASAttack::ExecuteTask(UBehaviorTreeComponent& Owner
 			return EBTNodeResult::Failed;
 		}
 
-		// °Å¸® ÆÇº° ·ÎÁ÷ 
+		// ê±°ë¦¬ íŒë³„ ë¡œì§ 
 		FVector SharkLocation = Shark->GetActorLocation();
 		FVector TargetLocation = TargetActor->GetActorLocation();
 
-		// »ó¾î¿Í ÇÃ·¹ÀÌ¾î »çÀÌÀÇ ½ÇÁ¦ 3D °Å¸®¸¦ °è»êÇÕ´Ï´Ù.
+		// ìƒì–´ì™€ í”Œë ˆì´ì–´ ì‚¬ì´ì˜ ì‹¤ì œ 3D ê±°ë¦¬ë¥¼ ê³„ì‚°í•©ë‹ˆë‹¤.
 		float DistanceToTarget = FVector::Dist(SharkLocation, TargetLocation);
 
-		// ¼³Á¤ÇÑ °ø°Ý »ç°Å¸®º¸´Ù ¸Ö´Ù¸é?
+		// ì„¤ì •í•œ ê³µê²© ì‚¬ê±°ë¦¬ë³´ë‹¤ ë©€ë‹¤ë©´?
 		if (DistanceToTarget > AttackRange)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Shark is too far to bite! Distance: %f, Range: %f"), DistanceToTarget, AttackRange);
 
-			// ÀÌº¥Æ®¸¦ ½îÁö ¾Ê°í ÅÂ½ºÅ©¸¦ ½ÇÆÐ »óÅÂ·Î Á¾·á
-			// BT´Â Selector¿¡ ÀÇÇØ ´ÙÀ½ ÇÁ·¹ÀÓ¿¡ ´Ù½Ã ÃßÀû(MoveTo) ÅÂ½ºÅ©¸¦ ½ÇÇà
+			// ì´ë²¤íŠ¸ë¥¼ ì˜ì§€ ì•Šê³  íƒœìŠ¤í¬ë¥¼ ì‹¤íŒ¨ ìƒíƒœë¡œ ì¢…ë£Œ
+			// BTëŠ” Selectorì— ì˜í•´ ë‹¤ìŒ í”„ë ˆìž„ì— ë‹¤ì‹œ ì¶”ì (MoveTo) íƒœìŠ¤í¬ë¥¼ ì‹¤í–‰
 			return EBTNodeResult::Failed;
 		}
 		
@@ -69,7 +69,7 @@ EBTNodeResult::Type UBTTask_GASAttack::ExecuteTask(UBehaviorTreeComponent& Owner
 
 		if (TargetActor)
 		{
-			Payload.Target = TargetActor; // ÆíÁö¿¡ ´ë»óÀ» ¸íÈ®È÷ ±âÀç
+			Payload.Target = TargetActor; // íŽ¸ì§€ì— ëŒ€ìƒì„ ëª…í™•ížˆ ê¸°ìž¬
 			UE_LOG(LogTemp, Warning, TEXT("Payload Event Send"), *TargetActor->GetName());
 		}
 		else
@@ -78,13 +78,13 @@ EBTNodeResult::Type UBTTask_GASAttack::ExecuteTask(UBehaviorTreeComponent& Owner
 		}
 	}
 
-	// 4. ÀÌº¥Æ® ¹ß¼Û (¾Ë¸²)
-	// »ó¾î ÀÚ½Å¿¡°Ô ÀÌº¥Æ®¸¦ º¸³À´Ï´Ù. »ó¾îÀÇ ¾îºô¸®Æ¼ Áß ÀÌ ÅÂ±×¸¦ 'Trigger'·Î ¼³Á¤ÇÑ ¾îºô¸®Æ¼°¡ ÆíÁö(Payload)¸¦ ¹Þ°í ½ÇÇà
+	// 4. ì´ë²¤íŠ¸ ë°œì†¡ (ì•Œë¦¼)
+	// ìƒì–´ ìžì‹ ì—ê²Œ ì´ë²¤íŠ¸ë¥¼ ë³´ëƒ…ë‹ˆë‹¤. ìƒì–´ì˜ ì–´ë¹Œë¦¬í‹° ì¤‘ ì´ íƒœê·¸ë¥¼ 'Trigger'ë¡œ ì„¤ì •í•œ ì–´ë¹Œë¦¬í‹°ê°€ íŽ¸ì§€(Payload)ë¥¼ ë°›ê³  ì‹¤í–‰
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Shark, AttackAbilityTag, Payload);
 
-	// 5. ÀÛ¾÷ ¿Ï·á
-	// ¾îºô¸®Æ¼ÀÇ ½ÇÇà ÀÚÃ¼´Â ºí·çÇÁ¸°Æ®¿¡¼­ ÁøÇàµÇ¹Ç·Î, BT Task´Â '¸í·É ÇÏ´Þ ¿Ï·á'·Î °£ÁÖÇÏ°í Áï½Ã ¼º°øÀ» ¹ÝÈ¯
-	// (°ø°Ý ÄðÅ¸ÀÓÀº BTÀÇ Cooldown Decorator·Î Á¦¾îÇÏ´Â °ÍÀÌ ¾ÆÅ°ÅØÃ³ »ó ±ò²ûÇÕ´Ï´Ù.)
+	// 5. ìž‘ì—… ì™„ë£Œ
+	// ì–´ë¹Œë¦¬í‹°ì˜ ì‹¤í–‰ ìžì²´ëŠ” ë¸”ë£¨í”„ë¦°íŠ¸ì—ì„œ ì§„í–‰ë˜ë¯€ë¡œ, BT TaskëŠ” 'ëª…ë ¹ í•˜ë‹¬ ì™„ë£Œ'ë¡œ ê°„ì£¼í•˜ê³  ì¦‰ì‹œ ì„±ê³µì„ ë°˜í™˜
+	// (ê³µê²© ì¿¨íƒ€ìž„ì€ BTì˜ Cooldown Decoratorë¡œ ì œì–´í•˜ëŠ” ê²ƒì´ ì•„í‚¤í…ì²˜ ìƒ ê¹”ë”í•©ë‹ˆë‹¤.)
 	//UE_LOG(LogTemp, Warning, TEXT("GAS Attack send Succeeded"));
 	return EBTNodeResult::Succeeded;
 }

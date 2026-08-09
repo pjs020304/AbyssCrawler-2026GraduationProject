@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "LobbyWidget.h"
@@ -80,13 +80,13 @@ void ULobbyWidget::RefreshUI()
         else
         {
             // Hide UI
-            // HiddenÀº ÀÚ¸® Â÷ÁöÇÏ°í collapse´Â ÀÚ¸®¸¦ Â÷ÁöÇÏÁö ¾Ê´Â´Ù.
+            // Hiddenì€ ìë¦¬ ì°¨ì§€í•˜ê³  collapseëŠ” ìë¦¬ë¥¼ ì°¨ì§€í•˜ì§€ ì•ŠëŠ”ë‹¤.
             LobbyUsers[Index]->SetVisibility(ESlateVisibility::Collapsed);
         }
 
     }
 
-    // HiddenÀº ÀÚ¸® Â÷Áö collapse´Â ÀÚ¸®¸¦ Â÷ÁöÇÏÁö ¾Ê´Â´Ù.
+    // Hiddenì€ ìë¦¬ ì°¨ì§€ collapseëŠ” ìë¦¬ë¥¼ ì°¨ì§€í•˜ì§€ ì•ŠëŠ”ë‹¤.
 
     /*
     if (UKismetSystemLibrary::IsServer(this))

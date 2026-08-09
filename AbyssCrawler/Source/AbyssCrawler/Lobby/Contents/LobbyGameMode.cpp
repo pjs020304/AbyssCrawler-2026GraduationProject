@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "LobbyGameMode.h"
@@ -90,10 +90,10 @@ void ALobbyGameMode::PreLogin(const FString& Options, const FString& Address, co
 {
 	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
 
-	// Å¬¶óÀÌ¾ğÆ®°¡ º¸³½ Password ÃßÃâ
+	// í´ë¼ì´ì–¸íŠ¸ê°€ ë³´ë‚¸ Password ì¶”ì¶œ
 	const FString InputPassword = UGameplayStatics::ParseOption(Options, TEXT("Password"));
 
-	// ¼­¹ö¿¡ ¼³Á¤µÈ Password °Ë»ç
+	// ì„œë²„ì— ì„¤ì •ëœ Password ê²€ì‚¬
 	UE_LOG(LogTemp, Warning, TEXT("[PreLogin] InputPassword = %s, ServerPassword = %s"), *InputPassword, *ServerPassword);
 
 	if (!ServerPassword.IsEmpty() && InputPassword != ServerPassword)

@@ -1,43 +1,43 @@
-#include "BTTask_SVOChasePlayer.h"
+ï»¿#include "BTTask_SVOChasePlayer.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AbyssSharkAIController.h"
 #include "AbyssSharkCharacter.h"
 #include "GameFramework/Actor.h"
-// #include "SVOSubsystem.h" // (°¡Á¤) SVO ¸Å´ÏÀú Çì´õ ÆÄÀÏ
+// #include "SVOSubsystem.h" // (ê°€ì •) SVO ë§¤ë‹ˆì € í—¤ë” íŒŒì¼
 
 UBTTask_SVOChasePlayer::UBTTask_SVOChasePlayer()
 {
 	NodeName = TEXT("SVO Chase Player");
-	bNotifyTick = true; // TickTask¸¦ »ç¿ëÇÏ±â À§ÇØ true·Î ¼³Á¤
+	bNotifyTick = true; // TickTaskë¥¼ ì‚¬ìš©í•˜ê¸° ìœ„í•´ trueë¡œ ì„¤ì •
 }
 
 EBTNodeResult::Type UBTTask_SVOChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	// 1. ÄÁÆ®·Ñ·¯¿Í Æù(»ó¾î) °¡Á®¿À±â
+	// 1. ì»¨íŠ¸ë¡¤ëŸ¬ì™€ í°(ìƒì–´) ê°€ì ¸ì˜¤ê¸°
 	AAbyssSharkAIController* AIController = Cast<AAbyssSharkAIController>(OwnerComp.GetAIOwner());
 	if (!AIController) return EBTNodeResult::Failed;
 
 	AAbyssSharkCharacter* Shark = Cast<AAbyssSharkCharacter>(AIController->GetPawn());
 	if (!Shark) return EBTNodeResult::Failed;
 
-	// 2. ºí·¢º¸µå¿¡¼­ Å¸°Ù(ÇÃ·¹ÀÌ¾î) À§Ä¡ °¡Á®¿À±â
+	// 2. ë¸”ë™ë³´ë“œì—ì„œ íƒ€ê²Ÿ(í”Œë ˆì´ì–´) ìœ„ì¹˜ ê°€ì ¸ì˜¤ê¸°
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
 	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKey.SelectedKeyName));
 	if (!TargetActor) return EBTNodeResult::Failed;
 
-	// 3. SVO ¸Å´ÏÀú¸¦ ÅëÇØ A* °æ·Î µµÃâ (¾Õ¼­ ³íÀÇÇÑ String Pulling Æ÷ÇÔ)
+	// 3. SVO ë§¤ë‹ˆì €ë¥¼ í†µí•´ A* ê²½ë¡œ ë„ì¶œ (ì•ì„œ ë…¼ì˜í•œ String Pulling í¬í•¨)
 	// USVOSubsystem* SVOManager = GetWorld()->GetSubsystem<USVOSubsystem>();
 	// TArray<FVector> PathPoints = SVOManager->FindSmoothedPath(Shark->GetActorLocation(), TargetActor->GetActorLocation());
 
-	// (ÀÓ½Ã) °æ·Î°¡ ÀÖ´Ù°í °¡Á¤
+	// (ì„ì‹œ) ê²½ë¡œê°€ ìˆë‹¤ê³  ê°€ì •
 	bool bFoundPath = true;
 
 	if (bFoundPath)
 	{
-		// °æ·Î¸¦ Ã£¾Ò´Ù¸é, »ó¾îÀÇ ¸Ş¸ğ¸®(¶Ç´Â AIController)¿¡ °æ·Î ¹è¿­À» ÀúÀåÇÕ´Ï´Ù.
+		// ê²½ë¡œë¥¼ ì°¾ì•˜ë‹¤ë©´, ìƒì–´ì˜ ë©”ëª¨ë¦¬(ë˜ëŠ” AIController)ì— ê²½ë¡œ ë°°ì—´ì„ ì €ì¥í•©ë‹ˆë‹¤.
 		// AIController->SetCurrentPath(PathPoints);
 
-		// Áï½Ã Á¾·áÇÏÁö ¾Ê°í, »ó¾î°¡ ¸ñÇ¥¿¡ µµ´ŞÇÒ ¶§±îÁö Task¸¦ 'ÁøÇà Áß' »óÅÂ·Î À¯ÁöÇÕ´Ï´Ù.
+		// ì¦‰ì‹œ ì¢…ë£Œí•˜ì§€ ì•Šê³ , ìƒì–´ê°€ ëª©í‘œì— ë„ë‹¬í•  ë•Œê¹Œì§€ Taskë¥¼ 'ì§„í–‰ ì¤‘' ìƒíƒœë¡œ ìœ ì§€í•©ë‹ˆë‹¤.
 		return EBTNodeResult::InProgress;
 	}
 
@@ -46,29 +46,29 @@ EBTNodeResult::Type UBTTask_SVOChasePlayer::ExecuteTask(UBehaviorTreeComponent& 
 
 void UBTTask_SVOChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
-	// ÀÌ ÇÔ¼ö´Â ExecuteTask°¡ 'InProgress'¸¦ ¹İÈ¯ÇßÀ» ¶§ ¸Å ÇÁ·¹ÀÓ ½ÇÇàµË´Ï´Ù.
+	// ì´ í•¨ìˆ˜ëŠ” ExecuteTaskê°€ 'InProgress'ë¥¼ ë°˜í™˜í–ˆì„ ë•Œ ë§¤ í”„ë ˆì„ ì‹¤í–‰ë©ë‹ˆë‹¤.
 
 	AAbyssSharkAIController* AIController = Cast<AAbyssSharkAIController>(OwnerComp.GetAIOwner());
 	AAbyssSharkCharacter* Shark = Cast<AAbyssSharkCharacter>(AIController->GetPawn());
 
-	// 1. ÀúÀåÇØµĞ °æ·Î(PathPoints)¿¡¼­ ÇöÀç ÇâÇØ¾ß ÇÒ '´ÙÀ½ ³ëµå'¸¦ ²¨³À´Ï´Ù.
+	// 1. ì €ì¥í•´ë‘” ê²½ë¡œ(PathPoints)ì—ì„œ í˜„ì¬ í–¥í•´ì•¼ í•  'ë‹¤ìŒ ë…¸ë“œ'ë¥¼ êº¼ëƒ…ë‹ˆë‹¤.
 	FVector NextWaypoint = /* AIController->GetNextWaypoint() */ FVector::ZeroVector;
 
-	// 2. ½ºÆ¼¾î¸µ(Steering Behavior) Àû¿ë: »ó¾îÀÇ ¸Ó¸®¸¦ µ¹¸®°í ¾ÕÀ¸·Î Çì¾öÄ¡°Ô ÇÕ´Ï´Ù.
+	// 2. ìŠ¤í‹°ì–´ë§(Steering Behavior) ì ìš©: ìƒì–´ì˜ ë¨¸ë¦¬ë¥¼ ëŒë¦¬ê³  ì•ìœ¼ë¡œ í—¤ì—„ì¹˜ê²Œ í•©ë‹ˆë‹¤.
 	FVector Direction = (NextWaypoint - Shark->GetActorLocation()).GetSafeNormal();
 
-	// ¸Ó¸® È¸Àü (ºÎµå·´°Ô)
+	// ë¨¸ë¦¬ íšŒì „ (ë¶€ë“œëŸ½ê²Œ)
 	FRotator TargetRot = Direction.Rotation();
 	Shark->SetActorRotation(FMath::RInterpTo(Shark->GetActorRotation(), TargetRot, DeltaSeconds, 5.0f));
 
-	// ÀüÁø ÃßÁø·Â (AddMovementInput)
+	// ì „ì§„ ì¶”ì§„ë ¥ (AddMovementInput)
 	Shark->AddMovementInput(Shark->GetActorForwardVector(), 1.0f);
 
-	// 3. ´ÙÀ½ ¿şÀÌÆ÷ÀÎÆ® ¹İ°æ ¾È¿¡ µµÂøÇß´Ù¸é?
+	// 3. ë‹¤ìŒ ì›¨ì´í¬ì¸íŠ¸ ë°˜ê²½ ì•ˆì— ë„ì°©í–ˆë‹¤ë©´?
 	if (FVector::Distance(Shark->GetActorLocation(), NextWaypoint) < 300.0f)
 	{
-		// °æ·Î ¹è¿­ÀÇ ÀÎµ¦½º¸¦ ´ÙÀ½À¸·Î ³Ñ±é´Ï´Ù.
-		// ¸¸¾à °æ·ÎÀÇ ¸¶Áö¸·(ÇÃ·¹ÀÌ¾î ÄÚ¾Õ)¿¡ µµ´ŞÇß´Ù¸é Task¸¦ ¼º°øÀ¸·Î ³¡³À´Ï´Ù.
+		// ê²½ë¡œ ë°°ì—´ì˜ ì¸ë±ìŠ¤ë¥¼ ë‹¤ìŒìœ¼ë¡œ ë„˜ê¹ë‹ˆë‹¤.
+		// ë§Œì•½ ê²½ë¡œì˜ ë§ˆì§€ë§‰(í”Œë ˆì´ì–´ ì½”ì•)ì— ë„ë‹¬í–ˆë‹¤ë©´ Taskë¥¼ ì„±ê³µìœ¼ë¡œ ëëƒ…ë‹ˆë‹¤.
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
 }

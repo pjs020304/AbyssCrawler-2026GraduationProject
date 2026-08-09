@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Mission/Contents/AbyssDataConsole.h"
@@ -170,8 +170,8 @@ void AAbyssDataConsole::CompleteDownload()
 	WorkingCharacter->Client_UpdateWorkProgress(1.0f);
 	WorkingCharacter->Client_HideWorkUI();
 
-	// ¿©±â¼­ ¹Ì¼Ç ÁøÇàµµ +1
-	// ³× ÇöÀç ¹Ì¼Ç ÇÔ¼ö ÀÌ¸§¿¡ ¸Â°Ô ¿¬°á
+	// ì—¬ê¸°ì„œ ë¯¸ì…˜ ì§„í–‰ë„ +1
+	// ë„¤ í˜„ì¬ ë¯¸ì…˜ í•¨ìˆ˜ ì´ë¦„ì— ë§ê²Œ ì—°ê²°
 	if (AAbyssGameMode* GM = GetWorld()->GetAuthGameMode<AAbyssGameMode>())
 	{
 		GM->AddMissionProgressById(MissionId, 1);
@@ -184,7 +184,7 @@ void AAbyssDataConsole::CompleteDownload()
 
 void AAbyssDataConsole::OnRep_Completed()
 {
-	// »óÈ£ÀÛ¿ë
+	// ìƒí˜¸ì‘ìš©
 }
 
 void AAbyssDataConsole::OnFocus_Implementation()
@@ -225,7 +225,7 @@ void AAbyssDataConsole::UpdateMissionPromptUI()
 	bool bCanInteract = bHasMission;
 	FText StateText = bHasMission ? ActiveStateText : InactiveStateText;
 
-	// ¸¸¾à ¿ÀºêÁ§Æ®¿¡ bCompleted º¯¼ö°¡ ÀÖ´Ù¸é
+	// ë§Œì•½ ì˜¤ë¸Œì íŠ¸ì— bCompleted ë³€ìˆ˜ê°€ ìˆë‹¤ë©´
 	if (bCompleted)
 	{
 		bCanInteract = false;

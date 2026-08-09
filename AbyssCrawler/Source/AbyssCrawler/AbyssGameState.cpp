@@ -1,13 +1,13 @@
-#include "AbyssGameState.h"
+ï»¿#include "AbyssGameState.h"
 #include "AbyssDiverCharacter.h"
 #include "MainHUDWidget.h"
 #include "GameFramework/PlayerController.h"
-#include "Net/UnrealNetwork.h" // [Áß¿ä] ¸®ÇÃ¸®ÄÉÀÌ¼ÇÀ» À§ÇØ ÇÊ¼ö!
+#include "Net/UnrealNetwork.h" // [ì¤‘ìš”] ë¦¬í”Œë¦¬ì¼€ì´ì…˜ì„ ìœ„í•´ í•„ìˆ˜!
 
 AAbyssGameState::AAbyssGameState()
 {
-    // º¯¼ö ÃÊ±âÈ­
-    RemainingMissionTime = 600; // ¿¹: 10ºĞ
+    // ë³€ìˆ˜ ì´ˆê¸°í™”
+    RemainingMissionTime = 600; // ì˜ˆ: 10ë¶„
     CollectedItemsCount = 0;
     TargetItemsCount = 10;
 
@@ -20,7 +20,7 @@ void AAbyssGameState::OnRep_CollectedItems()
 {
     UE_LOG(LogTemp, Warning, TEXT("[GameState] OnRep Called"));
 
-    // UI °»½Å Æ®¸®°Å
+    // UI ê°±ì‹  íŠ¸ë¦¬ê±°
     
     if (GetWorld())
     {
@@ -47,7 +47,7 @@ void AAbyssGameState::AddCollectedItem()
 
     UE_LOG(LogTemp, Warning, TEXT("[GameState] Collected: %d"), CollectedItemsCount);
 
-    // ¼­¹ö´Â OnRep¸¦ ¾È ¹ŞÀ¸´Ï±î ÇÊ¿äÇÏ¸é ¿©±â¼­ Ã³¸®
+    // ì„œë²„ëŠ” OnRepë¥¼ ì•ˆ ë°›ìœ¼ë‹ˆê¹Œ í•„ìš”í•˜ë©´ ì—¬ê¸°ì„œ ì²˜ë¦¬
     OnRep_CollectedItems();
 }
 
@@ -109,12 +109,12 @@ bool AAbyssGameState::AddMission(const FAbyssMissionData& NewMission)
     return true;
 }
 
-// Replicated º¯¼ö°¡ ÀÖ´Ù¸é ÀÌ ÇÔ¼ö¸¦ ¹İµå½Ã ±¸ÇöÇØ¾ß ÇÔ
+// Replicated ë³€ìˆ˜ê°€ ìˆë‹¤ë©´ ì´ í•¨ìˆ˜ë¥¼ ë°˜ë“œì‹œ êµ¬í˜„í•´ì•¼ í•¨
 void AAbyssGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-    // Çì´õ¿¡¼­ Replicated·Î ¼±¾ğÇÑ º¯¼öµéÀ» µî·Ï
+    // í—¤ë”ì—ì„œ Replicatedë¡œ ì„ ì–¸í•œ ë³€ìˆ˜ë“¤ì„ ë“±ë¡
     DOREPLIFETIME(AAbyssGameState, RemainingMissionTime);
     DOREPLIFETIME(AAbyssGameState, CollectedItemsCount);
     DOREPLIFETIME(AAbyssGameState, Missions);
@@ -156,7 +156,7 @@ void AAbyssGameState::AddSharedMoney(int32 Amount)
 
         UE_LOG(LogTemp, Warning, TEXT("[Money] Add %d / Total=%d"), Amount, SharedMoney);
 
-        // ¼­¹ö´Â OnRep¸¦ ¹ŞÁö ¾ÊÀ¸¹Ç·Î Á÷Á¢ È£Ãâ
+        // ì„œë²„ëŠ” OnRepë¥¼ ë°›ì§€ ì•Šìœ¼ë¯€ë¡œ ì§ì ‘ í˜¸ì¶œ
         OnRep_SharedMoney();
     }
 }
@@ -179,7 +179,7 @@ void AAbyssGameState::SetRemainingGameTime(float NewTime)
 
 void AAbyssGameState::OnRep_SharedMoney()
 {
-    // ¼­¹ö·ÎºÎÅÍ »õ·Î¿î µ· µ¥ÀÌÅÍ°¡ µµÂøÇÏ¸é UI¿¡ ¹æ¼ÛÇÕ´Ï´Ù.
+    // ì„œë²„ë¡œë¶€í„° ìƒˆë¡œìš´ ëˆ ë°ì´í„°ê°€ ë„ì°©í•˜ë©´ UIì— ë°©ì†¡í•©ë‹ˆë‹¤.
     OnMoneyChanged.Broadcast(SharedMoney);
 }
 
@@ -307,7 +307,7 @@ void AAbyssGameState::Debug_SetProgressFull()
 
     ProgressPoint = TargetProgressPoint;
 
-    // ¼­¹ö¿¡¼­´Â OnRepÀÌ ÀÚµ¿ È£ÃâµÇÁö ¾ÊÀ¸¹Ç·Î Á÷Á¢ UI °»½Å¿ë ÇÔ¼ö È£Ãâ
+    // ì„œë²„ì—ì„œëŠ” OnRepì´ ìë™ í˜¸ì¶œë˜ì§€ ì•Šìœ¼ë¯€ë¡œ ì§ì ‘ UI ê°±ì‹ ìš© í•¨ìˆ˜ í˜¸ì¶œ
     OnRep_Missions();
 
     UE_LOG(LogTemp, Warning, TEXT("[Exhibition] ProgressPoint = %d / %d"),

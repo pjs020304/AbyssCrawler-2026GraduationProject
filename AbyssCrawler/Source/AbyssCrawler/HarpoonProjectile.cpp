@@ -1,4 +1,4 @@
-#include "HarpoonProjectile.h"
+ï»¿#include "HarpoonProjectile.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
@@ -10,30 +10,30 @@ AHarpoonProjectile::AHarpoonProjectile()
 	bReplicates = true;
 	SetReplicateMovement(true);
 
-	// 1. Ãæµ¹Ã¼ ¼³Á¤
+	// 1. ì¶©ëŒì²´ ì„¤ì •
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	CollisionComp->InitSphereRadius(5.0f);
 	CollisionComp->SetCollisionProfileName("Projectile");
 	CollisionComp->OnComponentHit.AddDynamic(this, &AHarpoonProjectile::OnHit);
 	RootComponent = CollisionComp;
 
-	// 2. ¸Ş½¬ ¼³Á¤
+	// 2. ë©”ì‰¬ ì„¤ì •
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
 	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	// 3. ¹ß»çÃ¼ ÀÌµ¿ ¼³Á¤ (¼öÁßÀÌ¹Ç·Î Áß·Â ¿µÇâÀ» ÁÙÀÌ°Å³ª ¾ø¾Û´Ï´Ù)
+	// 3. ë°œì‚¬ì²´ ì´ë™ ì„¤ì • (ìˆ˜ì¤‘ì´ë¯€ë¡œ ì¤‘ë ¥ ì˜í–¥ì„ ì¤„ì´ê±°ë‚˜ ì—†ì•±ë‹ˆë‹¤)
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
 	ProjectileMovement->UpdatedComponent = CollisionComp;
-	ProjectileMovement->InitialSpeed = 3000.0f; // ÀÛ»ìÀÇ ¹ß»ç ¼Óµµ
+	ProjectileMovement->InitialSpeed = 3000.0f; // ì‘ì‚´ì˜ ë°œì‚¬ ì†ë„
 	ProjectileMovement->MaxSpeed = 3000.0f;
-	ProjectileMovement->ProjectileGravityScale = 0.1f; // ¼öÁß ÀúÇ×/ºÎ·Â ´À³¦
+	ProjectileMovement->ProjectileGravityScale = 0.1f; // ìˆ˜ì¤‘ ì €í•­/ë¶€ë ¥ ëŠë‚Œ
 }
 
 void AHarpoonProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	// 5ÃÊ µÚ¿¡ ¾îµò°¡ ¾È ¸Â¾Ò¾îµµ ÀÚµ¿ ¼Ò¸ê (¸Ş¸ğ¸® ´©¼ö ¹æÁö)
+	// 5ì´ˆ ë’¤ì— ì–´ë”˜ê°€ ì•ˆ ë§ì•˜ì–´ë„ ìë™ ì†Œë©¸ (ë©”ëª¨ë¦¬ ëˆ„ìˆ˜ ë°©ì§€)
 	SetLifeSpan(5.0f);
 }
 
@@ -44,19 +44,19 @@ void AHarpoonProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 		return;
 	}
 
-	// ÀÚ±â ÀÚ½ÅÀ» ½ğ »ç¶÷(ÇÃ·¹ÀÌ¾î)Àº ¹«½Ã
+	// ìê¸° ìì‹ ì„ ìœ ì‚¬ëŒ(í”Œë ˆì´ì–´)ì€ ë¬´ì‹œ
 	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherActor != GetInstigator()))
 	{
-		// 4. Ãæµ¹ÇÑ ´ë»ó(»ó¾î)¿¡°Ô GAS ÀÌº¥Æ®(ÆíÁö) ¹ß¼Û!
+		// 4. ì¶©ëŒí•œ ëŒ€ìƒ(ìƒì–´)ì—ê²Œ GAS ì´ë²¤íŠ¸(í¸ì§€) ë°œì†¡!
 		FGameplayEventData Payload;
 		Payload.EventTag = HarpoonHitEventTag;
-		Payload.Instigator = GetInstigator(); // ÇÃ·¹ÀÌ¾î
-		Payload.Target = OtherActor;          // ¸ÂÀº ´ë»ó (»ó¾î)
+		Payload.Instigator = GetInstigator(); // í”Œë ˆì´ì–´
+		Payload.Target = OtherActor;          // ë§ì€ ëŒ€ìƒ (ìƒì–´)
 
-		// Å¸°Ù¿¡°Ô "³Ê ÀÛ»ì ¸Â¾Ò¾î!" ¶ó°í ¾Ë¸²
+		// íƒ€ê²Ÿì—ê²Œ "ë„ˆ ì‘ì‚´ ë§ì•˜ì–´!" ë¼ê³  ì•Œë¦¼
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OtherActor, HarpoonHitEventTag, Payload);
 		UE_LOG(LogTemp, Warning, TEXT("Harpoon Hit Payload"));
-		// ÀÛ»ì ÆÄ±«
+		// ì‘ì‚´ íŒŒê´´
 		Destroy();
 
 		return;

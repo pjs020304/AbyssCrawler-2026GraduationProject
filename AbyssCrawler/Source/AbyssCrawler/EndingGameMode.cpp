@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "EndingGameMode.h"
@@ -11,7 +11,7 @@ AEndingGameMode::AEndingGameMode()
 {
 	PlayerControllerClass = AAbyssPlayerController::StaticClass();
 
-	// ¿£µù ¸Ê¿¡¼­´Â ÇÃ·¹ÀÌ¾î Ä³¸¯ÅÍ¸¦ ±»ÀÌ ½ºÆùÇÏÁö ¾ÊÀ¸·Á¸é nullptr
+	// ì—”ë”© ë§µì—ì„œëŠ” í”Œë ˆì´ì–´ ìºë¦­í„°ë¥¼ êµ³ì´ ìŠ¤í°í•˜ì§€ ì•Šìœ¼ë ¤ë©´ nullptr
 	DefaultPawnClass = nullptr;
 }
 

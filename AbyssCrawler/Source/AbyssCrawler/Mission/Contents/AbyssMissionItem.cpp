@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Mission/Contents/AbyssMissionItem.h"
@@ -39,7 +39,7 @@ void AAbyssMissionItem::Interact_Implementation(AActor* InstigatorActor)
     AAbyssGameState* GS = GetWorld()->GetGameState<AAbyssGameState>();
     if (!GS) return;
 
-    // ÇØ´ç ¹Ì¼ÇÀ» ¾È ¹Þ¾ÒÀ¸¸é ÀÛµ¿ X
+    // í•´ë‹¹ ë¯¸ì…˜ì„ ì•ˆ ë°›ì•˜ìœ¼ë©´ ìž‘ë™ X
     if (!GS->HasActiveMission(MissionId))
     {
         UE_LOG(LogTemp, Warning, TEXT("[MissionItem] Mission not active: %s"), *MissionId.ToString());

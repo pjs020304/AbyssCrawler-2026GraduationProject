@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Lobby/UI/GameConfigPopupWidget.h"
@@ -93,7 +93,7 @@ void UGameConfigPopupWidget::NativeConstruct()
 			CurrentQuality = 1;
 		}
 
-		// Áö±İ UI°¡ Low / Medium / High 3°³¶ó¼­ 0~2·Î »ç¿ë
+		// ì§€ê¸ˆ UIê°€ Low / Medium / High 3ê°œë¼ì„œ 0~2ë¡œ ì‚¬ìš©
 		CurrentQuality = FMath::Clamp(CurrentQuality, 0, 2);
 
 		RefreshQualityChecks(CurrentQuality);

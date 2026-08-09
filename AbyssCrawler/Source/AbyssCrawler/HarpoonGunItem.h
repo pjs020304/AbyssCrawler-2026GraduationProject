@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "AbyssItemBase.h"
@@ -12,11 +12,11 @@ class ABYSSCRAWLER_API AHarpoonGunItem : public AAbyssItemBase
 	GENERATED_BODY()
 
 public:
-	// ÁÂÅ¬¸¯ µî ¾ÆÀÌÅÛ »ç¿ë ½Ã È£ÃâµÇ´Â ÇÔ¼ö ¿À¹ö¶óÀÌµå
+	// ì¢Œí´ë¦­ ë“± ì•„ì´í…œ ì‚¬ìš© ì‹œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜ ì˜¤ë²„ë¼ì´ë“œ
 	virtual void UseItem() override;
 
 protected:
-	// ¿¡µğÅÍ¿¡¼­ ÇÒ´çÇÒ ¹ß»çÃ¼ Å¬·¡½º
+	// ì—ë””í„°ì—ì„œ í• ë‹¹í•  ë°œì‚¬ì²´ í´ë˜ìŠ¤
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 	TSubclassOf<AHarpoonProjectile> ProjectileClass;
 };

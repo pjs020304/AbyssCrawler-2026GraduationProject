@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "GameplayTagContainer.h" // GAS ÅÂ±×¸¦ »ç¿ëÇÏ±â À§ÇØ ÇÊ¼ö Æ÷ÇÔ
+#include "GameplayTagContainer.h" // GAS íƒœê·¸ë¥¼ ì‚¬ìš©í•˜ê¸° ìœ„í•´ í•„ìˆ˜ í¬í•¨
 #include "BTTask_GASAttack.generated.h"
 
 UCLASS()
@@ -14,10 +14,10 @@ public:
 	UBTTask_GASAttack();
 
 protected:
-	// Task°¡ ½ÇÇàµÉ ¶§ È£ÃâµÇ´Â ¸ŞÀÎ ÇÔ¼ö
+	// Taskê°€ ì‹¤í–‰ë  ë•Œ í˜¸ì¶œë˜ëŠ” ë©”ì¸ í•¨ìˆ˜
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
-	// ½ÇÇàÇÒ °ø°İ ¾îºô¸®Æ¼ÀÇ ÅÂ±× ("Ability.Attack.Bite")
+	// ì‹¤í–‰í•  ê³µê²© ì–´ë¹Œë¦¬í‹°ì˜ íƒœê·¸ ("Ability.Attack.Bite")
 	UPROPERTY(EditAnywhere, Category = "GAS")
 	FGameplayTag AttackAbilityTag;
 

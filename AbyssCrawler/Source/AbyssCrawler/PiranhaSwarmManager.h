@@ -25,6 +25,9 @@ struct FBoid
 	FVector Velocity = FVector::ZeroVector;
 	// Cached obstacle-avoidance steering direction (unit), refreshed round-robin.
 	FVector AvoidDir = FVector::ZeroVector;
+	// Constant per-fish animation phase (0..1), handed to the swim material as
+	// per-instance custom data so the flock doesn't beat its tail in lockstep.
+	float Phase = 0.f;
 	bool bAlive = true;
 
 	FBoid() {}
@@ -113,17 +116,28 @@ protected:
 
 	// --- Visual (Instanced Static Mesh) ---
 
-	// The fish mesh drawn once per boid. Assign a small fish static mesh.
+	// The fish mesh drawn once per boid. Must be a *static* mesh: instanced
+	// rendering is what lets one actor draw the whole flock in a single pass.
+	// The imported Swarm asset is a skeletal mesh with no animation sequence, so
+	// convert it once via the Skeletal Mesh Editor toolbar > "Make Static Mesh"
+	// and assign the result here. Swim motion comes from the material below.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Swarm|Visual")
 	UStaticMesh* FishMeshAsset;
 
-	// Optional material override applied to element 0 (e.g. a WPO swim-wiggle material).
+	// Material applied to element 0. Expected to be a World Position Offset
+	// "swim wiggle" material reading the per-instance custom data this actor
+	// writes every mesh update (see PushToInstances):
+	//   Custom Data 0 = phase offset (0..1, constant per fish)
+	//   Custom Data 1 = speed alpha  (0..1, MinSpeed..MaxSpeed)
+	//   Custom Data 2 = visibility   (1 = drawn, 0 = culled)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Swarm|Visual")
 	UMaterialInterface* FishMaterialOverride;
 
-	// Per-instance scale of the fish mesh.
-	UPROPERTY(EditAnywhere, Category = "Swarm|Visual")
-	FVector FishScale = FVector(1.f, 1.f, 1.f);
+	// Per-instance scale of the fish mesh. The converted Swarm mesh comes in at
+	// roughly 1 m, so 0.3 lands on the ~0.3 m piranha size from the design notes.
+	// Editable per placed swarm; the ratio lock keeps the three axes uniform.
+	UPROPERTY(EditAnywhere, Category = "Swarm|Visual", meta = (AllowPreserveRatio, ClampMin = "0.001", UIMin = "0.01", UIMax = "2.0"))
+	FVector FishScale = FVector(0.3f, 0.3f, 0.3f);
 
 	// Rotation offset so the mesh's forward axis lines up with travel direction.
 	// Default assumes the mesh faces +X (Unreal forward). Adjust if it faces another axis.
@@ -275,9 +289,13 @@ private:
 	bool bInvestigating = false;
 	float LoseInterestRemaining = 0.f;
 
+	// Number of per-instance custom data floats written for the swim material.
+	static constexpr int32 SwarmCustomDataFloats = 3;
+
 	// Reused each frame to avoid per-tick heap allocations.
 	TArray<FTransform> ScratchTransforms;
 	TArray<FVector> ScratchAccel;
+	TArray<float> ScratchCustomData;
 
 	FRandomStream RandStream;
 

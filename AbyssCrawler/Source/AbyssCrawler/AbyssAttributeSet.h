@@ -1,11 +1,11 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.generated.h"
 
-// GAS¿¡¼­ ÇÊ¼öÀûÀ¸·Î »ç¿ëÇÏ´Â ¸ÅÅ©·Î ¼¼Æ®ÀÔ´Ï´Ù. Getter/Setter ÇÔ¼ö¸¦ ÀÚµ¿À¸·Î ¸¸µé¾îÁİ´Ï´Ù.
+// GASì—ì„œ í•„ìˆ˜ì ìœ¼ë¡œ ì‚¬ìš©í•˜ëŠ” ë§¤í¬ë¡œ ì„¸íŠ¸ì…ë‹ˆë‹¤. Getter/Setter í•¨ìˆ˜ë¥¼ ìë™ìœ¼ë¡œ ë§Œë“¤ì–´ì¤ë‹ˆë‹¤.
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
 	GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
@@ -20,18 +20,18 @@ class ABYSSCRAWLER_API UAbyssAttributeSet : public UAttributeSet
 public:
 	UAbyssAttributeSet();
 
-	// ³×Æ®¿öÅ© ¸ÖÆ¼ÇÃ·¹ÀÌ µ¿±âÈ­¸¦ À§ÇÑ ÇÊ¼ö ¿À¹ö¶óÀÌµå ÇÔ¼ö
+	// ë„¤íŠ¸ì›Œí¬ ë©€í‹°í”Œë ˆì´ ë™ê¸°í™”ë¥¼ ìœ„í•œ í•„ìˆ˜ ì˜¤ë²„ë¼ì´ë“œ í•¨ìˆ˜
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// [Áß¿ä] ¼Ó¼º°ªÀÌ º¯°æµÇ±â Á÷Àü¿¡ È£ÃâµË´Ï´Ù. (ÃÖ´ë/ÃÖ¼Ò°ª Á¦ÇÑ µî Å¬·¥ÇÎ ¿ëµµ)
+	// [ì¤‘ìš”] ì†ì„±ê°’ì´ ë³€ê²½ë˜ê¸° ì§ì „ì— í˜¸ì¶œë©ë‹ˆë‹¤. (ìµœëŒ€/ìµœì†Œê°’ ì œí•œ ë“± í´ë¨í•‘ ìš©ë„)
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 
-	// °ÔÀÓÇÃ·¹ÀÌ ÀÌÆåÆ®(Damage, Heal µî)°¡ Àû¿ëµÈ Á÷ÈÄ¿¡ È£ÃâµË´Ï´Ù.
+	// ê²Œì„í”Œë ˆì´ ì´í™íŠ¸(Damage, Heal ë“±)ê°€ ì ìš©ëœ ì§í›„ì— í˜¸ì¶œë©ë‹ˆë‹¤.
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 
 public:
 	// ===========================================================
-	// 1. Ã¼·Â (Health)
+	// 1. ì²´ë ¥ (Health)
 	// ===========================================================
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes|Health", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
@@ -42,7 +42,7 @@ public:
 	ATTRIBUTE_ACCESSORS(UAbyssAttributeSet, MaxHealth)
 
 		// ===========================================================
-		// 2. »ê¼Ò (Oxygen)
+		// 2. ì‚°ì†Œ (Oxygen)
 		// ===========================================================
 		UPROPERTY(BlueprintReadOnly, Category = "Attributes|Oxygen", ReplicatedUsing = OnRep_Oxygen)
 	FGameplayAttributeData Oxygen;
@@ -53,7 +53,7 @@ public:
 	ATTRIBUTE_ACCESSORS(UAbyssAttributeSet, MaxOxygen)
 
 		// ===========================================================
-		// 3. ¹èÅÍ¸® (Battery)
+		// 3. ë°°í„°ë¦¬ (Battery)
 		// ===========================================================
 		UPROPERTY(BlueprintReadOnly, Category = "Attributes|Battery", ReplicatedUsing = OnRep_Battery)
 	FGameplayAttributeData Battery;
@@ -64,8 +64,8 @@ public:
 	ATTRIBUTE_ACCESSORS(UAbyssAttributeSet, MaxBattery)
 
 protected:
-	// --- ³×Æ®¿öÅ© ¸®ÇÃ¸®ÄÉÀÌ¼Ç(Replication) ÅëÁö ÇÔ¼öµé ---
-	// ¼­¹ö¿¡¼­ °ªÀÌ ¹Ù²î¾úÀ» ¶§ Å¬¶óÀÌ¾ğÆ®µé¿¡°Ô "°ªÀÌ ¹Ù²î¾ú¾î!" ¶ó°í ¾Ë·ÁÁÖ´Â ¿ªÇÒÀÔ´Ï´Ù.
+	// --- ë„¤íŠ¸ì›Œí¬ ë¦¬í”Œë¦¬ì¼€ì´ì…˜(Replication) í†µì§€ í•¨ìˆ˜ë“¤ ---
+	// ì„œë²„ì—ì„œ ê°’ì´ ë°”ë€Œì—ˆì„ ë•Œ í´ë¼ì´ì–¸íŠ¸ë“¤ì—ê²Œ "ê°’ì´ ë°”ë€Œì—ˆì–´!" ë¼ê³  ì•Œë ¤ì£¼ëŠ” ì—­í• ì…ë‹ˆë‹¤.
 
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);

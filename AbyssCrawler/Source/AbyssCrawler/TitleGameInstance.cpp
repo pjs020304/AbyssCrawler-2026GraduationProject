@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "TitleGameInstance.h"
@@ -43,19 +43,19 @@ void UTitleGameInstance::OnNetworkFailure(
 {
 	UE_LOG(LogTemp, Error, TEXT("[OnNetworkFailure] FailureType = %d, ErrorString = %s"), (int32)FailureType, *ErrorString);
 
-	// 1. WrongPassword ¾Æ´Ï¸é ¹«½Ã
+	// 1. WrongPassword ì•„ë‹ˆë©´ ë¬´ì‹œ
 	if (!ErrorString.Contains(TEXT("WrongPassword")))
 	{
 		return;
 	}
 
-	// 2. Á¢¼Ó ½Ãµµ ½ÇÆĞ°¡ ¾Æ´Ï¸é ¹«½Ã
+	// 2. ì ‘ì† ì‹œë„ ì‹¤íŒ¨ê°€ ì•„ë‹ˆë©´ ë¬´ì‹œ
 	if (FailureType != ENetworkFailure::PendingConnectionFailure)
 	{
 		return;
 	}
 
-	// 3. ·ÎÄÃ ÇÃ·¹ÀÌ¾î°¡ ¾øÀ¸¸é ¹«½Ã
+	// 3. ë¡œì»¬ í”Œë ˆì´ì–´ê°€ ì—†ìœ¼ë©´ ë¬´ì‹œ
 	ULocalPlayer* LocalPlayer = GetFirstGamePlayer();
 	if (!LocalPlayer)
 	{
@@ -63,7 +63,7 @@ void UTitleGameInstance::OnNetworkFailure(
 		return;
 	}
 
-	// 4. ÇöÀç ·ÎÄÃ PC°¡ ¾øÀ¸¸é ¹«½Ã
+	// 4. í˜„ì¬ ë¡œì»¬ PCê°€ ì—†ìœ¼ë©´ ë¬´ì‹œ
 	APlayerController* PC = LocalPlayer->GetPlayerController(GetWorld());
 	if (!PC)
 	{
@@ -71,7 +71,7 @@ void UTitleGameInstance::OnNetworkFailure(
 		return;
 	}
 
-	// 5. Å¸ÀÌÆ² ¸ÊÀÌ ¾Æ´Ï¸é ¹«½Ã (Áß¿ä)
+	// 5. íƒ€ì´í‹€ ë§µì´ ì•„ë‹ˆë©´ ë¬´ì‹œ (ì¤‘ìš”)
 	UWorld* CurrentWorld = PC->GetWorld();
 	if (!CurrentWorld)
 	{
@@ -86,7 +86,7 @@ void UTitleGameInstance::OnNetworkFailure(
 	}
 
 	/*
-	// 6. ÆË¾÷ ¶ç¿ì±â
+	// 6. íŒì—… ë„ìš°ê¸°
 	if (!WrongPopupClass)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[OnNetworkFailure] WrongPopupClass is NULL"));

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Mission/UI/MissionSelectUIWidget.h"
@@ -68,7 +68,7 @@ void UMissionSelectUIWidget::InitializeMissionList(const TArray<FAbyssMissionDat
 
 void UMissionSelectUIWidget::HandleMissionSelected(FName MissionId)
 {
-	// ÀÌ¹Ì ¼±ÅÃµÈ °æ¿ì ÇØÁ¦
+	// ì´ë¯¸ ì„ íƒëœ ê²½ìš° í•´ì œ
 	if (SelectedMissionIds.Contains(MissionId))
 	{
 		SelectedMissionIds.Remove(MissionId);
@@ -76,7 +76,7 @@ void UMissionSelectUIWidget::HandleMissionSelected(FName MissionId)
 		return;
 	}
 
-	// ÃÖ´ë °¹¼ö Á¦ÇÑ
+	// ìµœëŒ€ ê°¯ìˆ˜ ì œí•œ
 	if (SelectedMissionIds.Num() >= MaxSelectableCount)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Max 3 missions"));
@@ -92,7 +92,7 @@ void UMissionSelectUIWidget::HandleMissionSelected(FName MissionId)
 
 	UE_LOG(LogTemp, Warning, TEXT("Selected: %s"), *MissionId.ToString());
 
-	// ¼±ÅÃµÈ ½½·Ô Á¦°Å
+	// ì„ íƒëœ ìŠ¬ë¡¯ ì œê±°
 	for (int32 i = 0; i < MissionList->GetChildrenCount(); ++i)
 	{
 		if (UMissionSelectSlotWidget* SelectSlot =
@@ -106,7 +106,7 @@ void UMissionSelectUIWidget::HandleMissionSelected(FName MissionId)
 		}
 	}
 
-	// Å¬¸¯ ÈÄ¿¡µµ ¸¶¿ì½º ÀÔ·Â À¯Áö
+	// í´ë¦­ í›„ì—ë„ ë§ˆìš°ìŠ¤ ì…ë ¥ ìœ ì§€
 	if (APlayerController* PC = GetOwningPlayer())
 	{
 		FInputModeUIOnly InputMode;

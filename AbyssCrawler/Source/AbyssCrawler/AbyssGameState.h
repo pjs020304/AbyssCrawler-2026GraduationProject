@@ -1,7 +1,7 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameState.h" // GameStateBase ´ë½Å GameState »ç¿ë (MatchState È°¿ë °¡´É)
+#include "GameFramework/GameState.h" // GameStateBase ëŒ€ì‹  GameState ì‚¬ìš© (MatchState í™œìš© ê°€ëŠ¥)
 #include "AbyssGameState.generated.h"
 
 UENUM(BlueprintType)
@@ -40,7 +40,7 @@ struct FAbyssMissionData
 	int32 RewardMoney = 100;
 };
 
-// µ¨¸®°ÔÀÌÆ® ¼±¾ğ (»õ·Î¿î µ· ¾×¼ö¸¦ ÀÎÀÚ·Î Àü´Ş)
+// ë¸ë¦¬ê²Œì´íŠ¸ ì„ ì–¸ (ìƒˆë¡œìš´ ëˆ ì•¡ìˆ˜ë¥¼ ì¸ìë¡œ ì „ë‹¬)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMoneyChanged, int32, NewMoney);
 
 UCLASS()
@@ -51,22 +51,22 @@ class ABYSSCRAWLER_API AAbyssGameState : public AGameState
 public:
 	AAbyssGameState();
 
-	// ³²Àº ¹Ì¼Ç ½Ã°£ (ÃÊ)
+	// ë‚¨ì€ ë¯¸ì…˜ ì‹œê°„ (ì´ˆ)
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Abyss Mission")
 	int32 RemainingMissionTime;
 
-	// ÇöÀç ¼öÁıÇÑ Áß¿ä ÀÚ¿ø °³¼ö
+	// í˜„ì¬ ìˆ˜ì§‘í•œ ì¤‘ìš” ìì› ê°œìˆ˜
 	UPROPERTY(ReplicatedUsing = OnRep_CollectedItems, BlueprintReadOnly, Category = "Abyss Mission")
 	int32 CollectedItemsCount;
 
-	// ÃÑ ¸ğ¾Æ¾ß ÇÒ ÀÚ¿ø °³¼ö
+	// ì´ ëª¨ì•„ì•¼ í•  ìì› ê°œìˆ˜
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abyss Mission")
 	int32 TargetItemsCount = 10;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Missions, EditAnywhere, BlueprintReadOnly, Category = "Abyss Mission")
 	TArray<FAbyssMissionData> Missions;
 
-	// ¹Ì¼Ç ÁøÇàµµ
+	// ë¯¸ì…˜ ì§„í–‰ë„
 	UPROPERTY(ReplicatedUsing = OnRep_Missions, BlueprintReadOnly, Category = "Abyss Mission")
 	int32 ProgressPoint = 0;
 
@@ -90,11 +90,11 @@ public:
 
 	void AddMissionProgress(int32 MissionIndex, int32 Amount = 1);
 
-	// µ·ÀÌ º¯°æµÉ ¶§¸¶´Ù UI¸¦ °»½ÅÇÏ±â À§ÇÑ µ¨¸®°ÔÀÌÆ®
+	// ëˆì´ ë³€ê²½ë  ë•Œë§ˆë‹¤ UIë¥¼ ê°±ì‹ í•˜ê¸° ìœ„í•œ ë¸ë¦¬ê²Œì´íŠ¸
 	UPROPERTY(BlueprintAssignable, Category = "Economy")
 	FOnMoneyChanged OnMoneyChanged;
 
-	// µ·À» Ãß°¡ÇÏ°Å³ª »¬ ¶§ »ç¿ëÇÒ ¼­¹ö Àü¿ë ÇÔ¼ö
+	// ëˆì„ ì¶”ê°€í•˜ê±°ë‚˜ ëº„ ë•Œ ì‚¬ìš©í•  ì„œë²„ ì „ìš© í•¨ìˆ˜
 	UFUNCTION(BlueprintCallable, Category = "Economy")
 	bool ConsumeSharedMoney(int32 Amount);
 
@@ -113,7 +113,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abyss Mission")
 	int32 MaxActiveMissionCount = 3;
 
-	// ¸ÖÆ¼ÇÃ·¹ÀÌ¾î º¯¼ö µ¿±âÈ­ ÇÊ¼ö ÇÔ¼ö
+	// ë©€í‹°í”Œë ˆì´ì–´ ë³€ìˆ˜ ë™ê¸°í™” í•„ìˆ˜ í•¨ìˆ˜
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UFUNCTION(BlueprintCallable)
@@ -122,7 +122,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool AddMissionById(FName MissionId);
 
-	// Áßº¹ Á¦¿Ü
+	// ì¤‘ë³µ ì œì™¸
 	UFUNCTION(BlueprintCallable)
 	bool HasActiveMission(FName MissionId) const;
 
@@ -144,7 +144,7 @@ public:
 	void Debug_SetProgressFull();
 
 protected:
-	// ÆÀÀÌ °øÀ¯ÇÏ´Â µ· (¼­¹ö¿¡¼­ Å¬¶óÀÌ¾ğÆ®·Î µ¿±âÈ­µÊ)
+	// íŒ€ì´ ê³µìœ í•˜ëŠ” ëˆ (ì„œë²„ì—ì„œ í´ë¼ì´ì–¸íŠ¸ë¡œ ë™ê¸°í™”ë¨)
 	UPROPERTY(ReplicatedUsing = OnRep_SharedMoney, VisibleAnywhere, BlueprintReadOnly, Category = "Economy")
 	int32 SharedMoney = 0;
 

@@ -1,4 +1,4 @@
-#include "AbyssRechargeStation.h"
+ï»¿#include "AbyssRechargeStation.h"
 #include "Components/WidgetComponent.h"
 #include "AbyssDiverCharacter.h"
 #include "AbilitySystemComponent.h"
@@ -7,10 +7,10 @@ AAbyssRechargeStation::AAbyssRechargeStation()
 {
 	bReplicates = true;
 	bIsOnCooldown = false;
-	RechargeCooldown = 5.0f; // 5ÃÊ ÄğÅ¸ÀÓ
+	RechargeCooldown = 5.0f; // 5ì´ˆ ì¿¨íƒ€ì„
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-	MeshComp->SetCollisionProfileName(TEXT("BlockAllDynamic")); // ·¹ÀÌÀú¿¡ ¸Â¾Æ¾ß ÇÔ
+	MeshComp->SetCollisionProfileName(TEXT("BlockAllDynamic")); // ë ˆì´ì €ì— ë§ì•„ì•¼ í•¨
 	RootComponent = MeshComp;
 
 	InteractWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractWidget"));
@@ -29,7 +29,7 @@ void AAbyssRechargeStation::Interact_Implementation(AActor* InstigatorActor)
 		UAbilitySystemComponent* ASC = Diver->GetAbilitySystemComponent();
 		if (ASC)
 		{
-			// ÇÃ·¹ÀÌ¾î¿¡°Ô ÃæÀü ÀÌÆåÆ®(GE) Àû¿ë!
+			// í”Œë ˆì´ì–´ì—ê²Œ ì¶©ì „ ì´í™íŠ¸(GE) ì ìš©!
 			FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
 			Context.AddInstigator(this, this);
 			FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(RechargeEffectClass, 1.0f, Context);
@@ -39,7 +39,7 @@ void AAbyssRechargeStation::Interact_Implementation(AActor* InstigatorActor)
 				ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 				UE_LOG(LogTemp, Warning, TEXT("Attribute Set Recharge Complete!"));
 
-				// ÄğÅ¸ÀÓ ÁøÀÔ (¹«ÇÑ µş±ï ¹æÁö)
+				// ì¿¨íƒ€ì„ ì§„ì… (ë¬´í•œ ë”¸ê¹ ë°©ì§€)
 				bIsOnCooldown = true;
 				GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, this, &AAbyssRechargeStation::ResetCooldown, RechargeCooldown, false);
 			}

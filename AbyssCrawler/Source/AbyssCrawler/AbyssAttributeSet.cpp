@@ -1,10 +1,10 @@
-#include "AbyssAttributeSet.h"
+ï»¿#include "AbyssAttributeSet.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
 
 UAbyssAttributeSet::UAbyssAttributeSet()
 {
-	// ±âº»°ª ÃÊ±âÈ­
+	// ê¸°ë³¸ê°’ ì´ˆê¸°í™”
 	InitHealth(100.0f);
 	InitMaxHealth(100.0f);
 
@@ -15,7 +15,7 @@ UAbyssAttributeSet::UAbyssAttributeSet()
 	InitMaxBattery(100.0f);
 }
 
-// ¼­¹öÀÇ µ¥ÀÌÅÍ¸¦ Å¬¶óÀÌ¾ğÆ®¿Í µ¿±âÈ­ÇÏ´Â ¼³Á¤ÀÔ´Ï´Ù.
+// ì„œë²„ì˜ ë°ì´í„°ë¥¼ í´ë¼ì´ì–¸íŠ¸ì™€ ë™ê¸°í™”í•˜ëŠ” ì„¤ì •ì…ë‹ˆë‹¤.
 void UAbyssAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -30,37 +30,37 @@ void UAbyssAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME_CONDITION_NOTIFY(UAbyssAttributeSet, MaxBattery, COND_None, REPNOTIFY_Always);
 }
 
-// [ÇÙ½É ·ÎÁ÷] °ªÀÌ ½ÇÁ¦·Î Àû¿ëµÇ±â Á÷Àü¿¡ °Ë»çÇÏ¿© ¾ÈÀüÇÏ°Ô ´Ùµë½À´Ï´Ù.
+// [í•µì‹¬ ë¡œì§] ê°’ì´ ì‹¤ì œë¡œ ì ìš©ë˜ê¸° ì§ì „ì— ê²€ì‚¬í•˜ì—¬ ì•ˆì „í•˜ê²Œ ë‹¤ë“¬ìŠµë‹ˆë‹¤.
 void UAbyssAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
 
-	// Ã¼·ÂÀÌ º¯°æµÉ ¶§: 0°ú ÃÖ´ë Ã¼·Â »çÀÌ·Î °íÁ¤
+	// ì²´ë ¥ì´ ë³€ê²½ë  ë•Œ: 0ê³¼ ìµœëŒ€ ì²´ë ¥ ì‚¬ì´ë¡œ ê³ ì •
 	if (Attribute == GetHealthAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
 	}
-	// »ê¼Ò°¡ º¯°æµÉ ¶§: 0°ú ÃÖ´ë »ê¼Ò »çÀÌ·Î °íÁ¤
+	// ì‚°ì†Œê°€ ë³€ê²½ë  ë•Œ: 0ê³¼ ìµœëŒ€ ì‚°ì†Œ ì‚¬ì´ë¡œ ê³ ì •
 	else if (Attribute == GetOxygenAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxOxygen());
 	}
-	// ¹èÅÍ¸®°¡ º¯°æµÉ ¶§: 0°ú ÃÖ´ë ¹èÅÍ¸® »çÀÌ·Î °íÁ¤
+	// ë°°í„°ë¦¬ê°€ ë³€ê²½ë  ë•Œ: 0ê³¼ ìµœëŒ€ ë°°í„°ë¦¬ ì‚¬ì´ë¡œ ê³ ì •
 	else if (Attribute == GetBatteryAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxBattery());
 	}
 }
 
-// ÀÌÆåÆ® Ã³¸®°¡ ³¡³­ ÈÄ µ¥¹ÌÁö ¿¬»ê µîÀ» Ãß°¡ÇÒ °ø°£ÀÔ´Ï´Ù.
+// ì´í™íŠ¸ ì²˜ë¦¬ê°€ ëë‚œ í›„ ë°ë¯¸ì§€ ì—°ì‚° ë“±ì„ ì¶”ê°€í•  ê³µê°„ì…ë‹ˆë‹¤.
 void UAbyssAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	// ÃßÈÄ ¸ó½ºÅÍ Å¸°İ µ¥¹ÌÁö Ã³¸®¸¦ ÀÌ°÷¿¡¼­ ±¸ÇöÇÏ°Ô µË´Ï´Ù.
+	// ì¶”í›„ ëª¬ìŠ¤í„° íƒ€ê²© ë°ë¯¸ì§€ ì²˜ë¦¬ë¥¼ ì´ê³³ì—ì„œ êµ¬í˜„í•˜ê²Œ ë©ë‹ˆë‹¤.
 }
 
-// --- ¾Æ·¡´Â ¸®ÇÃ¸®ÄÉÀÌ¼Ç(µ¿±âÈ­) ÇÊ¼ö ÇÔ¼öµéÀÔ´Ï´Ù ---
+// --- ì•„ë˜ëŠ” ë¦¬í”Œë¦¬ì¼€ì´ì…˜(ë™ê¸°í™”) í•„ìˆ˜ í•¨ìˆ˜ë“¤ì…ë‹ˆë‹¤ ---
 void UAbyssAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UAbyssAttributeSet, Health, OldHealth);

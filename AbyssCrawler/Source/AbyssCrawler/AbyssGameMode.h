@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
@@ -14,16 +14,16 @@ public:
 
 	virtual void BeginPlay() override;
 
-	// ÇÃ·¹ÀÌ¾î Á¢¼Ó ½Ã È£Ãâ (GAS ÃÊ±âÈ­ Å¸ÀÌ¹Ö)
+	// í”Œë ˆì´ì–´ ì ‘ì† ì‹œ í˜¸ì¶œ (GAS ì´ˆê¸°í™” íƒ€ì´ë°)
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 
-	// ÇÃ·¹ÀÌ¾î »ç¸Á Ã³¸® (°üÀü ¸ğµå ÀüÈ¯ µî)
+	// í”Œë ˆì´ì–´ ì‚¬ë§ ì²˜ë¦¬ (ê´€ì „ ëª¨ë“œ ì „í™˜ ë“±)
 	virtual void OnPlayerDied(AController* DeadPlayer);
 
 	UFUNCTION()
 	void OnItemCollected();
 
-	// °ÔÀÓ Å¬¸®¾î Á¶°Ç Ã¼Å©
+	// ê²Œì„ í´ë¦¬ì–´ ì¡°ê±´ ì²´í¬
 	//void CheckMissionComplete();
 
 	void OnMissionItemCollected(int32 MissionIndex);
@@ -62,7 +62,7 @@ public:
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Game Flow")
-	float GameLimitTime = 1200.0f; // 20ºĞ
+	float GameLimitTime = 1200.0f; // 20ë¶„
 
 	FTimerHandle GameTimerHandle;
 

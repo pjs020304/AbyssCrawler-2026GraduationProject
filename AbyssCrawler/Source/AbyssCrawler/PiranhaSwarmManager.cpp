@@ -166,7 +166,9 @@ void APiranhaSwarmManager::InitializeBoids()
 		const FVector Offset = RandStream.VRand() * RandStream.FRandRange(0.f, SpawnRadius);
 		const FVector Pos = HomeLocation + Offset;
 		const FVector Vel = RandStream.VRand() * FMath::Max(MinSpeed, 1.f);
-		Boids.Emplace(Pos, Vel);
+		FBoid& B = Boids.Emplace_GetRef(Pos, Vel);
+		// Stable animation phase so every fish beats its tail on its own cycle.
+		B.Phase = RandStream.FRand();
 	}
 }
 
@@ -781,7 +783,10 @@ void APiranhaSwarmManager::InitializeInstances()
 	}
 
 	// One instance per boid; transforms are filled in every PushToInstances().
+	// Custom data floats must be declared before AddInstance so each new instance
+	// grows the custom data buffer with it.
 	FishMesh->ClearInstances();
+	FishMesh->SetNumCustomDataFloats(SwarmCustomDataFloats);
 	for (int32 i = 0; i < Boids.Num(); ++i)
 	{
 		FishMesh->AddInstance(FTransform::Identity, /*bWorldSpace=*/false);
@@ -801,6 +806,7 @@ void APiranhaSwarmManager::PushToInstances()
 	if (FishMesh->GetInstanceCount() != Count)
 	{
 		FishMesh->ClearInstances();
+		FishMesh->SetNumCustomDataFloats(SwarmCustomDataFloats);
 		for (int32 i = 0; i < Count; ++i)
 		{
 			FishMesh->AddInstance(FTransform::Identity, /*bWorldSpace=*/false);
@@ -819,7 +825,18 @@ void APiranhaSwarmManager::PushToInstances()
 	ScratchTransforms.Reset(Count);
 	ScratchTransforms.SetNum(Count);
 
+	// The fish mesh is a static mesh with no skeletal animation, so the swim
+	// motion is produced in the material from these per-instance values.
+	// Skipped (rather than asserting) if the count was overridden on the component.
+	const bool bWriteCustomData = (FishMesh->NumCustomDataFloats == SwarmCustomDataFloats);
+	if (bWriteCustomData)
+	{
+		ScratchCustomData.Reset(Count * SwarmCustomDataFloats);
+		ScratchCustomData.SetNum(Count * SwarmCustomDataFloats);
+	}
+
 	const FQuat OffsetQuat = MeshRotationOffset.Quaternion();
+	const float SpeedRange = FMath::Max(MaxSpeed - MinSpeed, 1.f);
 	int32 Shown = 0;
 
 	for (int32 i = 0; i < Count; ++i)
@@ -841,6 +858,23 @@ void APiranhaSwarmManager::PushToInstances()
 			// Hidden: collapse to zero scale so the instance disappears.
 			ScratchTransforms[i] = FTransform(FQuat::Identity, B.Position, FVector::ZeroVector);
 		}
+
+		if (bWriteCustomData)
+		{
+			const int32 Base = i * SwarmCustomDataFloats;
+			ScratchCustomData[Base + 0] = B.Phase;
+			ScratchCustomData[Base + 1] = bVisible
+				? FMath::Clamp((B.Velocity.Size() - MinSpeed) / SpeedRange, 0.f, 1.f)
+				: 0.f;
+			ScratchCustomData[Base + 2] = bVisible ? 1.f : 0.f;
+		}
+	}
+
+	// Write custom data without dirtying, then let the transform batch mark the
+	// render state dirty once for both payloads.
+	if (bWriteCustomData)
+	{
+		FishMesh->SetCustomData(0, Count - 1, ScratchCustomData, /*bMarkRenderStateDirty=*/false);
 	}
 
 	FishMesh->BatchUpdateInstancesTransforms(0, ScratchTransforms,

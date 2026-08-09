@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Mission/Contents/AbyssMissionSender.h"
@@ -24,7 +24,7 @@ void AAbyssMissionSender::Interact_Implementation(AActor* InstigatorActor)
 	AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(InstigatorActor);
 	if (!Diver) return;
 
-	// ´Ù¸¥ ÇÃ·¹ÀÌ¾î°¡ »ç¿ë ÁßÀÌ¸é °ÅºÎ
+	// ë‹¤ë¥¸ í”Œë ˆì´ì–´ê°€ ì‚¬ìš© ì¤‘ì´ë©´ ê±°ë¶€
 	if (bIsInUse && UsingCharacter != Diver)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[MissionSender] Already in use"));

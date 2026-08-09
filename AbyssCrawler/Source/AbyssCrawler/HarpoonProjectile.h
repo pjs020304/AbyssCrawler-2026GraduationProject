@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -19,23 +19,23 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// Ãæµ¹À» °¨ÁöÇÒ ±¸Ã¼ ÄÄÆ÷³ÍÆ®
+	// ì¶©ëŒì„ ê°ì§€í•  êµ¬ì²´ ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USphereComponent* CollisionComp;
 
-	// ÀÛ»ìÀÇ ¿ÜÇü
+	// ì‘ì‚´ì˜ ì™¸í˜•
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* MeshComp;
 
-	// ³¯¾Æ°¡´Â ¹°¸® ÀÌµ¿À» ´ã´çÇÏ´Â ÄÄÆ÷³ÍÆ®
+	// ë‚ ì•„ê°€ëŠ” ë¬¼ë¦¬ ì´ë™ì„ ë‹´ë‹¹í•˜ëŠ” ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	UProjectileMovementComponent* ProjectileMovement;
 
-	// »ó¾î¿¡°Ô º¸³¾ GAS ÀÌº¥Æ® ÅÂ±× (¿¹: "Event.Attack.Harpoon")
+	// ìƒì–´ì—ê²Œ ë³´ë‚¼ GAS ì´ë²¤íŠ¸ íƒœê·¸ (ì˜ˆ: "Event.Attack.Harpoon")
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	FGameplayTag HarpoonHitEventTag;
 
-	// Ãæµ¹ ½Ã È£ÃâµÉ ÇÔ¼ö
+	// ì¶©ëŒ ì‹œ í˜¸ì¶œë  í•¨ìˆ˜
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 };

@@ -1,6 +1,6 @@
-#include "AbyssEnemyBase.h"
+ï»¿#include "AbyssEnemyBase.h"
 #include "AbilitySystemComponent.h"
-#include "AbyssAttributeSet.h" // ÇÁ·ÎÁ§Æ®¿¡ ¸Â°Ô Çì´õ¸í È®ÀÎ
+#include "AbyssAttributeSet.h" // í”„ë¡œì íŠ¸ì— ë§ê²Œ í—¤ë”ëª… í™•ì¸
 #include "AIController.h"
 #include "BrainComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -11,12 +11,12 @@ AAbyssEnemyBase::AAbyssEnemyBase()
 	PrimaryActorTick.bCanEverTick = true;
 	bAbilitiesInitialized = false;
 
-	// 1. ASC ÄÄÆ÷³ÍÆ® »ı¼º
+	// 1. ASC ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
-	// 2. ¾îÆ®¸®ºäÆ® ¼Â(Ã¼·Â µî) »ı¼º
+	// 2. ì–´íŠ¸ë¦¬ë·°íŠ¸ ì…‹(ì²´ë ¥ ë“±) ìƒì„±
 	AttributeSet = CreateDefaultSubobject<UAbyssAttributeSet>(TEXT("AttributeSet"));
 }
 
@@ -33,20 +33,20 @@ void AAbyssEnemyBase::PossessedBy(AController* NewController)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
-		// ±âº» Ã¼·Â ÃÊ±âÈ­
+		// ê¸°ë³¸ ì²´ë ¥ ì´ˆê¸°í™”
 		if (AttributeSet)
 		{
 			AttributeSet->InitHealth(100.0f);
 		}
 
-		// Ã¼·Â ¹× ±âÀı ÅÂ±× ¸®½º³Ê ¹ÙÀÎµù
+		// ì²´ë ¥ ë° ê¸°ì ˆ íƒœê·¸ ë¦¬ìŠ¤ë„ˆ ë°”ì¸ë”©
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
 			.AddUObject(this, &AAbyssEnemyBase::OnHealthChangedCallback);
 
 		AbilitySystemComponent->RegisterGameplayTagEvent(StunTag, EGameplayTagEventType::NewOrRemoved)
 			.AddUObject(this, &AAbyssEnemyBase::OnStunTagChanged);
 
-		// ¾îºô¸®Æ¼ ºÎ¿© (¼­¹ö Àü¿ë)
+		// ì–´ë¹Œë¦¬í‹° ë¶€ì—¬ (ì„œë²„ ì „ìš©)
 		if (HasAuthority() && !bAbilitiesInitialized)
 		{
 			for (TSubclassOf<UGameplayAbility>& StartupAbility : StartupAbilities)
@@ -85,12 +85,12 @@ void AAbyssEnemyBase::Die()
 	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController && AIController->GetBrainComponent())
 	{
-		// Çàµ¿ Æ®¸® Áï½Ã Á¤Áö
+		// í–‰ë™ íŠ¸ë¦¬ ì¦‰ì‹œ ì •ì§€
 		AIController->GetBrainComponent()->StopLogic("Enemy Died");
 	}
 
-	// Äİ¸®Àü ÇØÁ¦
+	// ì½œë¦¬ì „ í•´ì œ
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	UE_LOG(LogTemp, Warning, TEXT("[%s] »ç¸ÁÇß½À´Ï´Ù."), *GetName());
+	UE_LOG(LogTemp, Warning, TEXT("[%s] ì‚¬ë§í–ˆìŠµë‹ˆë‹¤."), *GetName());
 }

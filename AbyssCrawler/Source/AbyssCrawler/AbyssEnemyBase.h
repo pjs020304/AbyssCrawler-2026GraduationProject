@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
@@ -10,7 +10,7 @@ class UAbilitySystemComponent;
 class UAbyssAttributeSet;
 class UGameplayAbility;
 
-UCLASS(Abstract) // [ÇÙ½É] ÀÌ Å¬·¡½º´Â ºÎ¸ğ·Î¸¸ ¾²ÀÌ°í Á÷Á¢ ½ºÆùµÇÁö ¾ÊÀ½À» ¿£Áø¿¡ ¾Ë¸³´Ï´Ù.
+UCLASS(Abstract) // [í•µì‹¬] ì´ í´ë˜ìŠ¤ëŠ” ë¶€ëª¨ë¡œë§Œ ì“°ì´ê³  ì§ì ‘ ìŠ¤í°ë˜ì§€ ì•ŠìŒì„ ì—”ì§„ì— ì•Œë¦½ë‹ˆë‹¤.
 class ABYSSCRAWLER_API AAbyssEnemyBase : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
@@ -18,20 +18,20 @@ class ABYSSCRAWLER_API AAbyssEnemyBase : public ACharacter, public IAbilitySyste
 public:
 	AAbyssEnemyBase();
 
-	// IAbilitySystemInterface ÇÊ¼ö ¿À¹ö¶óÀÌµå
+	// IAbilitySystemInterface í•„ìˆ˜ ì˜¤ë²„ë¼ì´ë“œ
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	virtual void PossessedBy(AController* NewController) override;
 
 protected:
-	// --- [GAS °øÅë ÄÄÆ÷³ÍÆ®] ---
+	// --- [GAS ê³µí†µ ì»´í¬ë„ŒíŠ¸] ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
 	UAbilitySystemComponent* AbilitySystemComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
 	UAbyssAttributeSet* AttributeSet;
 
-	// --- [°øÅë µ¥ÀÌÅÍ ¹× ÅÂ±×] ---
+	// --- [ê³µí†µ ë°ì´í„° ë° íƒœê·¸] ---
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> StartupAbilities;
 
@@ -40,10 +40,10 @@ protected:
 
 	bool bAbilitiesInitialized;
 
-	// --- [°øÅë Çàµ¿ ·ÎÁ÷] ---
+	// --- [ê³µí†µ í–‰ë™ ë¡œì§] ---
 	virtual void OnHealthChangedCallback(const struct FOnAttributeChangeData& Data);
 	virtual void OnStunTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
 
-	// »ç¸Á Ã³¸® (ÀÚ½Ä Å¬·¡½º¿¡¼­ ¿À¹ö¶óÀÌµåÇÒ ¼ö ÀÖµµ·Ï virtual ¼±¾ğ)
+	// ì‚¬ë§ ì²˜ë¦¬ (ìì‹ í´ë˜ìŠ¤ì—ì„œ ì˜¤ë²„ë¼ì´ë“œí•  ìˆ˜ ìˆë„ë¡ virtual ì„ ì–¸)
 	virtual void Die();
 };

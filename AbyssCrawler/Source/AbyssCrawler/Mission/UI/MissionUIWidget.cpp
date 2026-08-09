@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Mission/UI/MissionUIWidget.h"
@@ -24,7 +24,7 @@ void UMissionUIWidget::RefreshMissionUI()
     AAbyssGameState* GS = GetWorld()->GetGameState<AAbyssGameState>();
     if (!GS || !MissionSlotClass) return;
 
-    // ÁøÇàµµ Ç¥½Ã
+    // ì§„í–‰ë„ í‘œì‹œ
     if (TXT_ProgressPercent)
     {
         const float ProgressRatio = GS->TargetProgressPoint > 0
@@ -44,7 +44,7 @@ void UMissionUIWidget::RefreshMissionUI()
     {
         const FAbyssMissionData& Mission = GS->Missions[i];
 
-        // ¿Ï·áµÈ ¹Ì¼Ç ÆÐ½º
+        // ì™„ë£Œëœ ë¯¸ì…˜ íŒ¨ìŠ¤
         if (Mission.bCompleted)
         {
             continue;
@@ -63,7 +63,7 @@ void UMissionUIWidget::RefreshMissionUI()
 
         DisplayCount++;
 
-        // ÃÖ´ë 3°³ ±îÁö
+        // ìµœëŒ€ 3ê°œ ê¹Œì§€
         if (DisplayCount >= 3)
         {
             break;

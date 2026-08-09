@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -21,7 +21,7 @@ class ABYSSCRAWLER_API UMissionUIWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 
-	// ¹Ì¼Ç ¸®½ºÆ® °»½Å
+	// ë¯¸ì…˜ ë¦¬ìŠ¤íŠ¸ ê°±ì‹ 
 	UFUNCTION(BlueprintCallable)
 	void RefreshMissionUI();
 
