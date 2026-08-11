@@ -5,6 +5,8 @@
 #include "Camera/CameraShakeBase.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SpotLightComponent.h"
+#include "Engine/DirectionalLight.h"
+#include "Components/LightComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "AbilitySystemComponent.h"
@@ -339,6 +341,7 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	// 전시용 디버그 키
 	PlayerInputComponent->BindKey(EKeys::F1, IE_Pressed, this, &AAbyssDiverCharacter::Debug_SetProgressFull);
 	PlayerInputComponent->BindKey(EKeys::F2, IE_Pressed, this, &AAbyssDiverCharacter::Debug_SetRemainingTime10);
+	PlayerInputComponent->BindKey(EKeys::F4, IE_Pressed, this, &AAbyssDiverCharacter::HandleToggleDemoLight);
 }
 
 void AAbyssDiverCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -2133,6 +2136,78 @@ void AAbyssDiverCharacter::TrySubmitColorFromGameInstance()
 	Server_SubmitPlayerColorIndex(SelectedIndex);
 
 	GetWorldTimerManager().ClearTimer(SubmitColorTimerHandle);
+}
+
+void AAbyssDiverCharacter::HandleToggleDemoLight()
+{
+
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	// 전시용: 호스트만 F3 사용 가능
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DemoLight] Only host can toggle demo light."));
+		return;
+	}
+
+	bDemoLightHighIntensity = !bDemoLightHighIntensity;
+
+	Multicast_SetDemoLightIntensity(bDemoLightHighIntensity);
+
+	UE_LOG(LogTemp, Warning, TEXT("[DemoLight] Toggle Light High=%d"), bDemoLightHighIntensity);
+}
+
+void AAbyssDiverCharacter::ApplyDemoLightIntensityLocal(float NewIntensity)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	bool bFoundLight = false;
+
+	for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+	{
+		ADirectionalLight* DirectionalLight = *It;
+		if (!DirectionalLight)
+		{
+			continue;
+		}
+
+		if (!DirectionalLight->ActorHasTag(TEXT("DemoLightSource")))
+		{
+			continue;
+		}
+
+		ULightComponent* LightComp = DirectionalLight->GetLightComponent();
+		if (!LightComp)
+		{
+			continue;
+		}
+
+		LightComp->SetIntensity(NewIntensity);
+		bFoundLight = true;
+
+		UE_LOG(LogTemp, Warning, TEXT("[DemoLight] Set %s Intensity = %.2f"),
+			*DirectionalLight->GetName(),
+			NewIntensity);
+	}
+
+	if (!bFoundLight)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DemoLight] No DirectionalLight with tag DemoLightSource found."));
+	}
+}
+
+void AAbyssDiverCharacter::Multicast_SetDemoLightIntensity_Implementation(bool bHighIntensity)
+{
+	const float NewIntensity = bHighIntensity ? 5.0f : 0.5f;
+
+	ApplyDemoLightIntensityLocal(NewIntensity);
 }
 
 void AAbyssDiverCharacter::Server_SubmitPlayerColorIndex_Implementation(int32 ColorIndex)

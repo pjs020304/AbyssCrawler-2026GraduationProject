@@ -454,6 +454,18 @@ protected:
 
     FTimerHandle SubmitColorTimerHandle;
 
+    // Light Debug
+    void HandleToggleDemoLight();
+
+    UFUNCTION(NetMulticast, Reliable)
+    void Multicast_SetDemoLightIntensity(bool bHighIntensity);
+
+    void ApplyDemoLightIntensityLocal(float NewIntensity);
+
+    UPROPERTY()
+    bool bDemoLightHighIntensity = false;
+
+
 public:
     virtual void OnRep_PlayerState() override;
 
