@@ -229,19 +229,53 @@ void AAbyssGameState::AddMissionProgressById(FName MissionId, int32 Amount)
 
 bool AAbyssGameState::AddMissionById(FName MissionId)
 {
-    if (!HasAuthority()) return false;
-
-    if (Missions.Num() >= MaxActiveMissionCount)
+    if (!HasAuthority())
     {
-        UE_LOG(LogTemp, Warning, TEXT("[Mission] Mission list full"));
         return false;
     }
 
-    for (const FAbyssMissionData& Mission : MissionPool)
+    int32 ActiveMissionCount = 0;
+
+    for (const FAbyssMissionData& Mission : Missions)
     {
-        if (Mission.MissionId == MissionId)
+        if (!Mission.bCompleted)
         {
-            Missions.Add(Mission);
+            ActiveMissionCount++;
+        }
+    }
+
+    if (ActiveMissionCount >= MaxActiveMissionCount)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[Mission] Active mission list full"));
+        return false;
+    }
+
+    // 이미 활성화된 미션 중복 방지
+    for (const FAbyssMissionData& Mission : Missions)
+    {
+        if (Mission.MissionId == MissionId && !Mission.bCompleted)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[Mission] Already active: %s"), *MissionId.ToString());
+            return false;
+        }
+    }
+
+    // 이미 완료한 미션 다시 받지 않게 유지
+    if (CompletedMissionIds.Contains(MissionId))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[Mission] Already completed: %s"), *MissionId.ToString());
+        return false;
+    }
+
+    for (const FAbyssMissionData& PoolMission : MissionPool)
+    {
+        if (PoolMission.MissionId == MissionId)
+        {
+            FAbyssMissionData NewMission = PoolMission;
+            NewMission.CurrentCount = 0;
+            NewMission.bCompleted = false;
+
+            Missions.Add(NewMission);
 
             UE_LOG(LogTemp, Warning, TEXT("[Mission] Added: %s"), *MissionId.ToString());
 
@@ -305,7 +339,7 @@ void AAbyssGameState::Debug_SetProgressFull()
         return;
     }
 
-    ProgressPoint = TargetProgressPoint;
+    ProgressPoint += 10;
 
     // 서버에서는 OnRep이 자동 호출되지 않으므로 직접 UI 갱신용 함수 호출
     OnRep_Missions();
