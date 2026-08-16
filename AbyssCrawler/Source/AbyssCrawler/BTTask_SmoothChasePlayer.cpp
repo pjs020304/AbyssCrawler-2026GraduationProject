@@ -14,14 +14,65 @@ UBTTask_SmoothChasePlayer::UBTTask_SmoothChasePlayer()
 
 	// 매 프레임 상어를 움직여야 하므로 Tick 활성화
 	bNotifyTick = true;
+
+	// 성공/실패/어보트 어느 쪽으로 끝나도 OnTaskFinished를 받아 스레드를 반납한다.
+	bNotifyTaskFinished = true;
+
+	// [중요] BT 태스크 노드는 기본적으로 같은 BT를 쓰는 모든 AI가 하나의 객체를
+	// 공유한다. 이 태스크는 CurrentPath / CurrentWaypointIndex / PathfinderTask를
+	// 멤버로 들고 있어서, 공유 상태로 두면 레벨의 상어 9마리와 오징어 9마리가
+	// 서로의 경로와 스레드를 덮어써 추적이 전혀 동작하지 않는다.
+	// 노드 인스턴싱을 켜서 AI마다 자기 상태를 갖게 한다.
+	bCreateNodeInstance = true;
+}
+
+void UBTTask_SmoothChasePlayer::ReleasePathfinderTask()
+{
+	if (!PathfinderTask)
+	{
+		return;
+	}
+
+	// Cancel()은 아직 풀에서 대기 중일 때만 성공한다. 이미 워커가 실행 중이라면
+	// 완료를 기다려야 하지만, 시작 전이라면 게임 스레드에서 A*를 대신 돌리는
+	// (기본 동작인) 프레임 스톨은 피한다.
+	if (!PathfinderTask->Cancel())
+	{
+		PathfinderTask->EnsureCompletion(/*bDoWorkOnThisThreadIfNotStarted=*/false);
+	}
+
+	delete PathfinderTask;
+	PathfinderTask = nullptr;
+}
+
+EBTNodeResult::Type UBTTask_SmoothChasePlayer::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	ReleasePathfinderTask();
+	CurrentPath.Empty();
+	CurrentWaypointIndex = 0;
+
+	return EBTNodeResult::Aborted;
+}
+
+void UBTTask_SmoothChasePlayer::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult)
+{
+	// 어떤 경로로 끝나든 스레드가 남아 돌지 않게 한다. 남겨두면 레벨 종료 시
+	// 이미 파괴된 ASVOVolume을 백그라운드에서 만져 크래시가 난다.
+	ReleasePathfinderTask();
+
+	Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
 }
 
 EBTNodeResult::Type UBTTask_SmoothChasePlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	AAIController* AIController = OwnerComp.GetAIOwner();
-	ACharacter* Shark = Cast<ACharacter>(AIController->GetPawn());
-
 	UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
+	if (!AIController || !BlackboardComp)
+	{
+		return EBTNodeResult::Failed;
+	}
+
+	ACharacter* Shark = Cast<ACharacter>(AIController->GetPawn());
 	AActor* TargetActor = Cast<AActor>(BlackboardComp->GetValueAsObject(TargetKey.SelectedKeyName));
 
 	if (!Shark || !TargetActor) return EBTNodeResult::Failed;
@@ -82,15 +133,11 @@ EBTNodeResult::Type UBTTask_SmoothChasePlayer::ExecuteTask(UBehaviorTreeComponen
 	// --- [멀티스레드 지시 파트] ---
 
 	// 1. 기존에 돌고 있던 스레드가 있다면 안전하게 삭제 (메모리 누수 방지)
-	if (PathfinderTask)
-	{
-		PathfinderTask->EnsureCompletion();
-		delete PathfinderTask;
-		PathfinderTask = nullptr;
-	}
+	ReleasePathfinderTask();
 
 	// 2. 이전 경로 초기화
 	CurrentPath.Empty();
+	CurrentWaypointIndex = 0;
 
 	// 3. 백그라운드 스레드 생성 및 실행 (Fire and Forget)
 	UE_LOG(LogTemp, Warning, TEXT("A* Thread Started..."));
@@ -108,7 +155,15 @@ EBTNodeResult::Type UBTTask_SmoothChasePlayer::ExecuteTask(UBehaviorTreeComponen
 void UBTTask_SmoothChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
 	AAIController* AIController = OwnerComp.GetAIOwner();
-	ACharacter* Shark = Cast<ACharacter>(AIController->GetPawn());
+	ACharacter* Shark = AIController ? Cast<ACharacter>(AIController->GetPawn()) : nullptr;
+
+	// 폰이 죽거나 파괴된 뒤에도 Tick이 한 번 더 들어올 수 있다.
+	if (!Shark)
+	{
+		ReleasePathfinderTask();
+		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
+	}
 
 	// --- [멀티스레드 결과 수신 파트] ---
 	if (CurrentPath.Num() == 0 && PathfinderTask != nullptr)
@@ -134,10 +189,10 @@ void UBTTask_SmoothChasePlayer::TickTask(UBehaviorTreeComponent& OwnerComp, uint
 				FVector DebugOffset = FVector(0.0f, 0.0f, 30.0f);
 				for (int32 i = 0; i < CurrentPath.Num(); ++i) {
 					FVector DrawLoc = CurrentPath[i] + DebugOffset;
-					DrawDebugSphere(World, DrawLoc, 20.0f, 12, FColor::Green, false, 5.0f);
+					//DrawDebugSphere(World, DrawLoc, 20.0f, 12, FColor::Green, false, 5.0f);
 					if (i < CurrentPath.Num() - 1) {
 						FVector NextDrawLoc = CurrentPath[i + 1] + DebugOffset;
-						DrawDebugLine(World, DrawLoc, NextDrawLoc, FColor::Green, false, 5.0f, 0, 8.0f);
+						//DrawDebugLine(World, DrawLoc, NextDrawLoc, FColor::Green, false, 5.0f, 0, 8.0f);
 					}
 				}
 #endif

@@ -30,6 +30,14 @@ AHarpoonProjectile::AHarpoonProjectile()
 	ProjectileMovement->ProjectileGravityScale = 0.1f; // 수중 저항/부력 느낌
 }
 
+void AHarpoonProjectile::IgnoreShooter(AActor* ShooterActor)
+{
+	if (ShooterActor && CollisionComp)
+	{
+		CollisionComp->IgnoreActorWhenMoving(ShooterActor, true);
+	}
+}
+
 void AHarpoonProjectile::BeginPlay()
 {
 	Super::BeginPlay();

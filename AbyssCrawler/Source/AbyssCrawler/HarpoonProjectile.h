@@ -16,6 +16,10 @@ class ABYSSCRAWLER_API AHarpoonProjectile : public AActor
 public:
 	AHarpoonProjectile();
 
+	// 발사자(및 총 액터)와의 자체 충돌 방지.
+	// 총구가 캐릭터 몸에 붙어 있어 스폰 직후 자기 자신에 걸릴 수 있으므로 발사 시 호출한다.
+	void IgnoreShooter(AActor* ShooterActor);
+
 protected:
 	virtual void BeginPlay() override;
 

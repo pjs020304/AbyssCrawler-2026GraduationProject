@@ -156,12 +156,58 @@ void APiranhaSwarmManager::InitializeGAS()
 	}
 }
 
+void APiranhaSwarmManager::ValidateFishMesh() const
+{
+	if (!FishMeshAsset)
+	{
+		return;
+	}
+
+	const FBoxSphereBounds Bounds = FishMeshAsset->GetBounds();
+	const FVector Ext = Bounds.BoxExtent;
+	const float SideSpan = FMath::Max(Ext.Y, Ext.Z);
+
+	// 물고기 한 마리는 진행축(X)으로 길고 옆으로 얇다. 옆폭이 길이에 맞먹으면
+	// 여러 마리가 뭉쳐 있는 덩어리일 가능성이 높다. 어디까지나 휴리스틱이라
+	// 막지 않고 경고만 남긴다.
+	const bool bLooksLikeCluster = (Ext.X > KINDA_SMALL_NUMBER) && (SideSpan > Ext.X * 0.6f);
+
+	if (bLooksLikeCluster && FishPerMeshInstance <= 1)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("PiranhaSwarmManager '%s': FishMeshAsset '%s' 의 형태가 물고기 한 마리로 보이지 않습니다 ")
+			TEXT("(Extent X=%.1f Y=%.1f Z=%.1f). 여러 마리가 한 덩어리로 들어 있으면 그 덩어리가 통째로 ")
+			TEXT("움직여서 '판이 흔들리는' 것처럼 보입니다. 메시를 1마리로 잘라 쓰거나, 임시로 ")
+			TEXT("FishPerMeshInstance 를 실제 마릿수로 설정하세요."),
+			*GetName(), *FishMeshAsset->GetName(), Ext.X, Ext.Y, Ext.Z);
+	}
+
+	// 최종 렌더 크기를 남겨 FishScale 튜닝에 쓸 수 있게 한다 (피라냐 기준 약 30cm).
+	const float RenderedLength = Ext.X * 2.f * FMath::Abs(FishScale.X);
+	UE_LOG(LogTemp, Log,
+		TEXT("PiranhaSwarmManager '%s': 물고기 1마리 렌더 길이 약 %.1f cm (FishScale=%.3f), ")
+		TEXT("인스턴스 %d개 x %d마리 = 총 %d마리"),
+		*GetName(), RenderedLength, FishScale.X,
+		GetSimBoidCount(), FMath::Max(1, FishPerMeshInstance),
+		GetSimBoidCount() * FMath::Max(1, FishPerMeshInstance));
+}
+
+int32 APiranhaSwarmManager::GetSimBoidCount() const
+{
+	// NumBoids는 "화면에 보이는 총 마릿수"라는 뜻을 유지한다. 메시 한 덩어리에
+	// 여러 마리가 들어 있으면 그만큼 인스턴스를 적게 만들어야 총 마릿수가 맞는다.
+	const int32 PerInstance = FMath::Max(1, FishPerMeshInstance);
+	return FMath::Max(1, FMath::DivideAndRoundUp(NumBoids, PerInstance));
+}
+
 void APiranhaSwarmManager::InitializeBoids()
 {
-	Boids.Reset();
-	Boids.Reserve(NumBoids);
+	const int32 Count = GetSimBoidCount();
 
-	for (int32 i = 0; i < NumBoids; ++i)
+	Boids.Reset();
+	Boids.Reserve(Count);
+
+	for (int32 i = 0; i < Count; ++i)
 	{
 		const FVector Offset = RandStream.VRand() * RandStream.FRandRange(0.f, SpawnRadius);
 		const FVector Pos = HomeLocation + Offset;
@@ -169,6 +215,8 @@ void APiranhaSwarmManager::InitializeBoids()
 		FBoid& B = Boids.Emplace_GetRef(Pos, Vel);
 		// Stable animation phase so every fish beats its tail on its own cycle.
 		B.Phase = RandStream.FRand();
+		// 첫 프레임에 기본 방향에서 홱 돌아가지 않도록 진행 방향으로 초기화.
+		B.Forward = Vel.GetSafeNormal();
 	}
 }
 
@@ -426,6 +474,23 @@ void APiranhaSwarmManager::SimulateFlocking(float DeltaTime)
 		}
 
 		B.Position += B.Velocity * DeltaTime;
+
+		// 렌더링용 방향을 속도 방향으로 서서히 추종시킨다.
+		// 지수 감쇠라 프레임레이트가 달라져도 회전 체감이 같다.
+		const FVector DesiredFwd = B.Velocity.GetSafeNormal();
+		if (!DesiredFwd.IsNearlyZero())
+		{
+			if (TurnSmoothingRate > 0.f)
+			{
+				const float Alpha = 1.f - FMath::Exp(-TurnSmoothingRate * DeltaTime);
+				const FVector Blended = FMath::Lerp(B.Forward, DesiredFwd, Alpha);
+				B.Forward = Blended.IsNearlyZero() ? DesiredFwd : Blended.GetSafeNormal();
+			}
+			else
+			{
+				B.Forward = DesiredFwd;
+			}
+		}
 	}
 }
 
@@ -695,9 +760,12 @@ void APiranhaSwarmManager::UpdateAliveCountFromHealth()
 		return;
 	}
 
+	// 체력 비율 → 살아있는 인스턴스 수. 기준은 NumBoids가 아니라 실제 인스턴스 수여야
+	// 한다(메시 한 덩어리에 여러 마리면 둘이 다르다).
+	const int32 SimCount = GetSimBoidCount();
 	const float Ratio = FMath::Clamp(AttributeSet->GetHealth() / MaxH, 0.f, 1.f);
-	int32 TargetAlive = FMath::CeilToInt(NumBoids * Ratio);
-	TargetAlive = FMath::Clamp(TargetAlive, MinAliveWhileLiving, NumBoids);
+	int32 TargetAlive = FMath::CeilToInt(SimCount * Ratio);
+	TargetAlive = FMath::Clamp(TargetAlive, FMath::Min(MinAliveWhileLiving, SimCount), SimCount);
 
 	KillBoidsDownTo(TargetAlive);
 	RepAliveCount = GetAliveCount();
@@ -782,6 +850,8 @@ void APiranhaSwarmManager::InitializeInstances()
 			*GetName());
 	}
 
+	ValidateFishMesh();
+
 	// One instance per boid; transforms are filled in every PushToInstances().
 	// Custom data floats must be declared before AddInstance so each new instance
 	// grows the custom data buffer with it.
@@ -846,10 +916,28 @@ void APiranhaSwarmManager::PushToInstances()
 
 		if (bVisible)
 		{
-			const FVector Dir = B.Velocity.GetSafeNormal();
-			const FQuat Rot = Dir.IsNearlyZero()
-				? OffsetQuat
-				: FRotationMatrix::MakeFromX(Dir).ToQuat() * OffsetQuat;
+			// 스무딩된 방향을 쓴다. 속도 방향을 그대로 쓰면 매 프레임 미세하게 튄다.
+			FVector Dir = B.Forward;
+			if (Dir.IsNearlyZero())
+			{
+				Dir = B.Velocity.GetSafeNormal();
+			}
+
+			FQuat Rot = OffsetQuat;
+			if (!Dir.IsNearlyZero())
+			{
+				// MakeFromX는 X축만 맞추고 나머지 두 축은 임의로 잡는다. 그래서 진행 방향이
+				// 조금만 바뀌어도 롤이 확 뒤집히고, 이게 "판이 뒤집히며 파닥거리는" 주범이다.
+				// 월드 Z를 위쪽으로 고정해서 롤을 안정시킨다.
+				FVector Up = FVector::UpVector;
+				if (FMath::Abs(FVector::DotProduct(Dir, Up)) > 0.99f)
+				{
+					// 거의 수직으로 오르내릴 때는 Z를 up으로 못 쓰므로 다른 축으로 폴백.
+					Up = FVector::ForwardVector;
+				}
+				Rot = FRotationMatrix::MakeFromXZ(Dir, Up).ToQuat() * OffsetQuat;
+			}
+
 			ScratchTransforms[i] = FTransform(Rot, B.Position, FishScale);
 			++Shown;
 		}

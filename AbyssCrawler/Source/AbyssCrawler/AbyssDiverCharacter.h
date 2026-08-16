@@ -83,6 +83,75 @@ public:
   UPROPERTY(EditDefaultsOnly, Category = "Camera|Shake")
   FVector2D HitShakeScaleRange = FVector2D(0.5f, 1.5f);
 
+  // --- [문어에게 붙잡힌 동안] ---
+  // 붙잡혀 있는 내내 지속 재생되는 쉐이크. Oscillation의 Duration을 0(=무한 루프)으로
+  // 만든 쉐이크를 지정해야 한다. 탈출/사망 시 코드가 직접 정지시킨다.
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera|Shake")
+  TSubclassOf<class UCameraShakeBase> GrabbedCameraShake;
+
+  UPROPERTY(EditDefaultsOnly, Category = "Camera|Shake")
+  float GrabbedShakeScale = 1.0f;
+
+  // 탈출 연타(클릭)마다 한 번씩 터지는 짧은 쉐이크. "발버둥치는" 느낌용(선택).
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera|Shake")
+  TSubclassOf<class UCameraShakeBase> GrabStruggleCameraShake;
+
+  UPROPERTY(EditDefaultsOnly, Category = "Camera|Shake")
+  float GrabStruggleShakeScale = 1.0f;
+
+  // --- [피라냐 군집에게 공격받는 동안] ---
+  // 물릴 때마다(AttackInterval 주기) 한 번씩 터지는 짧고 날카로운 쉐이크.
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera|Shake")
+  TSubclassOf<class UCameraShakeBase> SwarmBiteCameraShake;
+
+  UPROPERTY(EditDefaultsOnly, Category = "Camera|Shake")
+  float SwarmBiteShakeScale = 1.0f;
+
+  // 군집에 둘러싸여 있는 동안 깔리는 지속 쉐이크(무한 루프 쉐이크 지정).
+  // 물기 이벤트가 들어올 때 켜지고, SwarmShakeTimeout 동안 추가 공격이 없으면 꺼진다.
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera|Shake")
+  TSubclassOf<class UCameraShakeBase> SwarmAmbientCameraShake;
+
+  UPROPERTY(EditDefaultsOnly, Category = "Camera|Shake")
+  float SwarmAmbientShakeScale = 1.0f;
+
+  // 마지막 물기 이후 이 시간(초) 동안 조용하면 지속 쉐이크를 끈다.
+  // 군집의 AttackInterval(기본 0.5초)보다 넉넉히 크게 잡을 것.
+  UPROPERTY(EditDefaultsOnly, Category = "Camera|Shake")
+  float SwarmShakeTimeout = 1.5f;
+
+  // --- 카메라 쉐이크 헬퍼 ---
+  // 아래 3개는 모두 "내 화면의 주인(IsLocallyControlled)"일 때만 동작한다.
+  // 이 체크가 없으면 리슨서버 호스트가 남의 피격에도 흔들린다.
+
+  // 1회성 쉐이크 재생
+  void PlayLocalCameraShake(TSubclassOf<class UCameraShakeBase> ShakeClass,
+                            float Scale = 1.0f);
+
+  // 지속형 쉐이크 시작. 이미 같은 핸들로 재생 중이면 중복 재생하지 않는다.
+  void StartLoopingCameraShake(TSubclassOf<class UCameraShakeBase> ShakeClass,
+                               float Scale,
+                               TObjectPtr<class UCameraShakeBase> &InOutHandle);
+
+  // 지속형 쉐이크 정지 (bImmediate=false면 자연스럽게 감쇠하며 종료)
+  void StopLoopingCameraShake(TObjectPtr<class UCameraShakeBase> &InOutHandle,
+                              bool bImmediate = false);
+
+protected:
+  // 현재 재생 중인 지속형 쉐이크 인스턴스. 정지시키려면 이 핸들이 필요하다.
+  UPROPERTY(Transient)
+  TObjectPtr<class UCameraShakeBase> ActiveGrabShake;
+
+  UPROPERTY(Transient)
+  TObjectPtr<class UCameraShakeBase> ActiveSwarmShake;
+
+  // 마지막 물기 이후 SwarmShakeTimeout이 지나면 ActiveSwarmShake를 끈다.
+  FTimerHandle SwarmShakeTimerHandle;
+
+  void StopSwarmAmbientShake();
+
+public:
+
   // 심해 수중 부유물(Marine Snow)을 위한 GPU 연산 파티클 컴포넌트
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Environment")
   UParticleSystemComponent* MarineSnowParticleComponent;
@@ -175,6 +244,33 @@ public:
   // 아이템을 부착할 손 소켓 이름 (스켈레톤에 추가한 소켓)
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
   FName HandSocketName = TEXT("LeftHandSocket");
+
+  // --- [탑승 포즈 (수중 스쿠터)] ---
+  // UsesRidePose()가 true인 아이템을 장착하면 캐릭터 메시를 통째로 "플레이어 + 탈것"
+  // 메시로 교체하고 전용 애니메이션을 재생한다. 두 메시가 같은 스켈레톤을 공유하므로
+  // 손과 핸들의 정렬이 자동으로 맞고, 소켓/카메라도 그대로 유지된다.
+
+  // 탑승 중에 사용할 스켈레탈 메시 (기본: RidingJet — 플레이어 + 제트기 일체형)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ride Pose")
+  TObjectPtr<class USkeletalMesh> RidePoseMesh;
+
+  // 탑승 중 루프 재생할 애니메이션 (기본: RidingJet_Anim)
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ride Pose")
+  TObjectPtr<class UAnimSequence> RidePoseAnim;
+
+  // 메시 교체 방식을 쓸지 여부. false로 두면 메시는 그대로 두고 bIsRidingItem 플래그만
+  // 갱신하므로, AB_DiverCharacter에서 직접 블렌딩하는 방식으로 전환할 수 있다.
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ride Pose")
+  bool bUseRideMeshSwap = true;
+
+  // 물 밖(잠수함 내부 등)에서는 탑승 포즈를 쓰지 않는다
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ride Pose")
+  bool bRidePoseRequiresSwimming = true;
+
+  // 현재 탑승 포즈 상태. 복제된 Inventory/CurrentSlotIndex에서 파생되므로 모든 머신에서
+  // 동일하게 계산된다 (별도 리플리케이션 불필요). AnimBP에서 읽어 쓸 수 있다.
+  UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ride Pose")
+  bool bIsRidingItem = false;
 
   // 현재 시선이 머물고 있는 상호작용 액터 기억하기
   UPROPERTY()
@@ -490,6 +586,19 @@ protected:
   void Server_SwitchToSlot(int32 NewIndex);
 
   void ApplyCurrentSlotVisual();
+
+  // 매 프레임 장착 아이템/이동 상태를 보고 탑승 포즈 진입·이탈을 판정 (상태가 바뀔 때만 적용)
+  void UpdateRidePose();
+
+  // 실제 메시/애니메이션 전환 수행
+  void SetRidePoseActive(bool bActive);
+
+  // 탑승 포즈 진입 전의 원본 메시/AnimBP (복귀용). BeginPlay에서 캐싱.
+  UPROPERTY(Transient)
+  TObjectPtr<class USkeletalMesh> DefaultBodyMesh;
+
+  UPROPERTY(Transient)
+  TSubclassOf<class UAnimInstance> DefaultAnimClass;
 
   // 상호작용 시도 함수
   void TryInteract();

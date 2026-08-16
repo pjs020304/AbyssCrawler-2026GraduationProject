@@ -3,6 +3,7 @@
 #include "AbyssCharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/CameraShakeBase.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "EnhancedInputComponent.h"
@@ -33,6 +34,10 @@
 #include "Mission/Contents/AbyssDataConsole.h"
 #include "Sound/SoundBase.h"
 #include "Materials/MaterialInterface.h"
+#include "Engine/SkeletalMesh.h"
+#include "Animation/AnimSequence.h"
+#include "Animation/AnimInstance.h"
+#include "UObject/ConstructorHelpers.h"
 
 // 중요: 커스텀 무브먼트 컴포넌트 사용을 위한 생성자 선언
 AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectInitializer)
@@ -67,6 +72,23 @@ AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectIniti
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	AttributeSet = CreateDefaultSubobject<UAbyssAttributeSet>(TEXT("AttributeSet"));
+
+	// 탑승 포즈 기본 에셋 (BP_DiverCharacter에서 덮어쓸 수 있음).
+	// RidingJet은 플레이어 스켈레톤(Walk_in_Water_Skeleton)을 그대로 쓰는
+	// "플레이어 + 제트기" 일체형 메시라 소켓/카메라가 교체 후에도 유지된다.
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> RideMeshFinder(
+		TEXT("/Game/AbyssCrawler/Core/Item/UseItem/RidingJet/RidingJet.RidingJet"));
+	if (RideMeshFinder.Succeeded())
+	{
+		RidePoseMesh = RideMeshFinder.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UAnimSequence> RideAnimFinder(
+		TEXT("/Game/AbyssCrawler/Core/Item/UseItem/RidingJet/RidingJet_Anim.RidingJet_Anim"));
+	if (RideAnimFinder.Succeeded())
+	{
+		RidePoseAnim = RideAnimFinder.Object;
+	}
 }
 
 void AAbyssDiverCharacter::BeginPlay()
@@ -86,6 +108,13 @@ void AAbyssDiverCharacter::BeginPlay()
 
 		// 머리에서 미세 조정이 필요하면 여기서 오프셋을 명시적으로 설정
 		FirstPersonCameraComponent->SetRelativeLocation(CameraEyeOffset);
+	}
+
+	// 탑승 포즈에서 되돌아올 원본 메시/AnimBP 캐싱 (BP에서 지정한 값 기준)
+	if (GetMesh())
+	{
+		DefaultBodyMesh = GetMesh()->GetSkeletalMeshAsset();
+		DefaultAnimClass = GetMesh()->GetAnimClass();
 	}
 
 	for (TActorIterator<APostProcessVolume> It(GetWorld()); It; ++It)
@@ -248,6 +277,9 @@ void AAbyssDiverCharacter::Tick(float DeltaTime)
 	// 다른 클라이언트가 볼 때도 들기 애니메이션이 올바르게 재생된다.
 	bIsHoldingItem = Inventory.IsValidIndex(CurrentSlotIndex) && Inventory[CurrentSlotIndex] != nullptr;
 
+	// 탑승 포즈도 같은 이유로 모든 머신에서 매 프레임 판정한다 (상태가 바뀔 때만 실제 전환 수행)
+	UpdateRidePose();
+
 	// Marine Snow 동적 파라미터 제어
 	if (MarineSnowParticleComponent)
 	{
@@ -384,9 +416,99 @@ void AAbyssDiverCharacter::Client_HideWorkUI_Implementation()
 	}
 }
 
+// --- [카메라 쉐이크 헬퍼] ---
+// 공통 규칙: "내 화면의 주인"일 때만 흔든다.
+// (IsLocallyControlled 체크가 없으면 리슨서버 호스트가 남이 당하는 것에도 흔들린다)
+
+void AAbyssDiverCharacter::PlayLocalCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale)
+{
+	if (!ShakeClass || !IsLocallyControlled())
+	{
+		return;
+	}
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		PC->ClientStartCameraShake(ShakeClass, Scale);
+	}
+}
+
+void AAbyssDiverCharacter::StartLoopingCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale, TObjectPtr<UCameraShakeBase>& InOutHandle)
+{
+	if (!ShakeClass || !IsLocallyControlled())
+	{
+		return;
+	}
+
+	// 이미 돌고 있으면 중복 재생 금지. 겹쳐 재생하면 강도가 배로 튄다.
+	if (IsValid(InOutHandle) && !InOutHandle->IsFinished())
+	{
+		return;
+	}
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC || !PC->PlayerCameraManager)
+	{
+		return;
+	}
+
+	// 나중에 정지시키려면 인스턴스 포인터가 필요한데 ClientStartCameraShake는 void를 반환한다.
+	// 여기는 이미 로컬 클라이언트이므로 RPC 없이 CameraManager를 직접 호출한다.
+	InOutHandle = PC->PlayerCameraManager->StartCameraShake(ShakeClass, Scale);
+}
+
+void AAbyssDiverCharacter::StopLoopingCameraShake(TObjectPtr<UCameraShakeBase>& InOutHandle, bool bImmediate)
+{
+	if (!IsValid(InOutHandle))
+	{
+		InOutHandle = nullptr;
+		return;
+	}
+
+	APlayerCameraManager* CamMgr = nullptr;
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		CamMgr = PC->PlayerCameraManager;
+	}
+
+	// 사망 직후처럼 컨트롤러가 이미 떨어져 나간 경우를 대비한 폴백.
+	// (핸들이 들어있다는 건 애초에 로컬 플레이어였다는 뜻이므로 인덱스 0이 맞다)
+	if (!CamMgr)
+	{
+		CamMgr = UGameplayStatics::GetPlayerCameraManager(this, 0);
+	}
+
+	if (CamMgr)
+	{
+		CamMgr->StopCameraShake(InOutHandle, bImmediate);
+	}
+
+	InOutHandle = nullptr;
+}
+
+void AAbyssDiverCharacter::StopSwarmAmbientShake()
+{
+	StopLoopingCameraShake(ActiveSwarmShake);
+}
+
 void AAbyssDiverCharacter::Client_OnSwarmBite_Implementation(FVector SwarmCenter)
 {
-	// 연출(카메라 셰이크/화면 효과)은 블루프린트의 OnSwarmBiteFeedback에서 구현.
+	// 1) 물릴 때마다 짧게 한 번 터뜨린다 (군집의 AttackInterval 주기로 들어온다).
+	PlayLocalCameraShake(SwarmBiteCameraShake, SwarmBiteShakeScale);
+
+	// 2) 물기가 이어지는 동안 깔리는 지속 쉐이크.
+	//    군집 매니저는 "공격 종료" 통보를 보내지 않으므로, 물기 이벤트가 들어올 때마다
+	//    타임아웃을 갱신해 두고 이벤트가 끊기면 스스로 꺼지게 한다.
+	StartLoopingCameraShake(SwarmAmbientCameraShake, SwarmAmbientShakeScale, ActiveSwarmShake);
+
+	if (IsValid(ActiveSwarmShake) && GetWorld())
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			SwarmShakeTimerHandle, this, &AAbyssDiverCharacter::StopSwarmAmbientShake,
+			FMath::Max(SwarmShakeTimeout, 0.1f), false);
+	}
+
+	// 그 외 연출(포스트프로세스/사운드 등)은 블루프린트의 OnSwarmBiteFeedback에서 구현.
 	OnSwarmBiteFeedback(SwarmCenter);
 }
 
@@ -754,6 +876,9 @@ void AAbyssDiverCharacter::UseCurrentItem()
 
 	if (bIsGrabbed)
 	{
+		// [카메라 쉐이크] 발버둥 한 번마다 짧게. 서버 왕복을 기다리지 않고 입력 시점에 로컬 재생.
+		PlayLocalCameraShake(GrabStruggleCameraShake, GrabStruggleShakeScale);
+
 		CurrentEscapeClicks++;
 		UE_LOG(LogTemp, Warning, TEXT("[Abyss] Escape Click! %d / %d"), CurrentEscapeClicks, RequiredEscapeClicks);
 		if (CurrentEscapeClicks >= RequiredEscapeClicks)
@@ -769,11 +894,21 @@ void AAbyssDiverCharacter::UseCurrentItem()
 		return;
 	}
 
+	AAbyssItemBase* ItemToUse = Inventory[CurrentSlotIndex];
+
+	// [쿨타임] 아직 쿨타임이면 연출도 서버 요청도 생략한다.
+	// 클라에서는 예측 판정이고, 최종 판정은 서버의 UseItem()이 다시 한다.
+	if (!ItemToUse->CanUseItem())
+	{
+		return;
+	}
+	ItemToUse->NotifyUseAttempted();
+
 	// [카메라 쉐이크] 반응성을 위해 서버 왕복을 기다리지 않고 입력 시점에 로컬로 재생.
 	// (UseItem()은 서버 전용(HasAuthority)이라 거기 넣으면 클라 화면이 안 흔들린다)
 	if (IsLocallyControlled())
 	{
-		if (const TSubclassOf<UCameraShakeBase> UseShake = Inventory[CurrentSlotIndex]->UseCameraShake)
+		if (const TSubclassOf<UCameraShakeBase> UseShake = ItemToUse->UseCameraShake)
 		{
 			if (APlayerController* PC = Cast<APlayerController>(GetController()))
 			{
@@ -908,21 +1043,37 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 		// ?꾩옱 ?щ’ ?꾩씠?쒖? ?ㅼ떆 移대찓?쇱뿉 遺李?
 		if (bShouldBeVisible && GetMesh())
 		{
+			// 탑승 포즈 중에는 캐릭터 메시/애니메이션이 통째로 바뀌어 손 위치가 달라지므로
+			// 아이템 BP에서 지정한 전용 소켓/오프셋을 사용한다.
+			const bool bRideAttach = bIsRidingItem && Item->UsesRidePose();
+
+			const FName AttachSocket =
+				(bRideAttach && !Item->RideAttachSocketName.IsNone())
+					? Item->RideAttachSocketName
+					: HandSocketName;
+
 			Item->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 			Item->AttachToComponent(
 				GetMesh(),
 				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-				HandSocketName
+				AttachSocket
 			);
+
+			if (bRideAttach)
+			{
+				Item->SetActorRelativeTransform(Item->RideAttachOffset);
+			}
 
 			// [진단] 클라이언트에서 소켓 부착이 제대로 되는지 확인
 			const TCHAR* NetMode =
 				HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT");
 			UE_LOG(LogTemp, Warning,
-				TEXT("[EquipVisual:%s] Item=%s SocketExists=%d ItemLoc=%s MeshLoc=%s Hidden=%d"),
+				TEXT("[EquipVisual:%s] Item=%s Socket=%s SocketExists=%d Ride=%d ItemLoc=%s MeshLoc=%s Hidden=%d"),
 				NetMode,
 				*Item->GetName(),
-				GetMesh()->DoesSocketExist(HandSocketName) ? 1 : 0,
+				*AttachSocket.ToString(),
+				GetMesh()->DoesSocketExist(AttachSocket) ? 1 : 0,
+				bRideAttach ? 1 : 0,
 				*Item->GetActorLocation().ToString(),
 				*GetMesh()->GetComponentLocation().ToString(),
 				Item->IsHidden() ? 1 : 0);
@@ -935,7 +1086,111 @@ void AAbyssDiverCharacter::ApplyCurrentSlotVisual()
 		}
 
 		Item->SetActorHiddenInGame(!bShouldBeVisible);
+
+		// 탈것 형상이 캐릭터 메시 쪽에 이미 포함된 아이템만 메시를 숨겨 중복 표시를 막는다.
+		// (액터 자체를 숨기면 버블 나이아가라까지 꺼지므로 ItemMesh만 건드린다)
+		if (Item->ItemMesh)
+		{
+			const bool bHiddenByRidePose =
+				bIsRidingItem && Item->UsesRidePose() && Item->bHideMeshInRidePose;
+
+			Item->ItemMesh->SetVisibility(bShouldBeVisible && !bHiddenByRidePose, true);
+		}
 	}
+}
+
+void AAbyssDiverCharacter::UpdateRidePose()
+{
+	bool bWantRidePose = false;
+
+	if (!bIsDead && Inventory.IsValidIndex(CurrentSlotIndex))
+	{
+		if (const AAbyssItemBase* EquippedItem = Inventory[CurrentSlotIndex])
+		{
+			bWantRidePose = EquippedItem->UsesRidePose();
+
+			// 물 밖(잠수함 내부 등)에서 탑승 포즈로 걸어다니면 어색하므로 수영 중일 때만 허용.
+			// MovementMode는 복제되므로 시뮬레이션 프록시에서도 같은 판정이 나온다.
+			if (bWantRidePose && bRidePoseRequiresSwimming)
+			{
+				bWantRidePose = GetCharacterMovement() && GetCharacterMovement()->IsSwimming();
+			}
+		}
+	}
+
+	if (bWantRidePose == bIsRidingItem)
+	{
+		return;
+	}
+
+	SetRidePoseActive(bWantRidePose);
+}
+
+void AAbyssDiverCharacter::SetRidePoseActive(bool bActive)
+{
+	bIsRidingItem = bActive;
+
+	USkeletalMeshComponent* MeshComp = GetMesh();
+
+	// bUseRideMeshSwap이 꺼져 있으면 플래그만 갱신하고 연출은 AnimBP에 맡긴다
+	if (MeshComp && bUseRideMeshSwap && RidePoseMesh && RidePoseAnim)
+	{
+		if (bActive)
+		{
+			// BeginPlay 이후 BP에서 메시를 바꿨을 수도 있으므로 진입 시점에 한 번 더 보정
+			if (!DefaultBodyMesh)
+			{
+				DefaultBodyMesh = MeshComp->GetSkeletalMeshAsset();
+			}
+			if (!DefaultAnimClass)
+			{
+				DefaultAnimClass = MeshComp->GetAnimClass();
+			}
+
+			MeshComp->SetSkeletalMeshAsset(RidePoseMesh);
+			MeshComp->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			MeshComp->PlayAnimation(RidePoseAnim, /*bLooping=*/true);
+		}
+		else if (DefaultBodyMesh)
+		{
+			MeshComp->SetSkeletalMeshAsset(DefaultBodyMesh);
+			MeshComp->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+
+			if (DefaultAnimClass)
+			{
+				MeshComp->SetAnimInstanceClass(DefaultAnimClass);
+			}
+		}
+
+		// 메시 교체로 머티리얼 오버라이드가 초기화되므로 슈트 색상을 다시 입힌다
+		ApplyPlayerSuitMaterial();
+
+		// 1인칭 카메라는 Eye 소켓에 붙어 있다. 두 메시가 같은 스켈레톤을 쓰므로 소켓은
+		// 유지되지만, 교체 과정에서 부모가 끊기는 경우를 대비해 명시적으로 다시 붙인다.
+		if (FirstPersonCameraComponent)
+		{
+			if (MeshComp->DoesSocketExist(TEXT("Eye")))
+			{
+				FirstPersonCameraComponent->AttachToComponent(
+					MeshComp,
+					FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+					TEXT("Eye"));
+
+				FirstPersonCameraComponent->SetRelativeLocation(CameraEyeOffset);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error,
+					TEXT("[RidePose] 'Eye' 소켓이 %s 메시에 없습니다. 소켓을 SkeletalMesh가 아닌 Skeleton 애셋에 추가해야 카메라가 유지됩니다."),
+					*GetNameSafe(MeshComp->GetSkeletalMeshAsset()));
+			}
+		}
+	}
+
+	// 손에 든 아이템 메시 표시 여부 갱신
+	ApplyCurrentSlotVisual();
+
+	UE_LOG(LogTemp, Log, TEXT("[RidePose] %s"), bActive ? TEXT("ON") : TEXT("OFF"));
 }
 
 void AAbyssDiverCharacter::RefreshEquippedVisual()
@@ -1753,6 +2008,11 @@ void AAbyssDiverCharacter::Multicast_OnGrabbed_Implementation(ACharacter* Grabbe
 	{
 		MyCMC->DisableMovement();
 	}
+
+	// [카메라 쉐이크] 붙잡혀 있는 내내 지속 재생. 탈출(Multicast_EscapeGrab) 또는
+	// 사망(ApplyDeadVisuals) 시 정지된다. 멀티캐스트라 모두에게 오지만 헬퍼가
+	// 로컬 플레이어가 아니면 무시하므로 안전하다.
+	StartLoopingCameraShake(GrabbedCameraShake, GrabbedShakeScale, ActiveGrabShake);
 }
 
 void AAbyssDiverCharacter::EscapeGrab()
@@ -1780,7 +2040,10 @@ void AAbyssDiverCharacter::Server_EscapeGrab_Implementation()
 void AAbyssDiverCharacter::Multicast_EscapeGrab_Implementation()
 {
 	bIsGrabbed = false;
-	
+
+	// [카메라 쉐이크] 붙잡힘 지속 쉐이크 종료. 즉시 끊지 않고 감쇠시켜 해방감을 준다.
+	StopLoopingCameraShake(ActiveGrabShake, /*bImmediate=*/false);
+
 	if (UAbyssCharacterMovementComponent* MyCMC = Cast<UAbyssCharacterMovementComponent>(GetCharacterMovement()))
 	{
 		MyCMC->bCheatFlying = false;
@@ -2037,6 +2300,15 @@ void AAbyssDiverCharacter::ApplyDeadVisuals()
 	GetMesh()->SetVisibility(false, true);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// [카메라 쉐이크] 붙잡힌 채 죽거나 군집에 물려 죽으면 탈출/타임아웃 경로를 타지 않으므로
+	// 지속 쉐이크가 관전 화면까지 따라간다. 여기서 확실히 끊는다.
+	if (GetWorld())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(SwarmShakeTimerHandle);
+	}
+	StopLoopingCameraShake(ActiveGrabShake, /*bImmediate=*/true);
+	StopLoopingCameraShake(ActiveSwarmShake, /*bImmediate=*/true);
 }
 
 void AAbyssDiverCharacter::OnRep_IsDead()

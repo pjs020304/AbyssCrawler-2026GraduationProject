@@ -21,6 +21,12 @@ protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 
+	// 추적이 중단(어보트)되면 돌고 있는 A* 스레드를 정리해야 한다.
+	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
+	// 성공/실패/어보트 어느 경로로 끝나도 스레드를 반납하는 마지막 관문.
+	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
+
 	// 쫓아갈 대상(플레이어)을 가져올 블랙보드 키
 	UPROPERTY(EditAnywhere, Category = "Blackboard")
 	struct FBlackboardKeySelector TargetKey;
@@ -34,11 +40,16 @@ protected:
 	float TurnSpeed = 3.0f;
 
 private:
+	// 돌고 있는 A* 스레드를 안전하게 취소하고 반납한다.
+	// 취소가 불가능하면(이미 워커가 집어간 경우) 끝날 때까지만 기다리고,
+	// 아직 시작도 안 했다면 게임 스레드에서 대신 계산하지 않고 버린다.
+	void ReleasePathfinderTask();
+
 	// A* 알고리즘이 뱉어낸 경로점들을 담아둘 배열
 	TArray<FVector> CurrentPath;
 
 	// 현재 상어가 향하고 있는 경로점의 인덱스
-	int32 CurrentWaypointIndex;
+	int32 CurrentWaypointIndex = 0;
 
 	// 백그라운드 작업을 관리할 포인터
 	FAsyncTask<FSVOPathfindingTask>* PathfinderTask = nullptr;

@@ -25,6 +25,11 @@ struct FBoid
 	FVector Velocity = FVector::ZeroVector;
 	// Cached obstacle-avoidance steering direction (unit), refreshed round-robin.
 	FVector AvoidDir = FVector::ZeroVector;
+	// Smoothed heading used for rendering. The raw velocity direction jitters
+	// frame to frame (wander + separation), and snapping the mesh to it every
+	// frame is what reads as "thrashing". This lags behind Velocity so the fish
+	// banks into a turn instead of teleporting its orientation.
+	FVector Forward = FVector::ForwardVector;
 	// Constant per-fish animation phase (0..1), handed to the swim material as
 	// per-instance custom data so the flock doesn't beat its tail in lockstep.
 	float Phase = 0.f;
@@ -139,6 +144,19 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Swarm|Visual", meta = (AllowPreserveRatio, ClampMin = "0.001", UIMin = "0.01", UIMax = "2.0"))
 	FVector FishScale = FVector(0.3f, 0.3f, 0.3f);
 
+	// FishMeshAsset 한 덩어리에 물고기가 몇 마리 들어 있는지.
+	//
+	// 이 시스템의 대전제는 "인스턴스 1개 = 물고기 1마리"다. NumBoids, 개체별 위상,
+	// 체력에 따른 마릿수 감소가 전부 그 위에 서 있다. 그런데 임포트한 Swarm 메시처럼
+	// 여러 마리가 한 덩어리로 뭉쳐 있으면 그 덩어리가 통째로 강체처럼 움직여서,
+	// 개체별 유영이 아니라 "판때기가 흔들리는" 것처럼 보인다.
+	//
+	// 이 값을 실제 마릿수로 맞춰두면 최소한 화면상 총 마릿수가 9배로 불어나는 것은
+	// 막을 수 있다(인스턴스 수 = NumBoids / FishPerMeshInstance). 어디까지나 임시방편이며,
+	// 정답은 메시를 1마리로 잘라서 이 값을 1로 되돌리는 것이다.
+	UPROPERTY(EditAnywhere, Category = "Swarm|Visual", meta = (ClampMin = "1", ClampMax = "64"))
+	int32 FishPerMeshInstance = 1;
+
 	// Rotation offset so the mesh's forward axis lines up with travel direction.
 	// Default assumes the mesh faces +X (Unreal forward). Adjust if it faces another axis.
 	UPROPERTY(EditAnywhere, Category = "Swarm|Visual")
@@ -195,6 +213,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Swarm|Movement")
 	float MaxSteerForce = 900.f;
+
+	// 메시가 진행 방향을 따라가는 속도(1/초). 클수록 빠릿하게 돌아본다.
+	// 속도 벡터는 wander/separation 때문에 매 프레임 미세하게 튀는데, 메시를 거기에
+	// 바로 스냅시키면 그 떨림이 그대로 보인다. 이 값으로 지연을 줘서 걸러낸다.
+	// 0 이하로 두면 스무딩 없이 즉시 스냅(예전 동작).
+	UPROPERTY(EditAnywhere, Category = "Swarm|Movement", meta = (UIMin = "0.0", UIMax = "20.0"))
+	float TurnSmoothingRate = 6.f;
 
 	// --- Obstacle Avoidance (Phase 2) ---
 
@@ -331,6 +356,14 @@ private:
 	void OnRep_State();
 
 	// --- Helpers ---
+	// 실제로 시뮬레이션/렌더링할 인스턴스 수. 메시 한 덩어리에 여러 마리가 들어 있으면
+	// 화면상 총 마릿수가 NumBoids에 맞도록 인스턴스 수를 나눠서 줄인다.
+	int32 GetSimBoidCount() const;
+
+	// FishMeshAsset이 "1마리 = 1인스턴스" 전제에 맞는지 BeginPlay에서 한 번 점검하고,
+	// 어긋나 보이면 경고를 남긴다(조용히 이상하게 보이는 것을 막기 위함).
+	void ValidateFishMesh() const;
+
 	int32 GetAliveCount() const;
 	bool IsChasing() const { return State == EPiranhaSwarmState::Chase || State == EPiranhaSwarmState::Attack; }
 	bool IsDispersing() const { return State == EPiranhaSwarmState::Dispersing; }
