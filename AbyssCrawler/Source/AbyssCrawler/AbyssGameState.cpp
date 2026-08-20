@@ -1,4 +1,5 @@
 ﻿#include "AbyssGameState.h"
+#include "Minimap/AbyssMinimapComponent.h"
 #include "AbyssDiverCharacter.h"
 #include "MainHUDWidget.h"
 #include "GameFramework/PlayerController.h"
@@ -6,6 +7,8 @@
 
 AAbyssGameState::AAbyssGameState()
 {
+    MinimapComponent = CreateDefaultSubobject<UAbyssMinimapComponent>(TEXT("MinimapComponent"));
+
     // 변수 초기화
     RemainingMissionTime = 600; // 예: 10분
     CollectedItemsCount = 0;
@@ -54,6 +57,14 @@ void AAbyssGameState::AddCollectedItem()
 void AAbyssGameState::OnRep_Missions()
 {
     UE_LOG(LogTemp, Warning, TEXT("[Mission] OnRep_Missions"));
+
+    // 이 프로젝트는 서버 세터가 OnRep을 직접 호출하는 관례를 지킨다(AddMission / AddMissionById /
+    // AddMissionProgress / AddMissionProgressById 전부). 덕분에 미션 수락 · 진행 · 완료의
+    // 모든 경로가 여기 한 곳으로 모여, 미니맵 목표 갱신을 호출부마다 심을 필요가 없다.
+    if (HasAuthority() && MinimapComponent)
+    {
+        MinimapComponent->RequestStaticRebuild();
+    }
 
     if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
     {

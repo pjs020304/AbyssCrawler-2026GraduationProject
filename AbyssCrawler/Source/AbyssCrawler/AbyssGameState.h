@@ -4,6 +4,8 @@
 #include "GameFramework/GameState.h" // GameStateBase 대신 GameState 사용 (MatchState 활용 가능)
 #include "AbyssGameState.generated.h"
 
+class UAbyssMinimapComponent;
+
 UENUM(BlueprintType)
 enum class EAbyssGamePhase : uint8
 {
@@ -50,6 +52,11 @@ class ABYSSCRAWLER_API AAbyssGameState : public AGameState
 
 public:
 	AAbyssGameState();
+
+	// 미니맵 표시용 위치 스냅샷을 서버에서 모아 복제하는 컴포넌트.
+	// GameState가 항상 릴리번트이므로 이 데이터는 거리와 무관하게 전 클라이언트에 도달한다.
+	UFUNCTION(BlueprintPure, Category = "Minimap")
+	UAbyssMinimapComponent* GetMinimapComponent() const { return MinimapComponent; }
 
 	// 남은 미션 시간 (초)
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Abyss Mission")
@@ -144,6 +151,9 @@ public:
 	void Debug_SetProgressFull();
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Minimap")
+	TObjectPtr<UAbyssMinimapComponent> MinimapComponent;
+
 	// 팀이 공유하는 돈 (서버에서 클라이언트로 동기화됨)
 	UPROPERTY(ReplicatedUsing = OnRep_SharedMoney, VisibleAnywhere, BlueprintReadOnly, Category = "Economy")
 	int32 SharedMoney = 0;

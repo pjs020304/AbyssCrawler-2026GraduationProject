@@ -1,18 +1,18 @@
-#include "AbyssCharacterMovementComponent.h"
+﻿#include "AbyssCharacterMovementComponent.h"
 #include "GameFramework/Character.h"
 
 UAbyssCharacterMovementComponent::UAbyssCharacterMovementComponent()
 {
-	// �ʱ�ȭ
+	// 초기화
 	bWantsToSprint = false;
 
-	// CMC �⺻ ���� (������)
+	// CMC 기본 속도 설정 (지상 / 수중)
 	MaxWalkSpeed = WalkSpeed;
 	MaxSwimSpeed = SwimSpeed;
 
-	// �⺻ ���� ����
-	BrakingDecelerationSwimming = 500.f; // ���� ���� (�������� �̲�����)
-	Buoyancy = 1.0f; // �߼� �η�
+	// 기본 물리 설정
+	BrakingDecelerationSwimming = 500.f; // 수중 감속 (낮을수록 오래 미끄러진다)
+	Buoyancy = 1.0f; // 중성 부력
 }
 
 void UAbyssCharacterMovementComponent::SetSprinting(bool bActive)
@@ -104,11 +104,11 @@ float UAbyssCharacterMovementComponent::GetMaxSpeed() const
 	{
 	case MOVE_Walking:
 	case MOVE_NavWalking:
-		// ����: Sprint ���̸� RunSpeed, �ƴϸ� WalkSpeed
+		// 지상: 스프린트 중이면 RunSpeed, 아니면 WalkSpeed
 		return (bWantsToSprint ? RunSpeed : WalkSpeed) * HauntMul;
 
 	case MOVE_Swimming:
-		// ����: Sprint ���̸� SwimDashSpeed, �ƴϸ� SwimSpeed
+		// 수중: 스프린트 중이면 SwimDashSpeed, 아니면 SwimSpeed
 		return (bWantsToSprint ? SwimDashSpeed : SwimSpeed) * HauntMul;
 
 	default:
@@ -126,48 +126,48 @@ void UAbyssCharacterMovementComponent::CalcVelocity(float DeltaTime, float Frict
     }
     MaxAcceleration = 512;
     // =========================================================
-    // 1. ������ ���� ���� ���� (���� ���� ������ ����)
+    // 1. 부모의 마찰과 브레이킹 감속을 끈다 (감속은 항력 하나로만 처리하기 위해)
     // =========================================================
     float NoBraking = 0.0f;
     float NoFriction = 0.0f;
 
     // =========================================================
-    // 2. ���� ������ �ִ� �ӵ��� �������� �ʿ��� '���� ���' ����
+    // 2. 목표 최고 속도에 정확히 수렴시키기 위한 '항력 계수'를 역산한다
     // =========================================================
-    float TargetMaxSpeed = GetMaxSpeed(); // �ȱ� ���� 120, ��� ���̸� 180 ��
-    float CurrentMaxAccel = GetMaxAcceleration(); // ������Ʈ ������ (�⺻ 2048 ��)
+    float TargetMaxSpeed = GetMaxSpeed(); // 수영 120, 대시 중이면 180 (cm/s)
+    float CurrentMaxAccel = GetMaxAcceleration(); // 이 컴포넌트의 추진 가속도
 
-    // [��� �ڵ�] 0���� ������ ����
+    // [방어 코드] 0으로 나누는 것을 막는다
     float DragFactor = 0.0f;
     if (TargetMaxSpeed > KINDA_SMALL_NUMBER)
     {
-        // ����: k = a / v^2
-        // �� ���� ����� �����ϸ�, Ǯ�Ǽ��� ��Ƶ� ��Ȯ�� TargetMaxSpeed���� ������ 0�� ��
+        // 유도: k = a / v^2
+        // 이렇게 두면 풀악셀을 유지해도 정확히 TargetMaxSpeed에서 가속도가 0이 된다
         DragFactor = CurrentMaxAccel / (TargetMaxSpeed * TargetMaxSpeed);
     }
 
     // =========================================================
-    // 3. ������ �׷�(Drag) ����
+    // 3. 속도의 제곱에 비례하는 항력(Drag)을 적용한다
     // =========================================================
     FVector CurrentVelocity = Velocity;
     float SpeedSq = CurrentVelocity.SizeSquared();
 
     if (SpeedSq > KINDA_SMALL_NUMBER)
     {
-        // ���� DragFactor�� ����Ͽ� ���׷� ����
-        // �ӵ��� TargetMaxSpeed�� �����ϸ�, �� ���׷��� ��Ȯ�� ������(Accel)�� ������
+        // 위에서 구한 DragFactor로 항력의 크기를 만든다
+        // 속도가 TargetMaxSpeed에 도달하면 이 항력이 추진력(Accel)과 정확히 상쇄된다
         FVector DragForce = -CurrentVelocity.GetSafeNormal() * (SpeedSq * DragFactor);
 
-        // ���� ����
+        // 속도에 반영
         Velocity += DragForce * DeltaTime;
     }
 
     // =========================================================
-    // 4. ������(Acceleration) ����
+    // 4. 추진력(Acceleration)을 적용한다
     // =========================================================
-    // ������ Multiplier ���� ���� �⺻ MaxAcceleration�� �ŷ��ϰų�,
-    // �ʿ��ϴٸ� ���⼭�� ��¦ ������ �� �ֽ��ϴ�. 
-    // (��, �����Ѵٸ� �� DragFactor ������ ���ڿ��� ������ ���� ��� ��Ȯ�մϴ�)
+    // 별도의 배율을 두지 않고 컴포넌트의 MaxAcceleration을 그대로 신뢰한다.
+    // 여기서 추진력을 더 키우고 싶다면,
+    // 위 DragFactor 계산에도 같은 값을 넣어야 수렴 지점이 어긋나지 않는다.
 
     if (Acceleration.SizeSquared() > KINDA_SMALL_NUMBER)
     {
@@ -175,7 +175,7 @@ void UAbyssCharacterMovementComponent::CalcVelocity(float DeltaTime, float Frict
     }
 
     // =========================================================
-    // 5. ���� ����
+    // 5. 최종 적용 (마찰과 브레이킹에 0을 넘겨 부모의 감속 모델을 끈다)
     // =========================================================
     Super::CalcVelocity(DeltaTime, NoFriction, bFluid, NoBraking);
 }

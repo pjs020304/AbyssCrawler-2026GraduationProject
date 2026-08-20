@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "LobbyUserWidget.h"
@@ -106,13 +106,13 @@ void ULobbyUserWidget::RefreshUI()
 		Txt_Ready->SetVisibility(ESlateVisibility::Visible);
 	}
 
-	// Ready Button: ÀÚ±â ½½·Ô¿¡¼­¸¸
+	// Ready Button: ìžê¸° ìŠ¬ë¡¯ì—ì„œë§Œ
 	if (bIsMine && !bIsReady)
 	{
 		Btn_Ready->SetVisibility(ESlateVisibility::Visible);
 	}
 
-	// Kick Button: ¼­¹ö°¡ ´Ù¸¥ ÇÃ·¹ÀÌ¾î¿¡°Ô¸¸
+	// Kick Button: ì„œë²„ê°€ ë‹¤ë¥¸ í”Œë ˆì´ì–´ì—ê²Œë§Œ
 	if (bIsServer && !bIsMine)
 	{
 		Btn_KickPlayer->SetVisibility(ESlateVisibility::Visible);
@@ -129,7 +129,7 @@ void ULobbyUserWidget::RefreshUI()
 		Img_ColorPreview->SetColorAndOpacity(PlayerState->GetPlayerColor());
 	}
 
-	// »ö»ó º¯°æ ¹öÆ°: ÀÚ±â ½½·Ô¿¡¼­¸¸
+	// ìƒ‰ìƒ ë³€ê²½ ë²„íŠ¼: ìžê¸° ìŠ¬ë¡¯ì—ì„œë§Œ
 	if (Btn_ColorPrev)
 	{
 		Btn_ColorPrev->SetVisibility(bIsMine && !bIsReady ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);

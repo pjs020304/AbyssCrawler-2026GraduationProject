@@ -1,20 +1,20 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
 #include "SVOVolume.generated.h"
 
-// ��Ʈ���� �⺻ ���� (���)
+// 옥트리의 기본 단위 (노드)
 struct FSVONode
 {
-	FVector Center;       // ������ �߽� ��ǥ
-	float Extent;         // ������ ���� ũ�� (Half-size)
-	bool bIsBlocked;      // ��ֹ��� �ִ°�?
-	bool bIsLeaf;         // �� �̻� �ɰ����� �ʴ� ����(����) ����ΰ�?
+	FVector Center;       // 노드의 중심 좌표
+	float Extent;         // 노드의 반 크기 (Half-size)
+	bool bIsBlocked;      // 장애물이 걸쳐 있는가?
+	bool bIsLeaf;         // 더 이상 쪼개지 않는 말단(리프) 노드인가?
 
 
-	// �ڽ� ��� 8�� (�ڽ��� Leaf�� �ƴ� ���� ������)
+	// 자식 노드 8개 (자신이 Leaf가 아닐 때만 채워진다)
 	TArray<TSharedPtr<FSVONode>> Children;
 
 	FSVONode(FVector InCenter, float InExtent)
@@ -33,23 +33,23 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	// �� ��ĵ ������ �ð������� ������ �ڽ�
+	// 옥트리가 스캔할 범위를 에디터에서 시각적으로 잡아 주는 박스
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "SVO")
 	UBoxComponent* BoundsVolume;
 
-	// Ʈ���� �� ���̳� �ɰ����� ���� (���� Ŭ���� ���������� �޸� ����)
+	// 트리를 몇 단계까지 쪼갤지 결정 (클수록 정밀해지지만 메모리가 늘어난다)
 	UPROPERTY(EditAnywhere, Category = "SVO")
 	int32 MaxDepth = 5;
 
-	// ��ĵ �� ������ ĳ���͵� (���, �÷��̾� ��)
+	// 스캔할 때 장애물로 세지 않을 액터들 (크리처, 플레이어 등)
 	UPROPERTY()
 	TArray<AActor*> ActorsToIgnore;
 
 private:
-	// Ʈ���� �ֻ�� �Ѹ� ���
+	// 트리의 최상위 뿌리 노드
 	TSharedPtr<FSVONode> RootNode;
 
-	// 1. Ʈ���� ��������� �����ϴ� �Լ�
+	// 1. 트리를 재귀적으로 구축하는 함수
 	void BuildOctree(TSharedPtr<FSVONode> Node, int32 CurrentDepth);
 
 	// [PCG 연동] 변경 영역과 겹치는 노드만 골라 재스캔하는 재귀 함수
@@ -61,10 +61,10 @@ private:
 	void DrawNodeDebugRecursive(TSharedPtr<FSVONode> Node) const;
 
 public:
-	// 2. �ܺ�(Pathfinder)���� Ư�� ��ǥ�� �����ִ��� $O(\log N)$ �ӵ��� ��� �Լ�
+	// 2. 외부(Pathfinder)에서 특정 좌표가 비어 있는지 O(log N)으로 묻는 함수
 	bool IsWalkable(const FVector& Location) const;
 
-	// 3. ���� ���� ��� SVO �����͸� Ȱ���� �ʰ��� 3D ���� ���� (��Ʈ�� Ǯ����)
+	// 3. 물리 질의 대신 SVO 데이터만으로 수행하는 3D 가시성 판정 (경로 평활화용)
 	bool SVORaycast(const FVector& Start, const FVector& End) const;
 
 	void DrawSVODebug() const;
@@ -78,7 +78,7 @@ public:
 	void RebuildRegionBox(FVector Center, FVector Extent);
 
 public:
-	// ��������Ʈ���� Ű �Է����� ȣ���� �� �ְ� ����
+	// 블루프린트에서 키 입력으로 호출할 수 있게 노출
 	UFUNCTION(BlueprintCallable, Category = "SVO Debug")
 	void ToggleSVODebug();
 

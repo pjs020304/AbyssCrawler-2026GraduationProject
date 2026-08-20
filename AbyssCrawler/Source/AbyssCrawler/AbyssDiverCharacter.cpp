@@ -1,4 +1,4 @@
-#include "AbyssDiverCharacter.h"
+﻿#include "AbyssDiverCharacter.h"
 #include "AbyssOctopusCharacter.h"
 #include "AbyssCharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
@@ -132,8 +132,7 @@ void AAbyssDiverCharacter::BeginPlay()
 		}
 	}
 	
-	APhysicsVolume* CurrentVolume = GetCharacterMovement() ? GetCharacterMovement()->GetPhysicsVolume() : nullptr;
-	bool bInWater = CurrentVolume && CurrentVolume->bWaterVolume;
+	const bool bInWater = IsInWater();
 
 	if (bInWater)
 	{
@@ -261,13 +260,19 @@ void AAbyssDiverCharacter::BeginPlay()
 
 }
 
+bool AAbyssDiverCharacter::IsInWater() const
+{
+	const UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	const APhysicsVolume* CurrentVolume = MoveComp ? MoveComp->GetPhysicsVolume() : nullptr;
+	return CurrentVolume && CurrentVolume->bWaterVolume;
+}
+
 void AAbyssDiverCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
 	// Post Process Blending 로직
-	APhysicsVolume* CurrentVolume = GetCharacterMovement() ? GetCharacterMovement()->GetPhysicsVolume() : nullptr;
-	bool bInWater = CurrentVolume && CurrentVolume->bWaterVolume;
+	const bool bInWater = IsInWater();
 
 	if (DeepSeaPPVolume)
 	{
