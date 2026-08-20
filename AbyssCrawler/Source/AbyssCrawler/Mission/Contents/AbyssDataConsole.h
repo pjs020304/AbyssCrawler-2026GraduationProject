@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -27,6 +27,10 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void StopDownload(AAbyssDiverCharacter* Character);
+
+	// 미니맵이 미션 목표 위치를 수집할 때 사용 (AAbyssMissionArea::GetMissionId와 동일한 관례)
+	UFUNCTION(BlueprintPure, Category = "Mission")
+	FName GetMissionId() const { return MissionId; }
 
 protected:
 	virtual void BeginPlay() override;

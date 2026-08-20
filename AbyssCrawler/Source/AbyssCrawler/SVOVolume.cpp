@@ -1,4 +1,4 @@
-#include "SVOVolume.h"
+﻿#include "SVOVolume.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
@@ -6,7 +6,7 @@
 
 ASVOVolume::ASVOVolume()
 {
-	// Tick ���� ����
+	// 이 액터는 매 프레임 할 일이 없다. Tick을 끈다.
 	PrimaryActorTick.bCanEverTick = false;
 
 	BoundsVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("BoundsVolume"));
@@ -18,7 +18,7 @@ void ASVOVolume::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// [New] �ʿ� �ִ� ��� ĳ����(���, �÷��̾� ��)�� ã�Ƽ� ���� ��Ͽ� �ֽ��ϴ�.
+	// 맵에 있는 모든 캐릭터(크리처, 플레이어 등)를 찾아 무시 목록에 넣는다.
 	RefreshIgnoredActors();
 
 	RootNode = MakeShared<FSVONode>(GetActorLocation(), BoundsVolume->GetUnscaledBoxExtent().X);
@@ -36,7 +36,7 @@ void ASVOVolume::BeginPlay()
 void ASVOVolume::BuildOctree(TSharedPtr<FSVONode> Node, int32 CurrentDepth)
 {
 	FCollisionQueryParams QueryParams;
-	// [�ٽ� �ذ�] �̸� ã�Ƶ� ��� ĳ���Ϳ� �ڽ��� ��ĵ ���̴����� ���������ϴ�!
+	// [핵심] 캐릭터는 지형이 아니므로 스캔 대상에서 제외한다.
 	QueryParams.AddIgnoredActors(ActorsToIgnore);
 
 	FCollisionShape BoxShape = FCollisionShape::MakeBox(FVector(Node->Extent));
@@ -84,14 +84,14 @@ void ASVOVolume::BuildOctree(TSharedPtr<FSVONode> Node, int32 CurrentDepth)
 void ASVOVolume::RefreshIgnoredActors()
 {
 	ActorsToIgnore.Reset();
-	// ��ĵ �� �����ص� �ϴ� ���� ��ü(ĳ����)�� �ٽ� ��� ���´�.
+	// 스캔할 때 장애물로 세면 안 되는 동적 객체(캐릭터)를 다시 모아 온다.
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacter::StaticClass(), ActorsToIgnore);
 	ActorsToIgnore.Add(this);
 }
 
 void ASVOVolume::RebuildRegion(const FBox& DirtyBounds)
 {
-	// ���� �ֻ�� ���尡 ���ٸ�(���� ���� ��) ��ü ����� ��ü.
+	// 아직 트리가 없다면(최초 호출) 부분 재빌드가 성립하지 않으므로 전체 빌드로 대체한다.
 	if (!RootNode.IsValid())
 	{
 		RefreshIgnoredActors();
@@ -105,10 +105,10 @@ void ASVOVolume::RebuildRegion(const FBox& DirtyBounds)
 		return;
 	}
 
-	// PCG �� �������� ���� ��ü(ĳ����)�� �ٽ� ���ϵ��� ���� ��� ����.
+	// PCG로 지형이 바뀌었으므로, 무시할 동적 객체 목록도 최신 상태로 갱신한다.
 	RefreshIgnoredActors();
 
-	// ���� ���(DirtyBounds)�� ��ġ�� ��������� ��ĵ�Ѵ�.
+	// 변경 영역(DirtyBounds)과 겹치는 노드만 다시 스캔한다.
 	RebuildNodeRecursive(RootNode, 0, DirtyBounds);
 
 	UE_LOG(LogTemp, Log, TEXT("[SVO] Partial rebuild done. Region=%s"), *DirtyBounds.ToString());
@@ -123,10 +123,10 @@ void ASVOVolume::RebuildNodeRecursive(TSharedPtr<FSVONode> Node, int32 CurrentDe
 {
 	if (!Node.IsValid()) return;
 
-	// �� ����� AABB
+	// 이 노드가 차지하는 영역(AABB)
 	const FBox NodeBox(Node->Center - FVector(Node->Extent), Node->Center + FVector(Node->Extent));
 
-	// ���� ���� ���̸� �״�� ���� (�ٽ� ���: ��ü ���� �ƴ� �κ� ���)
+	// 변경 영역 밖이면 손대지 않는다. 여기서 서브트리 전체를 건너뛰는 이득이 나온다.
 	if (!NodeBox.Intersect(DirtyBounds))
 	{
 		return;
@@ -134,13 +134,13 @@ void ASVOVolume::RebuildNodeRecursive(TSharedPtr<FSVONode> Node, int32 CurrentDe
 
 	if (Node->bIsLeaf)
 	{
-		// �� ���Ǹ� �ٽ� ��ĵ. (���ο� ��ֹ��� �����ϸ� BuildOctree�� �ٽ� �ɰ��ų� ���´�)
+		// 이 리프만 다시 스캔한다. 새 장애물이 생겼다면 BuildOctree가 다시 쪼개거나 막는다.
 		Node->Children.Reset();
 		BuildOctree(Node, CurrentDepth);
 		return;
 	}
 
-	// ���� ���: ���� ���� ��ġ�� �ڽ����� ��� ����
+	// 중간 노드: 변경 영역과 겹치는 자식으로만 계속 내려간다.
 	for (const TSharedPtr<FSVONode>& Child : Node->Children)
 	{
 		RebuildNodeRecursive(Child, CurrentDepth + 1, DirtyBounds);
@@ -200,13 +200,13 @@ void ASVOVolume::ToggleSVODebug()
 #if ENABLE_DRAW_DEBUG
 	bIsDebugVisible = !bIsDebugVisible;
 
-	// ������ �׷��� �ִ� ��� ����� ����/�ڽ��� ȭ�鿡�� ������ �� ����ϴ�.
+	// 이전에 그려 둔 디버그 라인과 박스를 화면에서 지운다.
 	FlushPersistentDebugLines(GetWorld());
 
 	if (bIsDebugVisible)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SVO debug rendering: ON"));
-		DrawSVODebug(); // ���ð� ���� �� �� �� ���� �׸��ϴ�.
+		DrawSVODebug(); // 토글을 켜는 순간 한 번 새로 그린다.
 	}
 	else
 	{
@@ -217,7 +217,7 @@ void ASVOVolume::ToggleSVODebug()
 
 void ASVOVolume::DrawNodeDebugRecursive(TSharedPtr<FSVONode> Node) const
 {
-	// ����׸� �׸� �� ���� �ð�(LifeTime)�� -1 (������) �Ǵ� ���� �� �ð����� �����մϴ�.
+	// 디버그를 그릴 때 유지 시간(LifeTime)은 -1(영구) 또는 충분히 긴 값으로 준다.
 	float DebugLifeTime = 99999.0f;
 
 	if (Node->bIsLeaf)

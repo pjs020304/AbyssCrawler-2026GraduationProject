@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
-#include "AbilitySystemInterface.h" // GAS ������ �������̽�
+#include "AbilitySystemInterface.h" // GAS 연동을 위한 인터페이스
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BrainComponent.h"
@@ -21,44 +21,44 @@ class ABYSSCRAWLER_API AAbyssSharkCharacter : public ACharacter, public IAbility
 public:
 	AAbyssSharkCharacter();
 
-	// --- [GAS �ʼ� �������̵�] ---
+	// --- [GAS 필수 오버라이드] ---
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	// AI�� ������ �� ȣ��Ǵ� �Լ� (���⼭ ASC �ʱ�ȭ �� ��ų �ο��� �����մϴ�)
+	// AI가 이 폰에 빙의할 때 호출되는 함수 (여기서 ASC를 초기화하고 시작 어빌리티를 부여한다)
 	virtual void PossessedBy(AController* NewController) override;
 
 protected:
 	virtual void BeginPlay() override;
 
-	// --- [GAS ������Ʈ] ---
+	// --- [GAS 컴포넌트] ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
 	UAbilitySystemComponent* AbilitySystemComponent;
 
 
 
-	// ���� ���� �� ���� �ο��� �����Ƽ(��ų) ���
-	// �����Ϳ��� ���⿡ ��� ���� GA_SharkBite�� ����
+	// 게임 시작 시 이 캐릭터에게 부여할 어빌리티(스킬) 목록
+	// 에디터에서 물기 공격에 해당하는 GA_SharkBite를 지정한다
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> StartupAbilities;	
 
-	// �����Ƽ�� �� ���� �ο��ǵ��� üũ�ϴ� �÷���
+	// 어빌리티가 이미 부여되었는지 확인하는 플래그 (중복 부여 방지)
 	bool bAbilitiesInitialized;
 
-	// ���� �±� ("State.Debuff.Stun")
+	// 기절 상태를 나타내는 태그 ("State.Debuff.Stun")
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	FGameplayTag StunTag;
 
-	// �±װ� �߰��ǰų� ������ �� ȣ��� �ݹ� �Լ�
+	// 태그가 추가되거나 제거될 때 호출되는 콜백 함수
 	virtual void OnStunTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
 
-	// �÷��̾�� ������ AttributeSet ���
+	// 플레이어와 같은 클래스를 쓰는 AttributeSet (체력 등 능력치를 담는다)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
 	UAbyssAttributeSet* AttributeSet;
 
-	// ü���� ���� �� ȣ��� �ݹ� �Լ�
+	// 체력이 바뀔 때 호출되는 콜백 함수
 	void OnHealthChangedCallback(const FOnAttributeChangeData& Data);
 
-	// ��� ó�� �Լ�
+	// 사망 처리 함수
 	void Die();
 
 	// 공격 어빌리티(GA_SharkBite)가 활성화된 동안 ASC에 부여되는 태그 (예: "State.Attacking")

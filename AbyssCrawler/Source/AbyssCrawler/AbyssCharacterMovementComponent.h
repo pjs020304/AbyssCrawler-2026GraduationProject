@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -12,7 +12,7 @@ class ABYSSCRAWLER_API UAbyssCharacterMovementComponent : public UCharacterMovem
 public:
 	UAbyssCharacterMovementComponent();
 
-	// ��ȹ�� �̵� �ӵ� ���� �ݿ�
+	// 기획서의 이동 속도 수치를 그대로 반영한다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abyss Movement")
 	float WalkSpeed = 150.f; // 1.5m/s -> 150cm/s
 
@@ -32,21 +32,22 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Abyss Movement")
 	float HauntSpeedMultiplier = 1.f;
 
-	// --- ���� ���� ���� ---
-	// �ΰ� ���� ��� (�������� ������ ����)
+	// --- 수중 물리 파라미터 ---
+	// 부가 질량 계수. 물속에서 몸을 밀 때 함께 밀리는 물의 양을 표현하려던 값이다.
+	// (현재 CalcVelocity에서 사용하지 않는다. 항력 역산 방식으로 정리되면서 남은 값)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abyss Physics")
 	float AddedMassCoefficient = 0.5f;
 
-	// ���� �е��� 
+	// 물의 밀도. 위와 같은 이유로 현재 사용하지 않는다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abyss Physics")
 	float WaterDensity = 0.05f;	
 
-	// [Ʃ�� �ٽ� 2] �Է� ���ӵ� ���� (Thrust)
-	// ���ӿ��� �������ϴ� ���Դϴ�. ������ �հ� ������ ���� ũ���Դϴ�.
+	// 입력 가속도 배율(Thrust). 수중에서 앞으로 밀어 주는 힘의 배율이다.
+	// (현재 사용하지 않는다. 추진력은 MaxAcceleration으로 직접 지정한다)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Abyss Physics")
 	float SwimmingAccelerationMultiplier = 2.5f;
 
-	// �ܺ�(Character)���� ȣ���� �Լ�
+	// 외부(Character)에서 스프린트를 켜고 끌 때 호출하는 함수
 	UFUNCTION(BlueprintCallable, Category = "Abyss Movement")
 	void SetSprinting(bool bActive);
 
@@ -54,10 +55,10 @@ public:
 	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 
 protected:
-	// ���� �̵� ��忡 ���� �ִ� �ӵ��� ��ȯ�ϴ� �Լ� �������̵�
+	// 현재 이동 모드에 맞는 최대 속도를 돌려주도록 오버라이드
 	virtual float GetMaxSpeed() const override;
 
-	// �� ������ ���ӵ�, ����, �극��ŷ�� ó���Ͽ� Velocity�� ���� �Լ�
+	// 매 프레임 가속도와 항력을 처리해 Velocity를 만드는 함수
 	virtual void CalcVelocity(float DeltaTime, float Friction, bool bFluid, float BrakingDeceleration) override;
 
 	// [네트워크 예측] 클라가 보낸 이동 패킷의 압축 플래그에서 스프린트 상태 복원 (서버 측)

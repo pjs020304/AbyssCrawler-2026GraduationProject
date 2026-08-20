@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -86,14 +86,14 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UMissionUIWidget* MissionUI;
 
-	// ������ �ʱ�ȭ�� �� ȣ��
+	// 위젯이 초기화될 때 호출
 	virtual void NativeConstruct() override;
 
-	// ���� ������ �� ����� UI ������Ʈ �Լ�
+	// 보유 금액이 바뀔 때 호출되는 UI 갱신 함수
 	UFUNCTION()
 	void UpdateMoneyDisplay(int32 NewMoney);
 
-	// ��������Ʈ���� �ؽ�Ʈ�� �ٲ� �� �ֵ��� �̺�Ʈ ����
+	// 블루프린트에서 텍스트를 바꿀 수 있도록 노출하는 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void OnUpdateMoneyText(int32 Money);
 	

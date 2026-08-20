@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "AbilitySystemInterface.h"
 #include "AbyssInteractionInterface.h"
@@ -350,6 +350,12 @@ public:
   void ClearMissionSelectUIRef();
 
   void ToggleMissionPanel();
+
+  // 물리 볼륨 기준 수중 판정. UCharacterMovementComponent::IsInWater()와 이름이 겹치지만
+  // 그쪽은 MOVE_Swimming 판정이라 의미가 다르다 — 여기서는 심해 연출/미니맵이 함께 쓰는
+  // bWaterVolume 기준을 유지한다.
+  UFUNCTION(BlueprintPure, Category = "Abyss State")
+  bool IsInWater() const;
 
   // 미션 아이템 판정
   bool IsHoldingUSBItem() const;

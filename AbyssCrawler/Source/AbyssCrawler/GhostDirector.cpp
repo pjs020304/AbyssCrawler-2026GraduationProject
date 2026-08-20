@@ -1,4 +1,4 @@
-#include "GhostDirector.h"
+﻿#include "GhostDirector.h"
 
 #include "GhostCreature.h"
 #include "AbyssDiverCharacter.h"

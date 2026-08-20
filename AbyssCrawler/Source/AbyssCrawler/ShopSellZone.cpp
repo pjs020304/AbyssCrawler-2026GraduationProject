@@ -1,4 +1,4 @@
-#include "ShopSellZone.h"
+﻿#include "ShopSellZone.h"
 #include "AbyssShopTypes.h"
 #include "Components/BoxComponent.h"
 #include "Components/WidgetComponent.h"
@@ -14,14 +14,14 @@ AShopSellZone::AShopSellZone()
 	bReplicates = true;
 
 	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseMesh"));
-	// �������� �¾ƾ� ��ȣ�ۿ��� �ǹǷ� Block ����
+	// 플레이어가 올라설 수 있어야 상호작용이 되므로 Block으로 설정
 	BaseMesh->SetCollisionProfileName(TEXT("BlockAllDynamic"));
 	RootComponent = BaseMesh;
 
 	SellAreaBox = CreateDefaultSubobject<UBoxComponent>(TEXT("SellAreaBox"));
 	SellAreaBox->SetupAttachment(RootComponent);
 	SellAreaBox->SetCollisionResponseToAllChannels(ECR_Ignore);
-	// ������ ������(AbyssItemBase)�� �������� �� ��ħ�� �ν��ϵ��� Overlap ����
+	// 판매대 위의 아이템(AbyssItemBase)이 영역 안에 들어왔는지 인식하도록 Overlap으로 설정
 	SellAreaBox->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
 
 	InfoWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("InfoWidget"));
