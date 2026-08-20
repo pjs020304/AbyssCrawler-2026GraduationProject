@@ -561,6 +561,11 @@ protected:
     UPROPERTY()
     bool bDemoLightHighIntensity = false;
 
+    // Move Debug
+    void HandleDebugTeleportToSubmarine();
+
+    UFUNCTION(Server, Reliable)
+    void Server_DebugTeleportToSubmarine();
 
 public:
     virtual void OnRep_PlayerState() override;

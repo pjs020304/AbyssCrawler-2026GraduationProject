@@ -14,6 +14,7 @@
 #include "AbyssAttributeSet.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "AbyssFlashLight.h"
 #include "AbyssCorpseItem.h"
@@ -30,6 +31,7 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "EngineUtils.h"
 #include "Engine/PostProcessVolume.h"
+#include "Engine/TargetPoint.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "Kismet/GameplayStatics.h"
 #include "Mission/Contents/AbyssUSBItem.h"
@@ -374,6 +376,7 @@ void AAbyssDiverCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	PlayerInputComponent->BindKey(EKeys::F1, IE_Pressed, this, &AAbyssDiverCharacter::Debug_SetProgressFull);
 	PlayerInputComponent->BindKey(EKeys::F2, IE_Pressed, this, &AAbyssDiverCharacter::Debug_SetRemainingTime10);
 	PlayerInputComponent->BindKey(EKeys::F4, IE_Pressed, this, &AAbyssDiverCharacter::HandleToggleDemoLight);
+	PlayerInputComponent->BindKey(EKeys::F5, IE_Pressed, this, &AAbyssDiverCharacter::HandleDebugTeleportToSubmarine);
 }
 
 void AAbyssDiverCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -2473,6 +2476,71 @@ void AAbyssDiverCharacter::ApplyDemoLightIntensityLocal(float NewIntensity)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[DemoLight] No DirectionalLight with tag DemoLightSource found."));
 	}
+}
+
+void AAbyssDiverCharacter::HandleDebugTeleportToSubmarine()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[DebugTeleport] F5 Pressed. Local=%d Authority=%d"),
+		IsLocallyControlled(),
+		HasAuthority());
+
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	Server_DebugTeleportToSubmarine();
+}
+
+void AAbyssDiverCharacter::Server_DebugTeleportToSubmarine_Implementation()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	AActor* TargetActor = nullptr;
+
+	for (TActorIterator<ATargetPoint> It(World); It; ++It)
+	{
+		ATargetPoint* TargetPoint = *It;
+		if (!TargetPoint)
+		{
+			continue;
+		}
+
+		if (TargetPoint->ActorHasTag(TEXT("DebugSubmarineEntrance")))
+		{
+			TargetActor = TargetPoint;
+			break;
+		}
+	}
+
+	if (!TargetActor)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DebugTeleport] TargetPoint with tag DebugSubmarineEntrance not found."));
+		return;
+	}
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->StopMovementImmediately();
+	}
+
+	const FVector TargetLocation = TargetActor->GetActorLocation();
+	const FRotator TargetRotation = TargetActor->GetActorRotation();
+
+	SetActorLocationAndRotation(
+		TargetLocation,
+		TargetRotation,
+		false,
+		nullptr,
+		ETeleportType::TeleportPhysics
+	);
+
+	UE_LOG(LogTemp, Warning, TEXT("[DebugTeleport] Teleported to Submarine Entrance: %s"),
+		*TargetLocation.ToString());
 }
 
 void AAbyssDiverCharacter::Multicast_SetDemoLightIntensity_Implementation(bool bHighIntensity)
