@@ -18,6 +18,11 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 protected:
+	// 설치가 끝나 미끼가 실제로 소환되는 순간의 효과음.
+	// 설치를 "시작"할 때의 소리는 베이스의 UseSound가 담당한다.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<USoundBase> InstallCompleteSound;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Decoy")
 	TSubclassOf<ADecoyActor> DecoyActorClass;
 

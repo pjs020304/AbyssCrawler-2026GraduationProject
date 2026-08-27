@@ -102,7 +102,11 @@ void UAbyssMinimapWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 
 	UpdateLocalPlayerIcon(SelfState, SelfIconYaw, GameState);
 	UpdateEntries(Minimap->GetDynamicEntries(), TEXT("Dyn"), SelfLocation, SelfState, GameState, ViewYaw, InDeltaTime);
-	UpdateEntries(Minimap->GetStaticEntries(), TEXT("Obj"), SelfLocation, SelfState, GameState, ViewYaw, InDeltaTime);
+	if (bShowMissionObjectives)
+	{
+		// 끈 상태로 두면 이 키들이 ActiveKeys에 안 들어가므로, 아래 정리 루프가 아이콘을 걷어낸다.
+		UpdateEntries(Minimap->GetStaticEntries(), TEXT("Obj"), SelfLocation, SelfState, GameState, ViewYaw, InDeltaTime);
+	}
 
 	// 이번 프레임에 사라진 엔트리의 아이콘을 정리한다
 	for (TMap<FName, FAbyssMinimapIconSlot>::TIterator It(IconSlots); It; ++It)
@@ -120,6 +124,16 @@ void UAbyssMinimapWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 	}
 
 	BP_UpdateMapBackground(FVector2D(SelfLocation.X, SelfLocation.Y), ViewRadiusUU);
+
+	if (bLogIconDiagnostics)
+	{
+		DiagnosticsAccumulator += InDeltaTime;
+		if (DiagnosticsAccumulator >= 1.f)
+		{
+			DiagnosticsAccumulator = 0.f;
+			LogDiagnostics(*Minimap, SelfLocation);
+		}
+	}
 }
 
 void UAbyssMinimapWidget::UpdateLocalPlayerIcon(APlayerState* SelfState, float SelfIconYaw, AAbyssGameState* GameState)
@@ -241,6 +255,14 @@ void UAbyssMinimapWidget::ApplyIconState(
 	float IconYaw,
 	AAbyssGameState* GameState)
 {
+	// 아이콘이 살아 있는 한 루트는 항상 보이도록 C++이 못 박는다.
+	// BP의 BP_SetClamped/BP_SetDead 구현이 한쪽 분기만 채워져 있어도 아이콘이 통째로
+	// 사라지지 않게 하기 위한 안전장치다.
+	if (IconSlot.Widget->GetVisibility() != ESlateVisibility::SelfHitTestInvisible)
+	{
+		IconSlot.Widget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+
 	// 연속 값은 매 프레임 갱신한다
 	IconSlot.Widget->BP_SetRelativeDepth(DeltaZ);
 	if (Entry.IconType == EAbyssMinimapIconType::Player)
@@ -310,21 +332,21 @@ FAbyssMinimapIconSlot* UAbyssMinimapWidget::CreateIconSlot(FName Key, const FAby
 		return nullptr;
 	}
 
-	const TSubclassOf<UAbyssMinimapIconWidget>* IconClass = IconWidgetClasses.Find(Entry.IconType);
-	if (!IconClass || !*IconClass)
+	const TSubclassOf<UAbyssMinimapIconWidget> IconClass = GetIconClass(Entry.IconType);
+	if (!IconClass)
 	{
 		// 설정 누락은 "아이콘이 아예 안 뜬다"로만 드러나 원인을 찾기 어렵다. 타입별로 한 번만 알린다.
 		if (!ReportedMissingIconClasses.Contains(Entry.IconType))
 		{
 			ReportedMissingIconClasses.Add(Entry.IconType);
 			UE_LOG(LogTemp, Warning,
-				TEXT("[Minimap] IconWidgetClasses에 %s 항목이 비어 있어 아이콘을 만들 수 없습니다. WBP_Minimap의 Class Defaults를 확인하세요."),
+				TEXT("[Minimap] %s 아이콘 클래스가 비어 있어 아이콘을 만들 수 없습니다. WBP_Minimap의 Class Defaults에서 채우세요."),
 				*UEnum::GetValueAsString(Entry.IconType));
 		}
 		return nullptr;
 	}
 
-	UAbyssMinimapIconWidget* IconWidget = CreateWidget<UAbyssMinimapIconWidget>(GetOwningPlayer(), *IconClass);
+	UAbyssMinimapIconWidget* IconWidget = CreateWidget<UAbyssMinimapIconWidget>(GetOwningPlayer(), IconClass);
 	if (!IconWidget)
 	{
 		return nullptr;
@@ -345,6 +367,36 @@ FAbyssMinimapIconSlot* UAbyssMinimapWidget::CreateIconSlot(FName Key, const FAby
 	FAbyssMinimapIconSlot& NewSlot = IconSlots.Add(Key);
 	NewSlot.Widget = IconWidget;
 	return &NewSlot;
+}
+
+TSubclassOf<UAbyssMinimapIconWidget> UAbyssMinimapWidget::GetIconClass(EAbyssMinimapIconType IconType) const
+{
+	switch (IconType)
+	{
+	case EAbyssMinimapIconType::Player:           return PlayerIconClass;
+	case EAbyssMinimapIconType::Submarine:        return SubmarineIconClass;
+	case EAbyssMinimapIconType::MissionObjective: return MissionObjectiveIconClass;
+	default:                                      return nullptr;
+	}
+}
+
+void UAbyssMinimapWidget::LogDiagnostics(const UAbyssMinimapComponent& Minimap, const FVector& SelfLocation) const
+{
+	UE_LOG(LogTemp, Warning,
+		TEXT("[Minimap] Dynamic=%d Static=%d Icons=%d Self=(%.0f, %.0f) ViewRadius=%.0f RadiusPx=%.0f"),
+		Minimap.GetDynamicEntries().Num(), Minimap.GetStaticEntries().Num(), IconSlots.Num(),
+		SelfLocation.X, SelfLocation.Y, ViewRadiusUU, MinimapRadiusPx);
+
+	for (const TPair<FName, FAbyssMinimapIconSlot>& Pair : IconSlots)
+	{
+		const UAbyssMinimapIconWidget* Icon = Pair.Value.Widget;
+		UE_LOG(LogTemp, Warning,
+			TEXT("[Minimap]   %-24s pos=(%7.1f,%7.1f) clamped=%d visible=%s"),
+			*Pair.Key.ToString(),
+			Pair.Value.DisplayPos.X, Pair.Value.DisplayPos.Y,
+			Pair.Value.bLastClamped ? 1 : 0,
+			Icon ? *UEnum::GetValueAsString(Icon->GetVisibility()) : TEXT("<null>"));
+	}
 }
 
 void UAbyssMinimapWidget::ClearIcons()

@@ -7,6 +7,7 @@
 
 class AAbyssGameState;
 class UAbyssMinimapIconWidget;
+class UAbyssMinimapComponent;
 class UCanvasPanel;
 class UPanelWidget;
 struct FAbyssMinimapEntry;
@@ -60,8 +61,17 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UCanvasPanel> IconCanvas;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Minimap")
-	TMap<EAbyssMinimapIconType, TSubclassOf<UAbyssMinimapIconWidget>> IconWidgetClasses;
+	// 타입별 아이콘 위젯 클래스.
+	// TMap<enum, ...>은 디테일 패널에서 새 항목이 항상 기본값 키(=Player)로 추가돼
+	// 중복 키가 되는 순간 항목이 통째로 무효화된다. 그 함정을 피하려고 개별 프로퍼티로 둔다.
+	UPROPERTY(EditDefaultsOnly, Category = "Minimap|Icon Class")
+	TSubclassOf<UAbyssMinimapIconWidget> PlayerIconClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Minimap|Icon Class")
+	TSubclassOf<UAbyssMinimapIconWidget> SubmarineIconClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Minimap|Icon Class")
+	TSubclassOf<UAbyssMinimapIconWidget> MissionObjectiveIconClass;
 
 	// 미니맵이 담는 월드 반경 (uu)
 	UPROPERTY(EditDefaultsOnly, Category = "Minimap")
@@ -79,10 +89,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Minimap")
 	float IconInterpSpeed = 12.f;
 
+	// 미션 목표 아이콘(AAbyssMissionItem / MissionArea / MissionWorkObject / DataConsole)을 표시할지.
+	// 런타임에 BP에서 껐다 켜도 다음 틱에 아이콘이 알아서 정리 / 복원된다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minimap")
+	bool bShowMissionObjectives = true;
+
 	// true  = 내가 보는 방향이 항상 미니맵 위쪽 (맵 전체가 회전, 내 아이콘은 고정)
 	// false = 북쪽(월드 +X) 고정 (맵은 안 돌고 내 아이콘만 회전)
 	UPROPERTY(EditDefaultsOnly, Category = "Minimap")
 	bool bRotateWithCamera = true;
+
+	// 켜면 1초마다 엔트리 수 / 아이콘 위치 / 가시성을 로그로 찍는다.
+	// "아이콘이 안 보인다"가 좌표 문제인지 위젯 문제인지 한 번에 가른다.
+	UPROPERTY(EditDefaultsOnly, Category = "Minimap|Debug")
+	bool bLogIconDiagnostics = false;
 
 	// 배경 텍스처 팬을 BP가 처리하도록 넘기는 훅
 	UFUNCTION(BlueprintImplementableEvent, Category = "Minimap")
@@ -112,6 +132,10 @@ private:
 
 	FAbyssMinimapIconSlot* CreateIconSlot(FName Key, const FAbyssMinimapEntry& Entry, bool bIsLocalPlayer);
 
+	TSubclassOf<UAbyssMinimapIconWidget> GetIconClass(EAbyssMinimapIconType IconType) const;
+
+	void LogDiagnostics(const UAbyssMinimapComponent& Minimap, const FVector& SelfLocation) const;
+
 	// 엔트리에 대응하는 표시용 라벨을 로컬에서 조회한다 (복제 데이터가 아니다)
 	FText ResolveLabel(const FAbyssMinimapEntry& Entry, AAbyssGameState* GameState) const;
 
@@ -124,7 +148,9 @@ private:
 	// 이번 프레임에 살아있는 키. 매 틱 재사용해 할당을 피한다.
 	TSet<FName> ActiveKeys;
 
-	// IconWidgetClasses 설정 누락은 "아이콘이 아예 안 뜬다"로만 나타나 원인 찾기가 어렵다.
+	// 아이콘 클래스 설정 누락은 "아이콘이 아예 안 뜬다"로만 나타나 원인 찾기가 어렵다.
 	// 타입별로 딱 한 번 경고 로그를 남기기 위한 기록.
 	TSet<EAbyssMinimapIconType> ReportedMissingIconClasses;
+
+	float DiagnosticsAccumulator = 0.f;
 };

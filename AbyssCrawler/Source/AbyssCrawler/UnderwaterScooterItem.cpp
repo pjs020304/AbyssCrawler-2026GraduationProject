@@ -2,9 +2,12 @@
 
 #include "UnderwaterScooterItem.h"
 #include "AbyssDiverCharacter.h"
+#include "Components/AudioComponent.h"
 #include "NiagaraComponent.h"
+#include "Sound/SoundBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "AbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
 
@@ -16,12 +19,22 @@ AUnderwaterScooterItem::AUnderwaterScooterItem()
 	BubbleParticleComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("BubbleParticleComp"));
 	BubbleParticleComp->SetupAttachment(RootComponent);
 	BubbleParticleComp->SetAutoActivate(false);
+
+	EngineAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("EngineAudioComp"));
+	EngineAudioComp->SetupAttachment(RootComponent);
+	EngineAudioComp->bAutoActivate = false;
 }
 
 void AUnderwaterScooterItem::BeginPlay()
 {
 	Super::BeginPlay();
 	SetActorTickEnabled(false);
+
+	// 에디터에서 지정한 루프 사운드를 컴포넌트에 걸어둔다(재생은 작동 상태에 따라 토글).
+	if (EngineAudioComp && EngineLoopSound)
+	{
+		EngineAudioComp->SetSound(EngineLoopSound);
+	}
 }
 
 void AUnderwaterScooterItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -77,6 +90,35 @@ void AUnderwaterScooterItem::OnRep_IsActive()
 
 void AUnderwaterScooterItem::ApplyVisualEffects()
 {
+	// 이 함수는 서버(직접 호출)와 클라이언트(OnRep_IsActive) 양쪽에서 모두 돌기 때문에
+	// 각 머신이 자기 자리에서 재생하면 된다 — 별도의 멀티캐스트 RPC가 필요 없다.
+	const bool bStateChanged = !bActiveStateInitialized || bLastAppliedActiveState != bIsActive;
+
+	// 일회성 시작/정지음은 "상태가 실제로 바뀐" 순간에만. 최초 반영(초기 동기화)에서는 울리지 않는다.
+	if (bActiveStateInitialized && bStateChanged)
+	{
+		if (USoundBase* OneShot = bIsActive ? StartSound : StopSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, OneShot, GetActorLocation());
+		}
+	}
+
+	// 루프음은 반대로, 뒤늦게 접속해 이미 작동 중인 추진기를 보게 된 클라이언트에서도 켜져야 한다.
+	if (EngineAudioComp && EngineAudioComp->Sound)
+	{
+		if (bIsActive && !EngineAudioComp->IsPlaying())
+		{
+			EngineAudioComp->Play();
+		}
+		else if (!bIsActive && EngineAudioComp->IsPlaying())
+		{
+			EngineAudioComp->Stop();
+		}
+	}
+
+	bLastAppliedActiveState = bIsActive;
+	bActiveStateInitialized = true;
+
 	if (bIsActive)
 	{
 		UE_LOG(LogTemp, Log, TEXT("Underwater Scooter Activated"));

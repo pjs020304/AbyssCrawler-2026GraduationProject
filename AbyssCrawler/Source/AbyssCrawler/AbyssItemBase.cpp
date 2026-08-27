@@ -72,7 +72,14 @@ void AAbyssItemBase::UseItem()
 	UE_LOG(LogTemp, Log, TEXT("Item Used: %s"), *ItemName);
 
 	// 1. 서버에서만 소모 로직을 처리합니다.
-	if (!HasAuthority() || !OwnerCharacter || !BatteryConsumeEffectClass) return;
+	if (!HasAuthority() || !OwnerCharacter) return;
+
+	// 배터리를 쓰지 않는 아이템은 소모 단계를 건너뛰고 바로 효과음만 재생한다.
+	if (!BatteryConsumeEffectClass)
+	{
+		PlayItemSound(UseSound);
+		return;
+	}
 
 	UAbilitySystemComponent* ASC = OwnerCharacter->GetAbilitySystemComponent();
 	if (ASC)
@@ -98,6 +105,9 @@ void AAbyssItemBase::UseItem()
 
 			UE_LOG(LogTemp, Log, TEXT("Item Used: %s, Battery Consumed: %f"), *ItemName, BatteryCost);
 
+			// 배터리 차감까지 통과한, 실제로 성사된 사용에만 효과음을 붙인다.
+			PlayItemSound(UseSound);
+
 			// 4. (옵션) 이 아래에 실제 아이템 고유의 기능(빛 켜기 등)을 구현하거나 서브클래스에서 Super::UseItem() 호출 후 구현합니다.
 		}
 	}
@@ -112,6 +122,22 @@ void AAbyssItemBase::NotifyUnequipped()
 {
 	// 기본 동작: 지속 소모 정지 (서브클래스에서 필요 시 super 호출 후 추가 처리)
 	StopPassiveDrain();
+}
+
+void AAbyssItemBase::PlayItemSound(USoundBase* Sound)
+{
+	// 소리는 서버가 판정한 "실제로 일어난 사건"에만 붙인다.
+	// 클라이언트가 각자 재생하면 서버가 거부한 사용에도 소리가 나기 때문이다.
+	if (!HasAuthority() || !Sound) return;
+
+	Multicast_PlayItemSound(Sound);
+}
+
+void AAbyssItemBase::Multicast_PlayItemSound_Implementation(USoundBase* Sound)
+{
+	if (!Sound) return;
+
+	UGameplayStatics::PlaySoundAtLocation(this, Sound, GetActorLocation());
 }
 
 void AAbyssItemBase::Multicast_PlayPickupSound_Implementation()

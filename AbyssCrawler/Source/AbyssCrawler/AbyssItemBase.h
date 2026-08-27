@@ -138,8 +138,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
 	TObjectPtr<USoundBase> PickupSound;
 
+	// 아이템을 사용했을 때 재생할 효과음.
+	// 사용이 실제로 성사된 순간에만 울린다(배터리 부족 등으로 취소되면 재생하지 않음).
+	// 손전등 / 수중 추진기처럼 켜고 끄는 아이템은 이 값 대신 각자의 전용 사운드를 쓴다.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<USoundBase> UseSound;
+
 	UFUNCTION(NetMulticast, Unreliable)
 	void Multicast_PlayPickupSound();
+
+	// 지정한 효과음을 모든 머신에서 아이템 위치에 재생한다.
+	// 서버에서만 의미가 있으며(권위), 서버가 아니거나 Sound가 비어 있으면 아무것도 하지 않는다.
+	// 아이템은 손에 부착되어 있으므로 재생 위치는 곧 사용자의 손 위치가 된다.
+	void PlayItemSound(USoundBase* Sound);
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_PlayItemSound(USoundBase* Sound);
 
 	// --- 지속 소모 (Passive Drain) ---
 

@@ -70,6 +70,8 @@ void ADecoyItem::FinishInstallation()
 		// Unblock movement on client
 		OwnerCharacter->Client_SetMovementBlocked(false);
 
+		PlayItemSound(InstallCompleteSound);
+
 		if (DecoyActorClass)
 		{
 			FVector SpawnLocation = OwnerCharacter->GetActorLocation() + (OwnerCharacter->GetActorForwardVector() * 100.0f);

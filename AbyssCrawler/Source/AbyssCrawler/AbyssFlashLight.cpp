@@ -3,7 +3,9 @@
 #include "AbyssFlashLight.h"
 #include "AbyssDiverCharacter.h"
 #include "Components/SpotLightComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "Sound/SoundBase.h"
 
 AAbyssFlashLight::AAbyssFlashLight()
 {
@@ -115,6 +117,20 @@ void AAbyssFlashLight::ApplyLightState()
     }
 
     SpotLightComp->SetVisibility(bIsLightOn);
+
+    // 이 함수는 서버(직접 호출)와 클라이언트(OnRep_IsLightOn) 양쪽에서 모두 돌기 때문에
+    // 각 머신이 자기 자리에서 재생하면 된다 — 별도의 멀티캐스트 RPC가 필요 없다.
+    // 다만 최초 반영은 "상태 변화"가 아니라 초기 동기화이므로 건너뛴다.
+    if (bLightStateInitialized && bLastAppliedLightState != bIsLightOn)
+    {
+        if (USoundBase* ToggleSound = bIsLightOn ? LightOnSound : LightOffSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, ToggleSound, GetActorLocation());
+        }
+    }
+
+    bLastAppliedLightState = bIsLightOn;
+    bLightStateInitialized = true;
 
     UE_LOG(LogTemp, Warning, TEXT("[FlashLight] ApplyLightState, LightOn=%s"),
         bIsLightOn ? TEXT("true") : TEXT("false"));

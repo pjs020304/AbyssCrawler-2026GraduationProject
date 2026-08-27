@@ -37,7 +37,23 @@ public:
 
     void SetLightEnabled(bool bEnabled);
 
+protected:
+    // 손전등을 켤 때 / 끌 때 재생할 효과음.
+    // 베이스의 UseSound 대신 이 두 값을 쓴다(손전등은 "사용"이 곧 토글이라 켬/끔을 구분해야 한다).
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+    TObjectPtr<USoundBase> LightOnSound;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound")
+    TObjectPtr<USoundBase> LightOffSound;
+
 private:
+    // 직전에 반영한 라이트 상태. 실제로 상태가 "바뀐" 순간에만 소리를 내기 위한 기준값이다.
+    bool bLastAppliedLightState = false;
+
+    // 스폰/최초 복제 시점의 첫 반영에서는 소리를 내지 않기 위한 플래그.
+    // (뒤늦게 접속한 클라이언트에게 켜져 있는 손전등이 복제될 때 딸깍 소리가 나면 안 된다)
+    bool bLightStateInitialized = false;
+
     UPROPERTY(ReplicatedUsing = OnRep_IsLightOn)
     bool bIsLightOn = false;
 
