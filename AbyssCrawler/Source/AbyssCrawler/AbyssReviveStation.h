@@ -11,13 +11,19 @@ class UWidgetComponent;
 class AAbyssPlayerState;
 
 /**
- * 부활 장치.
- * E키 상호작용 시 죽어 있는 모든 플레이어를 PlayerStart 지점에 되살린다.
+ * 체력 스테이션 (부활 + 체력 충전).
+ * E키 상호작용 시
+ *   - 사용한 플레이어가 살아 있으면 체력을 최대치로 충전하고,
+ *   - 죽어 있는 모든 플레이어를 PlayerStart 지점에 되살린다.
+ * 둘 중 하나라도 성사되면 쿨타임에 들어간다.
+ *
+ * 산소/배터리 스테이션(AAbyssRechargeStation)과 달리 체력 충전은 GE 에셋이 아니라
+ * 어트리뷰트를 직접 세팅한다. GE_RestoreHealthMax에 해당하는 에셋이 없기 때문.
  *
  * 부활 파이프라인 (전부 서버에서 실행):
  *  ① 죽은 캐릭터 껍데기 정리: 인벤토리 드롭 → 액터 파괴
- *  ② GAS 어트리뷰트 리셋: 체력/산소를 최대치로 (GAS가 PlayerState 소속이라 죽어도 0으로 남아있음)
- *  ③ bIsAlive 복구 → 관전 상태 해제 → GameMode::RestartPlayer로 PlayerStart에 재스폰+빙의
+ *  ② bIsAlive 복구 → 관전 상태 해제 → GameMode::RestartPlayer로 PlayerStart에 재스폰+빙의
+ *  ③ 새로 스폰된 캐릭터의 체력/산소를 최대치로 보정
  *  ④ 부활한 플레이어의 시체(CorpseItem) 제거 (운반 중인 시체는 제외)
  */
 UCLASS()
@@ -34,6 +40,9 @@ public:
 	virtual void OnLostFocus_Implementation() override;
 
 protected:
+	// [서버] 살아 있는 사용자의 체력을 최대치로 충전. 실제로 회복했으면 true
+	bool RestoreHealth(class AAbyssDiverCharacter* Diver);
+
 	// [서버] 한 명 부활 처리. 성공 시 true
 	bool RevivePlayer(AAbyssPlayerState* DeadPlayerState);
 

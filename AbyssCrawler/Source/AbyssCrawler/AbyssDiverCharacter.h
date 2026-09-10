@@ -65,6 +65,11 @@ public:
   virtual void GetLifetimeReplicatedProps(
       TArray<FLifetimeProperty> &OutLifetimeProps) const override;
 
+  // 이동 모드가 바뀔 때마다 IsSwimming 플래그를 실제 모드에 맞춘다.
+  // 서버/클라/시뮬레이션 프록시 모두에서 호출되므로 별도 리플리케이션이 필요 없다.
+  virtual void OnMovementModeChanged(EMovementMode PrevMovementMode,
+                                     uint8 PreviousCustomMode = 0) override;
+
   // --- Components ---
   UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
   UCameraComponent *FirstPersonCameraComponent;
@@ -192,8 +197,16 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction *ConvertAction; // C키로 전환
 
-  UPROPERTY(EditAnywhere, BlueprintReadOnly)
-  bool IsSwimming = true;
+  // 실제로 수영 중인지(= CharacterMovement의 MOVE_Swimming) 여부.
+  // OnMovementModeChanged에서만 갱신하므로 항상 실제 이동 모드와 일치한다.
+  // (예전에는 기본값 true인 채로 잠수함 출입에서만 바뀌어서, 한 번 물에 들어가면
+  //  물 밖으로 나와도 계속 true로 남아 있었다)
+  UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Abyss State")
+  bool IsSwimming = false;
+
+  // C키로 켜고 끄는 자유 유영(6DOF) 조작 토글. "수중인지"와는 별개의 값이다.
+  UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Abyss State")
+  bool bUseFreeSwimControl = true;
 
   UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
   UInputAction *UseItemAction; // 마우스 좌클릭

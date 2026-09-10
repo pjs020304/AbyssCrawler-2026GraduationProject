@@ -17,6 +17,10 @@ public:
 	AAbyssPlayerState();
 
 	// --- GAS Interface ---
+	// [주의] 실제 게임플레이 어트리뷰트(체력/산소/배터리)는 여기가 아니라
+	// AAbyssDiverCharacter가 소유한 ASC + UAbyssAttributeSet에 들어 있다.
+	// 아래 AttributeSet은 생성자에서 만들어지지 않아 항상 nullptr이므로,
+	// 스탯을 읽거나 쓰려면 반드시 캐릭터 쪽 ASC를 사용할 것.
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	UAttributeSet* GetAttributeSet() const { return AttributeSet; }
 

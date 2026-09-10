@@ -267,6 +267,25 @@ bool AAbyssDiverCharacter::IsInWater() const
 	return CurrentVolume && CurrentVolume->bWaterVolume;
 }
 
+// 이동 모드가 바뀔 때마다 수중 플래그를 실제 모드에 맞춘다.
+// 물에 들어갈 때(PhysicsVolumeChanged -> MOVE_Swimming)와 물에서 나올 때
+// (MOVE_Falling/MOVE_Walking) 모두 엔진이 이 함수를 불러 주므로,
+// 예전처럼 잠수함 출입에서만 플래그를 갱신할 때 생기던 "한 번 켜지면 안 꺼지는" 문제가 없다.
+// 시뮬레이션 프록시에서도 복제된 MovementMode가 적용될 때 호출되므로 별도 리플리케이션이 필요 없다.
+void AAbyssDiverCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+
+	const UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	IsSwimming = MoveComp && MoveComp->IsSwimming();
+
+	if (!IsSwimming)
+	{
+		// 물 밖으로 나오면 자유 유영 조작 토글도 기본값으로 되돌린다.
+		bUseFreeSwimControl = true;
+	}
+}
+
 void AAbyssDiverCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -798,7 +817,7 @@ void AAbyssDiverCharacter::Move(const FInputActionValue& Value)
 		// [?듭떖] ?섏쁺 紐⑤뱶???뚮뒗 移대찓?쇨? 蹂대뒗 諛⑺뼢(Z異??ы븿)?쇰줈 ?대룞?댁빞 ??(6DOF)
 		bool bIsSwimming = GetCharacterMovement()->IsSwimming();
 
-		if (bIsSwimming && IsSwimming)
+		if (bIsSwimming && bUseFreeSwimControl)
 		{
 			// ?섏쁺 以? ControlRotation???ъ슜?섏뿬 3李⑥썝 諛⑺뼢 ?띾뱷
 			FRotator ControlRot = GetControlRotation();
@@ -876,7 +895,8 @@ void AAbyssDiverCharacter::StopDescend()
 void AAbyssDiverCharacter::ConvertMove()
 {
 	if (GetCharacterMovement()->IsSwimming()) {
-		IsSwimming = !IsSwimming;
+		// 수중 조작 방식만 전환한다. "수중인지" 판정(IsSwimming)은 건드리지 않는다.
+		bUseFreeSwimControl = !bUseFreeSwimControl;
 	}
 }
 
@@ -1920,7 +1940,7 @@ void AAbyssDiverCharacter::SetInsideSubmarine(bool bInside)
 
 		// 2. 媛뺤젣濡?嫄룰린/?숉븯 紐⑤뱶濡?蹂寃?(?섏쨷?먯꽌??以묐젰???곸슜?섏뼱 諛붾떏?쇰줈 ?⑥뼱吏?
 		MoveComp->SetMovementMode(MOVE_Falling);
-		IsSwimming = false;
+		// IsSwimming은 OnMovementModeChanged에서 자동으로 false가 된다.
 	}
 	else
 	{
@@ -1931,7 +1951,6 @@ void AAbyssDiverCharacter::SetInsideSubmarine(bool bInside)
 		if (MoveComp->IsInWater())
 		{
 			MoveComp->SetMovementMode(MOVE_Swimming);
-			IsSwimming = true;
 		}
 	}
 }
@@ -2059,7 +2078,9 @@ void AAbyssDiverCharacter::Multicast_EscapeGrab_Implementation()
 	{
 		MyCMC->bCheatFlying = false;
 		
-		if (IsSwimming || MyCMC->IsInWater())
+		// 예전에는 래치된 IsSwimming을 봤기 때문에, 한 번 물에 들어갔던 캐릭터는
+		// 지상에서 붙잡힘을 풀어도 MOVE_Swimming으로 되돌아갔다.
+		if (MyCMC->CanEverSwim() && MyCMC->IsInWater())
 		{
 			MyCMC->SetMovementMode(MOVE_Swimming);
 		}

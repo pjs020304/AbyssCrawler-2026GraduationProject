@@ -82,6 +82,51 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SVO Debug")
 	void ToggleSVODebug();
 
+	// ------------------------------------------------------------------
+	// 측정용(벤치마크) 코드.
+	// 기본값은 '아무것도 하지 않음'이다. 커맨드라인에 -SVOBench 를 줄 때만 돌고,
+	// 게임 플레이 경로(BeginPlay 의 빌드, IsWalkable, RebuildRegion)는 건드리지 않는다.
+	// ------------------------------------------------------------------
+public:
+	// A* 1회 탐색 비용을 실측한다.
+	// 이 시간이 곧 '길찾기를 게임 스레드에서 돌렸을 때 그 프레임이 밀리는 시간'이다.
+	UFUNCTION(BlueprintCallable, Category = "SVO|Benchmark")
+	// MinDistance/MaxDistance 를 주면 그 거리 범위 안에서만 표본을 뽑는다.
+	// 0이면 볼륨 전체에서 무작위로 뽑는다(최악 조건).
+	void RunSVOBenchmark(int32 NumTrials = 200, float MinDistance = 0.0f, float MaxDistance = 0.0f);
+
+	// MaxDepth 를 바꿔 가며 옥트리 노드 수 / 빌드 시간 / 탐색 시간을 함께 잰다.
+	// 측정이 끝나면 원래 MaxDepth 로 되돌려 다시 빌드한다.
+	UFUNCTION(BlueprintCallable, Category = "SVO|Benchmark")
+	void RunSVODepthSweep(int32 NumTrials = 100, float MinDistance = 0.0f, float MaxDistance = 0.0f);
+
+private:
+	// 현재 MaxDepth 로 옥트리를 처음부터 다시 만들고, 걸린 시간(초)을 돌려준다.
+	double RebuildWholeTreeTimed();
+
+	// 노드를 종류별로 센다. 메모리 추정에 쓴다.
+	void CollectStats(const TSharedPtr<FSVONode>& Node, int32& OutInternal,
+		int32& OutFreeLeaf, int32& OutBlockedLeaf) const;
+
+	// 벤치마크 표본 추출 — 비어 있는(이동 가능한) 지점만 고른다.
+	bool PickWalkablePoint(FRandomStream& Rng, FVector& OutPoint) const;
+
+	// Origin 에서 [MinDistance, MaxDistance] 떨어진 비어 있는 지점을 고른다.
+	// 크리처가 실제로 추적을 시작하는 거리에서 재기 위한 것이다.
+	bool PickWalkablePointNear(FRandomStream& Rng, const FVector& Origin,
+		float MinDistance, float MaxDistance, FVector& OutPoint) const;
+
+	// 시간 표본 배열을 정렬해 평균/중앙값/p95/최대를 한 줄로 찍는다.
+	// 정렬하므로 배열을 값이 아니라 참조로 받는다.
+	static void LogDurations(const TCHAR* Label, TArray<double>& Milliseconds);
+
+	// BeginPlay 의 최초 전체 빌드에 걸린 시간(초).
+	double LastFullBuildSeconds = 0.0;
+
+	// 벤치마크가 쓰는 복셀 크기.
+	// BTTask_SmoothChasePlayer 의 값과 같아야 실제 게임과 같은 조건이 된다.
+	static constexpr float BenchVoxelSize = 250.0f;
+
 private:
 	bool bIsDebugVisible = false;
 };
