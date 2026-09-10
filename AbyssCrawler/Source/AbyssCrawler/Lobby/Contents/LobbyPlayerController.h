@@ -30,4 +30,7 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_SetPlayerColorIndex(int32 NewIndex);
+
+	UFUNCTION(Client, Reliable)
+	void Client_SetSelectedPlayerColorIndex(int32 NewIndex);
 };

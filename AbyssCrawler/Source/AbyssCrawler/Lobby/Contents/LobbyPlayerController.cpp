@@ -15,7 +15,11 @@ void ALobbyPlayerController::Server_HandleReadyButton_Implementation()
 
 	ALobbyPlayerState* LobbyPlayerState = Cast<ALobbyPlayerState>(GetPawn()->GetPlayerState());
 	if (LobbyPlayerState)
+	{
+		Client_SetSelectedPlayerColorIndex(LobbyPlayerState->PlayerColorIndex);
+
 		LobbyPlayerState->Multicast_Ready();
+	}
 
 	ALobbyGameMode* LobbyGameMode = Cast<ALobbyGameMode>(UGameplayStatics::GetGameMode(this));
 	if (LobbyGameMode)
@@ -60,4 +64,22 @@ void ALobbyPlayerController::Server_SetPlayerColorIndex_Implementation(int32 New
 	}
 
 	LobbyPS->SetPlayerColorIndex(NewIndex);
+
+	Client_SetSelectedPlayerColorIndex(NewIndex);
+
+	UE_LOG(LogTemp, Warning, TEXT("[LobbyColor] Server Set ColorIndex=%d"), NewIndex);
+}
+
+void ALobbyPlayerController::Client_SetSelectedPlayerColorIndex_Implementation(int32 NewIndex)
+{
+	if (UTitleGameInstance* GI = GetGameInstance<UTitleGameInstance>())
+	{
+		GI->SetSelectedPlayerColorIndex(NewIndex);
+
+		UE_LOG(LogTemp, Warning, TEXT("[ColorGI] Client Saved ColorIndex=%d"), NewIndex);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[ColorGI] TitleGameInstance is NULL"));
+	}
 }

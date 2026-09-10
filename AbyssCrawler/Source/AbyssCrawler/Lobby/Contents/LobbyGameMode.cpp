@@ -8,6 +8,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/OnlineReplStructs.h"
 #include "LobbyPlayerState.h"
+#include "LobbyPlayerController.h"
 
 void ALobbyGameMode::BeginPlay()
 {
@@ -70,15 +71,24 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 
 	NicknameIndex++;
 
-	// Format Text
 	FString NameString = FString::Printf(TEXT("User%d"), NicknameIndex);
-
-	// Set Nickname
 	LobbyPS->Nickname = FText::FromString(NameString);
 
 	const int32 MaxColorCount = 3;
-	LobbyPS->PlayerColorIndex = (NicknameIndex - 1) % MaxColorCount;
-	LobbyPS->OnRep_PlayerColorIndex();
+	const int32 InitialColorIndex = (NicknameIndex - 1) % MaxColorCount;
+
+	// 기존 직접 대입 대신 함수 사용
+	LobbyPS->SetPlayerColorIndex(InitialColorIndex);
+
+	// 추가: 자동 배정된 색상을 해당 클라이언트 GameInstance에도 저장
+	if (ALobbyPlayerController* LobbyPC = Cast<ALobbyPlayerController>(NewPlayer))
+	{
+		LobbyPC->Client_SetSelectedPlayerColorIndex(InitialColorIndex);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[LobbyColor] Initial Color Assigned Player=%s Index=%d"),
+		*LobbyPS->GetName(),
+		InitialColorIndex);
 }
 
 void ALobbyGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)

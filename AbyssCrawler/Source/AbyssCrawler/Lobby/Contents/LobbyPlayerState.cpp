@@ -42,10 +42,10 @@ void ALobbyPlayerState::CopyProperties(APlayerState* PlayerState)
 		PlayerState ? *PlayerState->GetName() : TEXT("NULL"));
 
 	AAbyssPlayerState* NewPlayerState = Cast<AAbyssPlayerState>(PlayerState);
-
-	if (NewPlayerState)
+	if (!NewPlayerState)
 	{
-		NewPlayerState->Nickname = Nickname;
+		UE_LOG(LogTemp, Error, TEXT("[ColorCopy] Target is not AAbyssPlayerState"));
+		return;
 	}
 
 	NewPlayerState->Nickname = Nickname;
