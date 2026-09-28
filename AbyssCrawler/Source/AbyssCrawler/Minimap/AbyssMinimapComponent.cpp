@@ -9,6 +9,7 @@
 #include "Mission/Contents/AbyssMissionArea.h"
 #include "Mission/Contents/AbyssMissionItem.h"
 #include "Mission/Contents/AbyssMissionWorkObject.h"
+#include "Minimap/AbyssMinimapLandmark.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 
@@ -129,6 +130,16 @@ void UAbyssMinimapComponent::RebuildStaticEntries()
 	}
 
 	StaticEntries.Reset();
+
+	// 랜드마크는 미션과 무관하게 항상 표시한다 (미션이 없어도 아래 early return 전에 수집).
+	// AAbyssMinimapLandmark는 공간 로딩을 끈 액터라 서버에 항상 로드되어 있다.
+	for (TActorIterator<AAbyssMinimapLandmark> It(World); It; ++It)
+	{
+		FAbyssMinimapEntry& Entry = StaticEntries.AddDefaulted_GetRef();
+		Entry.IconType = EAbyssMinimapIconType::Landmark;
+		Entry.WorldLocation = It->GetActorLocation();
+		Entry.Label = It->GetLabel();
+	}
 
 	// 수락했고 아직 완료되지 않은 미션만 목표를 노출한다
 	TSet<FName> ActiveMissionIds;

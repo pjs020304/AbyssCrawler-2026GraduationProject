@@ -7,6 +7,7 @@
 #include "Engine/DataTable.h"
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
+#include "EngineUtils.h"
 
 AShopItemDisplay::AShopItemDisplay()
 {
@@ -82,6 +83,39 @@ void AShopItemDisplay::SelectRandomItem()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Shop] %s: 상품 후보가 없습니다 (테이블/풀 비어있음)"), *GetName());
 		return;
+	}
+
+	// 다른 진열대가 이미 진열 중인 상품은 후보에서 제외 (진열대끼리 중복 방지).
+	// 서버에서 BeginPlay가 순차 실행되므로 앞서 고른 진열대의 결과가 그대로 보인다.
+	// 후보가 진열대 수보다 적어 전부 걸러지면 중복을 허용하고 원래 목록을 쓴다.
+	TSet<UClass*> ClassesOnOtherDisplays;
+	for (TActorIterator<AShopItemDisplay> It(GetWorld()); It; ++It)
+	{
+		const AShopItemDisplay* Other = *It;
+		if (!Other || Other == this || !Other->SelectedItemClass || Other->bSoldOut)
+		{
+			continue;
+		}
+		// 재입고 대기 중이면서 재입고 때 새 상품을 뽑을 진열대는 곧 바뀌므로 제외 대상이 아니다
+		if (Other->bIsRestocking && !Other->bKeepSameItemOnRestock)
+		{
+			continue;
+		}
+		ClassesOnOtherDisplays.Add(Other->SelectedItemClass.Get());
+	}
+
+	TArray<FCandidate> UniqueCandidates = Candidates.FilterByPredicate(
+		[&ClassesOnOtherDisplays](const FCandidate& C)
+		{
+			return !ClassesOnOtherDisplays.Contains(C.ItemClass.Get());
+		});
+	if (UniqueCandidates.Num() > 0)
+	{
+		Candidates = MoveTemp(UniqueCandidates);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Shop] %s: 중복 없는 상품 후보가 부족해 중복 진열을 허용합니다"), *GetName());
 	}
 
 	// 가중치 합 비례 선택

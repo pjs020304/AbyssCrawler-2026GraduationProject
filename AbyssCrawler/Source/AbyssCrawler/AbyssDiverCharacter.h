@@ -532,6 +532,8 @@ public:
     UFUNCTION(Client, Reliable)
     void Client_ShowGameClearUI();
 
+    // 게임 오버 위젯. 표시는 AAbyssPlayerController::Client_ShowGameOverUI가 담당한다
+    // (죽어서 폰이 없는 플레이어에게도 떠야 하므로 컨트롤러 경유).
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
     TSubclassOf<UUserWidget> GameOverWidgetClass;
 
@@ -722,8 +724,6 @@ public:
   UFUNCTION()
   void ApplyGrabDamage();
 
-  UFUNCTION(Client, Reliable)
-  void Client_ShowGameOverUI();
 
   UFUNCTION(Client, Unreliable)
   void Client_PlaySound2D(USoundBase* Sound);

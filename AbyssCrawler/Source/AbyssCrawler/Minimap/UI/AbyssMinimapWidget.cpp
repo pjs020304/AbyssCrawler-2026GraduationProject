@@ -1,4 +1,4 @@
-#include "Minimap/UI/AbyssMinimapWidget.h"
+﻿#include "Minimap/UI/AbyssMinimapWidget.h"
 
 #include "AbyssDiverCharacter.h"
 #include "AbyssGameState.h"
@@ -30,6 +30,9 @@ namespace
 
 		case EAbyssMinimapIconType::Submarine:
 			return FName(TEXT("__Submarine"));
+
+		case EAbyssMinimapIconType::Landmark:
+			return FName(*FString::Printf(TEXT("%s_Landmark_%d"), KeyPrefix, Index));
 
 		default:
 			// MissionId를 키에 넣지 않으면, 미션 하나가 완료돼 배열이 앞으로 밀렸을 때
@@ -102,11 +105,9 @@ void UAbyssMinimapWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 
 	UpdateLocalPlayerIcon(SelfState, SelfIconYaw, GameState);
 	UpdateEntries(Minimap->GetDynamicEntries(), TEXT("Dyn"), SelfLocation, SelfState, GameState, ViewYaw, InDeltaTime);
-	if (bShowMissionObjectives)
-	{
-		// 끈 상태로 두면 이 키들이 ActiveKeys에 안 들어가므로, 아래 정리 루프가 아이콘을 걷어낸다.
-		UpdateEntries(Minimap->GetStaticEntries(), TEXT("Obj"), SelfLocation, SelfState, GameState, ViewYaw, InDeltaTime);
-	}
+	// 미션 목표/랜드마크 표시 여부는 UpdateEntries 안에서 타입별로 거른다.
+	// 꺼진 타입의 키는 ActiveKeys에 안 들어가므로, 아래 정리 루프가 아이콘을 걷어낸다.
+	UpdateEntries(Minimap->GetStaticEntries(), TEXT("Obj"), SelfLocation, SelfState, GameState, ViewYaw, InDeltaTime);
 
 	// 이번 프레임에 사라진 엔트리의 아이콘을 정리한다
 	for (TMap<FName, FAbyssMinimapIconSlot>::TIterator It(IconSlots); It; ++It)
@@ -179,6 +180,12 @@ void UAbyssMinimapWidget::UpdateEntries(
 	for (int32 Index = 0; Index < Entries.Num(); ++Index)
 	{
 		const FAbyssMinimapEntry& Entry = Entries[Index];
+
+		if ((Entry.IconType == EAbyssMinimapIconType::MissionObjective && !bShowMissionObjectives) ||
+			(Entry.IconType == EAbyssMinimapIconType::Landmark && !bShowLandmarks))
+		{
+			continue;
+		}
 
 		// 내 아이콘은 UpdateLocalPlayerIcon이 로컬 값으로 따로 그린다
 		if (Entry.IconType == EAbyssMinimapIconType::Player && SelfState && Entry.OwnerState.Get() == SelfState)
@@ -311,6 +318,11 @@ FText UAbyssMinimapWidget::ResolveLabel(const FAbyssMinimapEntry& Entry, AAbyssG
 		return AbyssState->Nickname;
 	}
 
+	if (Entry.IconType == EAbyssMinimapIconType::Landmark)
+	{
+		return Entry.Label;
+	}
+
 	if (Entry.IconType == EAbyssMinimapIconType::MissionObjective && GameState)
 	{
 		for (const FAbyssMissionData& Mission : GameState->Missions)
@@ -362,7 +374,12 @@ FAbyssMinimapIconSlot* UAbyssMinimapWidget::CreateIconSlot(FName Key, const FAby
 		CanvasSlot->SetAutoSize(true);
 	}
 
-	IconWidget->BP_InitIcon(Entry.IconType, bIsLocalPlayer);
+	// 랜드마크 전용 아이콘이 없어 미션 목표 아이콘을 빌려 쓸 때는, 그 BP가 아는 타입으로 초기화한다
+	const EAbyssMinimapIconType InitType =
+		(Entry.IconType == EAbyssMinimapIconType::Landmark && !LandmarkIconClass)
+		? EAbyssMinimapIconType::MissionObjective
+		: Entry.IconType;
+	IconWidget->BP_InitIcon(InitType, bIsLocalPlayer);
 
 	FAbyssMinimapIconSlot& NewSlot = IconSlots.Add(Key);
 	NewSlot.Widget = IconWidget;
@@ -376,6 +393,7 @@ TSubclassOf<UAbyssMinimapIconWidget> UAbyssMinimapWidget::GetIconClass(EAbyssMin
 	case EAbyssMinimapIconType::Player:           return PlayerIconClass;
 	case EAbyssMinimapIconType::Submarine:        return SubmarineIconClass;
 	case EAbyssMinimapIconType::MissionObjective: return MissionObjectiveIconClass;
+	case EAbyssMinimapIconType::Landmark:         return LandmarkIconClass ? LandmarkIconClass : MissionObjectiveIconClass;
 	default:                                      return nullptr;
 	}
 }

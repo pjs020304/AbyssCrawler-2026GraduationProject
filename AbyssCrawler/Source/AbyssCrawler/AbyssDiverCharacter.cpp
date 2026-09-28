@@ -18,6 +18,7 @@
 #include "Net/UnrealNetwork.h"
 #include "AbyssFlashLight.h"
 #include "AbyssCorpseItem.h"
+#include "AbyssPlayerController.h"
 #include "AbyssGameMode.h"
 #include "AbyssGameState.h"
 #include "AbyssPlayerState.h"
@@ -2172,39 +2173,6 @@ void AAbyssDiverCharacter::SendChatMessage(const FString& Message)
 	Server_SendChatMessage(TrimmedMessage);
 }
 
-void AAbyssDiverCharacter::Client_ShowGameOverUI_Implementation()
-{
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC)
-	{
-		return;
-	}
-
-	if (GameOverWidgetRef)
-	{
-		GameOverWidgetRef->RemoveFromParent();
-		GameOverWidgetRef = nullptr;
-	}
-
-	if (GameOverWidgetClass)
-	{
-		GameOverWidgetRef = CreateWidget<UUserWidget>(PC, GameOverWidgetClass);
-		if (GameOverWidgetRef)
-		{
-			GameOverWidgetRef->AddToViewport(999);
-		}
-	}
-
-	PC->SetPause(false);
-	PC->bShowMouseCursor = true;
-
-	FInputModeUIOnly InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	PC->SetInputMode(InputMode);
-
-	DisableInput(PC);
-}
-
 void AAbyssDiverCharacter::Client_ShowGameClearUI_Implementation()
 {
 	SetInputLockedByUI(true);
@@ -2306,17 +2274,28 @@ void AAbyssDiverCharacter::Server_Die_Implementation()
 		Corpse->InitCorpse(GetMesh()->GetSkeletalMeshAsset(), GetMesh()->GetMaterials());
 	}
 
-	// Inform GameMode
-	if (AAbyssGameMode* GM = Cast<AAbyssGameMode>(GetWorld()->GetAuthGameMode()))
+	// 관전 전환은 빙의 해제 전에 컨트롤러를 확보해 둬야 한다
+	AController* DeadController = GetController();
+
+	// 관전 상태로 전환 + 살아있는 팀원에게 카메라 연결.
+	// GameMode 통보보다 먼저 해야 전멸 시 게임오버 UI가 관전 상태 위에 정상적으로 뜬다.
+	if (AAbyssPlayerController* PC = Cast<AAbyssPlayerController>(DeadController))
 	{
-		GM->OnPlayerDied(GetController());
+		PC->StartSpectating();
+	}
+	else if (APlayerController* BasePC = Cast<APlayerController>(DeadController))
+	{
+		BasePC->ChangeState(NAME_Spectating);
+		BasePC->ClientGotoState(NAME_Spectating);
 	}
 
-	// Unpossess and set to spectator
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	// Inform GameMode (전멸 판정)
+	if (DeadController)
 	{
-		PC->ChangeState(NAME_Spectating);
-		PC->ClientGotoState(NAME_Spectating);
+		if (AAbyssGameMode* GM = Cast<AAbyssGameMode>(GetWorld()->GetAuthGameMode()))
+		{
+			GM->OnPlayerDied(DeadController);
+		}
 	}
 
 	// 서버(리슨 호스트)는 OnRep이 오지 않으므로 직접 상태 적용. 클라는 OnRep_IsDead로 적용.

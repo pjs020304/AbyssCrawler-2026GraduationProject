@@ -73,6 +73,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Minimap|Icon Class")
 	TSubclassOf<UAbyssMinimapIconWidget> MissionObjectiveIconClass;
 
+	// 랜드마크(길찾기용 건물 등) 아이콘. 비워 두면 미션 목표 아이콘을 대신 쓴다.
+	UPROPERTY(EditDefaultsOnly, Category = "Minimap|Icon Class")
+	TSubclassOf<UAbyssMinimapIconWidget> LandmarkIconClass;
+
 	// 미니맵이 담는 월드 반경 (uu)
 	UPROPERTY(EditDefaultsOnly, Category = "Minimap")
 	float ViewRadiusUU = 4000.f;
@@ -93,6 +97,10 @@ protected:
 	// 런타임에 BP에서 껐다 켜도 다음 틱에 아이콘이 알아서 정리 / 복원된다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minimap")
 	bool bShowMissionObjectives = true;
+
+	// 랜드마크(AAbyssMinimapLandmark) 아이콘을 표시할지
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Minimap")
+	bool bShowLandmarks = true;
 
 	// true  = 내가 보는 방향이 항상 미니맵 위쪽 (맵 전체가 회전, 내 아이콘은 고정)
 	// false = 북쪽(월드 +X) 고정 (맵은 안 돌고 내 아이콘만 회전)

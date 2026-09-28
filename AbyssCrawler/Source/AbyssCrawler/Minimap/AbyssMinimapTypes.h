@@ -11,7 +11,8 @@ enum class EAbyssMinimapIconType : uint8
 {
 	Player            UMETA(DisplayName = "Player"),           // 팀원
 	Submarine         UMETA(DisplayName = "Submarine"),        // 잠수함 (귀환 지점)
-	MissionObjective  UMETA(DisplayName = "MissionObjective")  // 활성 미션 목표
+	MissionObjective  UMETA(DisplayName = "MissionObjective"), // 활성 미션 목표
+	Landmark          UMETA(DisplayName = "Landmark")          // 길찾기용 고정 지형지물 (AAbyssMinimapLandmark)
 };
 
 /**
@@ -50,4 +51,8 @@ struct FAbyssMinimapEntry
 	// MissionObjective 타입에서만 유효. 라벨 표시 및 아이콘 풀링 키
 	UPROPERTY()
 	FName MissionId = NAME_None;
+
+	// Landmark 타입에서만 유효. 미니맵 라벨
+	UPROPERTY()
+	FText Label;
 };

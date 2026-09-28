@@ -33,6 +33,14 @@ void AAbyssGameMode::PostLogin(APlayerController* NewPlayer)
 
     if (!NewPlayer) return;
 
+    // 관전/게임오버 UI는 AAbyssPlayerController에 구현되어 있다.
+    // BP 컨트롤러의 부모 클래스가 엔진 기본 PlayerController면 전부 동작하지 않으므로 바로 알린다.
+    if (!NewPlayer->IsA<AAbyssPlayerController>())
+    {
+        UE_LOG(LogTemp, Error, TEXT("[GameMode] %s is not an AAbyssPlayerController. Reparent the controller BP to AbyssPlayerController (spectate / game over UI will not work)."),
+            *NewPlayer->GetClass()->GetName());
+    }
+
     // GAS 초기화: PlayerState에 있는 ASC를 갱신
     if (AAbyssPlayerState* PS = NewPlayer->GetPlayerState<AAbyssPlayerState>())
     {
@@ -53,6 +61,8 @@ void AAbyssGameMode::PostLogin(APlayerController* NewPlayer)
 
 void AAbyssGameMode::OnPlayerDied(AController* DeadPlayer)
 {
+    if (!DeadPlayer) return;
+
     // 1. 해당 플레이어의 PlayerState 가져오기
     if (AAbyssPlayerState* PS = DeadPlayer->GetPlayerState<AAbyssPlayerState>())
     {
@@ -362,15 +372,27 @@ void AAbyssGameMode::FinishGameOver()
 
     UE_LOG(LogTemp, Warning, TEXT("[GameFlow] Game Over"));
 
+    // 폰이 아니라 컨트롤러로 보낸다: 먼저 죽어 관전 중인 플레이어(예: 리슨 호스트)는
+    // 폰이 없어서 예전 방식(Diver->Client_ShowGameOverUI)으로는 UI가 뜨지 않았다.
     for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
     {
-        if (APlayerController* PC = It->Get())
+        AAbyssPlayerController* PC = Cast<AAbyssPlayerController>(It->Get());
+        if (!PC)
         {
-            if (AAbyssDiverCharacter* Diver = Cast<AAbyssDiverCharacter>(PC->GetPawn()))
+            continue;
+        }
+
+        // 위젯 클래스는 다이버 BP에 지정되어 있다. 폰이 없으면 기본 폰 클래스의 CDO에서 가져온다.
+        const AAbyssDiverCharacter* DiverForWidget = Cast<AAbyssDiverCharacter>(PC->GetPawn());
+        if (!DiverForWidget)
+        {
+            if (UClass* PawnClass = GetDefaultPawnClassForController(PC))
             {
-                Diver->Client_ShowGameOverUI();
+                DiverForWidget = Cast<AAbyssDiverCharacter>(PawnClass->GetDefaultObject());
             }
         }
+
+        PC->Client_ShowGameOverUI(DiverForWidget ? DiverForWidget->GameOverWidgetClass : nullptr);
     }
 }
 

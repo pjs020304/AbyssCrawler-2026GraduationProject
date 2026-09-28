@@ -101,6 +101,13 @@ public:
 	// 현재 누군가의 인벤토리에 들어있는지 (판매존 등 외부에서 판매 가능 여부 판단용)
 	bool IsPickedUp() const { return bPickedUp; }
 
+	// 움직이는 탈것(잠수함) 안에 고정되어 있는지
+	bool IsStowed() const { return bStowed; }
+
+	// [서버] 탈것 이동 중 선체에 고정. 물리를 끄고 Parent에 부착한다.
+	// nullptr을 넘기면 고정을 풀고 원래 물리 상태로 되돌린다.
+	void SetStowedIn(USceneComponent* Parent);
+
 	// 아이템 상태 전환
 	void SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USceneComponent* AttachParent, bool bVisibleInHand, FName AttachSocketName = NAME_None);
 	void SetAsDropped(const FVector& DropLocation, const FRotator& DropRotation, const FVector& ThrowImpulse);
@@ -115,6 +122,21 @@ protected:
 
 	UFUNCTION()
 	void OnRep_PickedUp();
+
+	// 탈것에 고정됨. 클라이언트도 물리를 꺼야 부착이 흔들리지 않으므로 리플리케이트한다.
+	UPROPERTY(ReplicatedUsing = OnRep_Stowed)
+	bool bStowed = false;
+
+	// [서버 전용] 고정 전에 물리 시뮬레이션 중이었는지 (해제 시 복원용)
+	bool bWasSimulatingBeforeStow = false;
+
+	UFUNCTION()
+	void OnRep_Stowed();
+
+	virtual void OnRep_AttachmentReplication() override;
+
+	// 클라이언트: 고정 상태 진입 시 로컬 물리 시뮬레이션/물리 복제 목표를 정리
+	void StopLocalPhysicsForStow();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void ApplyPickedUpState();

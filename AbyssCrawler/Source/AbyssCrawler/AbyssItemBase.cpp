@@ -7,6 +7,10 @@
 #include "AbilitySystemComponent.h"
 #include "AbyssAttributeSet.h"
 #include "TimerManager.h"
+#include "EngineUtils.h"
+#include "AbyssSubmarine.h"
+#include "Physics/Experimental/PhysScene_Chaos.h"
+#include "PhysicsReplicationInterface.h"
 
 AAbyssItemBase::AAbyssItemBase()
 {
@@ -294,6 +298,7 @@ void AAbyssItemBase::SetAsPickedUp(AAbyssDiverCharacter* NewOwnerCharacter, USce
 {
 	OwnerCharacter = NewOwnerCharacter;
 	bPickedUp = true;
+	bStowed = false; // 잠수함 이동 중 주워도 고정 상태는 해제
 
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
@@ -337,6 +342,105 @@ void AAbyssItemBase::SetAsDropped(const FVector& DropLocation, const FRotator& D
 		RootPrim->WakeAllRigidBodies();
 		RootPrim->AddImpulse(ThrowImpulse, NAME_None, true);
 	}
+
+	// 이동 중인 잠수함 안에 떨어뜨렸다면 바로 선체에 고정 (안 그러면 고속으로 움직이는 바닥을 뚫고 빠진다)
+	if (HasAuthority())
+	{
+		for (TActorIterator<AAbyssSubmarine> It(GetWorld()); It; ++It)
+		{
+			if (It->TryStowItem(this))
+			{
+				break;
+			}
+		}
+	}
+}
+
+void AAbyssItemBase::SetStowedIn(USceneComponent* Parent)
+{
+	if (!HasAuthority() || bPickedUp) return;
+
+	UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(GetRootComponent());
+
+	if (Parent)
+	{
+		bWasSimulatingBeforeStow = RootPrim && RootPrim->IsSimulatingPhysics();
+		bStowed = true;
+
+		// 물리를 먼저 꺼야 부착이 유지된다 (엔진은 시뮬레이션 중인 컴포넌트의 부착을 즉시 풀어버린다)
+		if (RootPrim)
+		{
+			RootPrim->SetSimulatePhysics(false);
+		}
+		AttachToComponent(Parent, FAttachmentTransformRules::KeepWorldTransform);
+	}
+	else
+	{
+		bStowed = false;
+		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+		if (RootPrim && bWasSimulatingBeforeStow)
+		{
+			RootPrim->SetSimulatePhysics(true);
+
+			// 고정 중에는 키네마틱으로 잠수함과 함께 (초속 수십 m로) 움직였기 때문에
+			// 물리를 다시 켜면 그 속도가 그대로 남는다. 그대로 두면 얇은 바닥을 뚫고 빠져나가므로 반드시 0으로.
+			RootPrim->SetPhysicsLinearVelocity(FVector::ZeroVector);
+			RootPrim->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+			RootPrim->WakeAllRigidBodies();
+		}
+		bWasSimulatingBeforeStow = false;
+	}
+
+	ForceNetUpdate();
+}
+
+void AAbyssItemBase::StopLocalPhysicsForStow()
+{
+	UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(GetRootComponent());
+	if (!RootPrim) return;
+
+	RootPrim->SetSimulatePhysics(false);
+
+	// 고정 직전의 물리 복제 목표(수면 위치)가 남아 있으면 계속 그쪽으로 끌려갈 수 있으므로 제거
+	if (UWorld* World = GetWorld())
+	{
+		if (FPhysScene* PhysScene = World->GetPhysicsScene())
+		{
+			if (IPhysicsReplication* PhysicsReplication = PhysScene->GetPhysicsReplication())
+			{
+				PhysicsReplication->RemoveReplicatedTarget(RootPrim);
+			}
+		}
+	}
+}
+
+void AAbyssItemBase::OnRep_AttachmentReplication()
+{
+	// 클라이언트에서 부착 정보가 bStowed보다 먼저 도착하면 루트가 아직 물리 시뮬레이션 중이라
+	// 엔진이 부착을 즉시 풀어버린다(아이템이 수면에 남고 잠수함만 내려가 "안 보이는" 원인).
+	// 고정 상태라면 물리를 먼저 끄고 부착을 적용한다.
+	if (bStowed)
+	{
+		StopLocalPhysicsForStow();
+	}
+
+	Super::OnRep_AttachmentReplication();
+}
+
+void AAbyssItemBase::OnRep_Stowed()
+{
+	if (bStowed)
+	{
+		// 부착 정보가 먼저 와서 (물리 때문에) 부착이 풀렸던 경우를 대비해,
+		// 물리를 끈 뒤 이미 받아 둔 부착 정보를 다시 적용한다.
+		StopLocalPhysicsForStow();
+		if (GetAttachmentReplication().AttachParent)
+		{
+			Super::OnRep_AttachmentReplication();
+		}
+	}
+	// 해제 시에는 부착 해제 복제 → OnRep_ReplicatedMovement(bRepPhysics)가 물리 상태를 다시 맞춰 준다.
 }
 
 void AAbyssItemBase::OnRep_PickedUp()
@@ -349,6 +453,7 @@ void AAbyssItemBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AAbyssItemBase, bPickedUp);
+	DOREPLIFETIME(AAbyssItemBase, bStowed);
 }
 
 void AAbyssItemBase::ApplyPickedUpState()
