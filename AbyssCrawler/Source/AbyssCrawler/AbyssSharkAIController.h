@@ -23,6 +23,9 @@ protected:
 	// AI가 캐릭터에 빙의(Possess)할 때 호출된다 (여기서 Behavior Tree를 실행한다)
 	virtual void OnPossess(APawn* InPawn) override;
 
+	// 빙의 이후 월드 BeginPlay 시점에 감지 리스너 등록을 한 번 더 보장한다.
+	virtual void BeginPlay() override;
+
 	// --- [AI 핵심 컴포넌트] ---
 
 	// 에디터에서 지정하는 행동 트리(Behavior Tree)

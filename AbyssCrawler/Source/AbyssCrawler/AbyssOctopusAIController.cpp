@@ -1,4 +1,5 @@
 ﻿#include "AbyssOctopusAIController.h"
+#include "AbyssAIPerceptionHelper.h"
 #include "AbyssOctopusCharacter.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -27,9 +28,24 @@ AAbyssOctopusAIController::AAbyssOctopusAIController()
 	OctopusPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AAbyssOctopusAIController::OnTargetDetected);
 }
 
+void AAbyssOctopusAIController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// OnPossess 시점에 AISystem이 아직 없었다면 여기서 다시 등록한다(이미 등록됐으면 무시).
+	EnsurePerceptionListenerRegistered(OctopusPerceptionComp);
+}
+
 void AAbyssOctopusAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+
+	// seamless travel(패키징 빌드) 경로에서 감지 리스너가 등록되지 않는 경우를 보정
+	if (OctopusPerceptionComp)
+	{
+		EnsurePerceptionListenerRegistered(OctopusPerceptionComp);
+		OctopusPerceptionComp->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &AAbyssOctopusAIController::OnTargetDetected);
+	}
 
 	if (AIBehavior)
 	{

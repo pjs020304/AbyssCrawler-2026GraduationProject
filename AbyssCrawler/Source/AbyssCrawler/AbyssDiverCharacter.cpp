@@ -39,6 +39,8 @@
 #include "Mission/Contents/AbyssDataConsole.h"
 #include "Sound/SoundBase.h"
 #include "Materials/MaterialInterface.h"
+#include "Perception/AIPerceptionSystem.h"
+#include "Perception/AISense_Sight.h"
 #include "Engine/SkeletalMesh.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimInstance.h"
@@ -99,6 +101,16 @@ AAbyssDiverCharacter::AAbyssDiverCharacter(const FObjectInitializer& ObjectIniti
 void AAbyssDiverCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 크리처 AI의 시각(Sight) 감지 대상으로 명시 등록한다.
+	// 엔진의 폰 자동 등록(bAutoRegisterAllPawnsAsSources)만 믿으면, 로비에서 seamless travel로
+	// 들어오는 패키징 빌드에서 등록이 누락되어 크리처가 플레이어를 전혀 추적하지 않았다.
+	// (PIE는 하드 LoadMap이라 재현되지 않음.) 이미 등록돼 있으면 중복 없이 무시되고,
+	// AISystem이 없는 클라이언트에서는 아무 일도 하지 않는다.
+	if (HasAuthority())
+	{
+		UAIPerceptionSystem::RegisterPerceptionStimuliSource(this, UAISense_Sight::StaticClass(), this);
+	}
 
 	// 카메라를 Head 소켓에 부착 보장 (BP에서 Parent Socket이 비어 있어도 머리 본을 따라가도록)
 	// SnapToTarget으로 상대 오프셋을 0으로 만들어 Head 본에 정확히 붙인다.

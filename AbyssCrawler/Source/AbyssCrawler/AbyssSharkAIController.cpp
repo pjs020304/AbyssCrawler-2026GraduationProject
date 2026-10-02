@@ -1,4 +1,5 @@
 ﻿#include "AbyssSharkAIController.h"
+#include "AbyssAIPerceptionHelper.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -37,6 +38,14 @@ AAbyssSharkAIController::AAbyssSharkAIController()
 	}
 }
 
+void AAbyssSharkAIController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// OnPossess 시점에 AISystem이 아직 없었다면 여기서 다시 등록한다(이미 등록됐으면 무시).
+	EnsurePerceptionListenerRegistered(SharkPerceptionComp);
+}
+
 void AAbyssSharkAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
@@ -44,7 +53,9 @@ void AAbyssSharkAIController::OnPossess(APawn* InPawn)
 	// 1. 빙의 시 시각 감지 이벤트 바인딩
 	if (SharkPerceptionComp)
 	{
-		SharkPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AAbyssSharkAIController::OnTargetDetected);
+		// seamless travel(패키징 빌드) 경로에서 감지 리스너가 등록되지 않는 경우를 보정
+		EnsurePerceptionListenerRegistered(SharkPerceptionComp);
+		SharkPerceptionComp->OnTargetPerceptionUpdated.AddUniqueDynamic(this, &AAbyssSharkAIController::OnTargetDetected);
 	}
 
 	// 2. 행동 트리(Behavior Tree)가 설정되어 있다면 실행!

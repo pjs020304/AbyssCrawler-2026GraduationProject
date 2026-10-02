@@ -21,6 +21,9 @@ public:
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
+	// 빙의 이후 월드 BeginPlay 시점에 감지 리스너 등록을 한 번 더 보장한다.
+	virtual void BeginPlay() override;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI")
 	UBehaviorTree* AIBehavior;
 
